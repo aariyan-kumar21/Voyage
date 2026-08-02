@@ -1,0 +1,1960 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Voyage — Personal Productivity</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#05060b;
+    --sidebar-bg:#040509;
+    --surface:rgba(255,255,255,0.035);
+    --surface-2:rgba(255,255,255,0.02);
+    --surface-raised:rgba(255,255,255,0.06);
+    --border:rgba(255,255,255,0.09);
+    --border-soft:rgba(255,255,255,0.06);
+    --text-1:#f2f4fb;
+    --text-2:#98a1c0;
+    --text-3:#5c6488;
+    --blue:#5b8bff;
+    --blue-soft:rgba(91,139,255,0.14);
+    --blue-dim:#2c4590;
+    --amber:#ff9d3d;
+    --amber-soft:rgba(255,157,61,0.14);
+    --green:#34d399;
+    --green-soft:rgba(52,211,153,0.14);
+    --violet:#8b6cf7;
+    --violet-soft:rgba(139,108,247,0.16);
+    --gradient-accent:linear-gradient(90deg, var(--violet), var(--blue));
+    --radius-lg:20px;
+    --radius-md:14px;
+    --radius-sm:10px;
+    --font-display:'Sora', sans-serif;
+    --font-body:'Inter', sans-serif;
+    --font-mono:'JetBrains Mono', monospace;
+  }
+
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:
+      radial-gradient(circle at 1px 1px, rgba(255,255,255,0.045) 1px, transparent 1px) 0 0/28px 28px,
+      linear-gradient(180deg, #060810 0%, #05060b 40%, #05060b 100%);
+    background-attachment:fixed;
+    color:var(--text-1);
+    font-family:var(--font-body);
+    -webkit-font-smoothing:antialiased;
+    min-height:100vh;
+    overflow-x:hidden;
+  }
+  ::selection{background:var(--blue-soft);color:var(--text-1);}
+  .grad-text{
+    background:var(--gradient-accent);
+    -webkit-background-clip:text;
+    background-clip:text;
+    color:transparent;
+  }
+  a{color:inherit;text-decoration:none;}
+  button{font-family:inherit;cursor:pointer;}
+  ::-webkit-scrollbar{width:8px;height:8px;}
+  ::-webkit-scrollbar-thumb{background:var(--border);border-radius:8px;}
+  ::-webkit-scrollbar-track{background:transparent;}
+
+  /* ---------- Layout ---------- */
+  .app{
+    display:flex;
+    min-height:100vh;
+  }
+
+  /* ---------- Sidebar ---------- */
+  .sidebar{
+    position:fixed;
+    top:0; left:0; bottom:0;
+    width:76px;
+    background:rgba(4,5,9,0.85);
+    backdrop-filter:blur(20px);
+    -webkit-backdrop-filter:blur(20px);
+    border-right:1px solid var(--border-soft);
+    display:flex;
+    flex-direction:column;
+    padding:20px 0;
+    z-index:100;
+    transition:width .22s cubic-bezier(.4,0,.2,1);
+    overflow:hidden;
+  }
+  .sidebar:hover{ width:236px; }
+
+  .brand{
+    display:flex; align-items:center; gap:12px;
+    padding:0 22px 26px 22px;
+    white-space:nowrap;
+  }
+  .brand-mark{
+    width:34px;height:34px;flex:0 0 auto;
+    border-radius:9px;
+    background:linear-gradient(135deg, var(--blue), #6aa3ff);
+    display:flex;align-items:center;justify-content:center;
+  }
+  .brand-mark svg{width:18px;height:18px;}
+  .brand-name{
+    font-family:var(--font-display);
+    font-weight:600;
+    font-size:19px;
+    letter-spacing:0.2px;
+    opacity:0;
+    transition:opacity .15s ease;
+  }
+  .sidebar:hover .brand-name{opacity:1; transition-delay:.05s;}
+
+  .nav{
+    display:flex;
+    flex-direction:column;
+    gap:4px;
+    padding:0 14px;
+    flex:1;
+  }
+  .nav-item{
+    display:flex;
+    align-items:center;
+    gap:14px;
+    padding:11px 12px;
+    border-radius:11px;
+    color:var(--text-2);
+    white-space:nowrap;
+    position:relative;
+  }
+  .nav-item svg{width:20px;height:20px;flex:0 0 auto;}
+  .nav-item span{
+    font-size:14px; font-weight:500;
+    opacity:0;
+    transition:opacity .12s ease;
+  }
+  .sidebar:hover .nav-item span{opacity:1; transition-delay:.04s;}
+  .nav-item:hover{background:var(--surface); color:var(--text-1);}
+  .nav-item.active{background:var(--blue-soft); color:#bcd2ff;}
+  .nav-item.active svg{color:var(--blue);}
+  .nav-item .badge{
+    margin-left:auto;
+    font-family:var(--font-mono);
+    font-size:11px;
+    background:var(--border);
+    color:var(--text-2);
+    padding:1px 7px;
+    border-radius:20px;
+    opacity:0;
+    transition:opacity .12s ease;
+  }
+  .sidebar:hover .nav-item .badge{opacity:1;}
+
+  .sidebar-footer{
+    padding:14px 14px 4px 14px;
+    border-top:1px solid var(--border-soft);
+    margin-top:4px;
+  }
+  .account-item{
+    display:flex; align-items:center; gap:12px;
+    padding:8px 4px; border-radius:11px; cursor:pointer;
+  }
+  .account-item:hover{background:var(--surface);}
+  .account-text{
+    white-space:nowrap; opacity:0; transition:opacity .12s ease;
+  }
+  .sidebar:hover .account-text{opacity:1; transition-delay:.04s;}
+  .account-name{font-size:13.5px; font-weight:600; color:var(--text-1);}
+  .account-sub{font-size:11.5px; color:var(--text-3);}
+
+  /* ---------- Main ---------- */
+  .main{
+    margin-left:76px;
+    flex:1;
+    min-width:0;
+    padding:22px 32px 60px 28px;
+  }
+
+  .topbar{
+    display:flex;
+    align-items:center;
+    gap:18px;
+    margin-bottom:28px;
+  }
+  .avatar{
+    width:40px;height:40px;border-radius:50%;
+    background:linear-gradient(135deg,var(--violet),var(--blue));
+    display:flex;align-items:center;justify-content:center;
+    font-family:var(--font-display); font-weight:600; font-size:15px; color:#fff;
+    flex:0 0 auto;
+  }
+
+  .search-wrap{
+    flex:1;
+    max-width:420px;
+    display:flex;
+    align-items:center;
+    gap:10px;
+    background:var(--surface);
+    border:1px solid var(--border);
+    border-radius:11px;
+    padding:10px 14px;
+    color:var(--text-3);
+  }
+  .search-wrap svg{width:16px;height:16px;flex:0 0 auto;}
+  .search-wrap input{
+    background:none;border:none;outline:none;color:var(--text-1);
+    font-size:13.5px; width:100%; font-family:var(--font-body);
+  }
+  .search-wrap input::placeholder{color:var(--text-3);}
+
+  .topbar-right{
+    margin-left:auto;
+    display:flex; align-items:center; gap:12px;
+  }
+  .icon-btn{
+    width:40px;height:40px;border-radius:11px;
+    background:var(--surface); border:1px solid var(--border);
+    display:flex;align-items:center;justify-content:center;
+    color:var(--text-2); position:relative;
+  }
+  .icon-btn svg{width:18px;height:18px;}
+  .icon-btn .dot{
+    position:absolute; top:8px; right:8px;
+    width:7px;height:7px;border-radius:50%;background:var(--green);
+    border:2px solid var(--surface);
+  }
+  .streak-pill{
+    display:flex; align-items:center; gap:8px;
+    background:var(--amber-soft);
+    border:1px solid rgba(245,166,35,0.3);
+    padding:8px 14px 8px 10px;
+    border-radius:11px;
+  }
+  .streak-pill svg{width:18px;height:18px;color:var(--amber);}
+  .streak-pill .num{font-family:var(--font-mono);font-weight:600;font-size:14px;color:#ffcf7d;}
+  .streak-pill .lbl{font-size:11.5px;color:#d7a05a;}
+
+  /* ---------- Header ---------- */
+  .page-head{
+    display:flex; align-items:flex-end; justify-content:space-between;
+    margin-bottom:26px; flex-wrap:wrap; gap:14px;
+  }
+  .page-head h1{
+    font-family:var(--font-display);
+    font-size:32px; font-weight:700; margin:0 0 6px 0; letter-spacing:-0.5px;
+  }
+  .page-head p{margin:0;color:var(--text-2); font-size:14px;}
+  .date-badge{
+    display:flex; align-items:center; gap:10px;
+  }
+  .date-text{font-size:13px; color:var(--text-3);}
+  .today-chip{
+    display:flex; align-items:center; gap:6px;
+    background:var(--surface); border:1px solid var(--border);
+    padding:9px 14px; border-radius:10px; font-size:13px; font-weight:500;
+  }
+  .today-chip svg{width:14px;height:14px;color:var(--text-2);}
+
+  /* ---------- Grid ---------- */
+  .grid{
+    display:grid;
+    grid-template-columns:repeat(12, 1fr);
+    gap:18px;
+  }
+  .card{
+    background:var(--surface);
+    backdrop-filter:blur(20px);
+    -webkit-backdrop-filter:blur(20px);
+    border:1px solid var(--border-soft);
+    border-radius:var(--radius-lg);
+    padding:20px;
+    box-shadow:0 1px 0 rgba(255,255,255,0.03) inset, 0 20px 40px -30px rgba(0,0,0,0.6);
+  }
+  .card-head{
+    display:flex; align-items:center; gap:10px; margin-bottom:16px;
+  }
+  .card-icon{
+    width:32px;height:32px;border-radius:9px;
+    display:flex;align-items:center;justify-content:center;
+    flex:0 0 auto;
+  }
+  .card-icon svg{width:16px;height:16px;}
+  .card-title{font-size:13.5px; font-weight:600; color:var(--text-1);}
+  .card-more{margin-left:auto; color:var(--text-3); cursor:pointer;}
+  .card-more svg{width:16px;height:16px;}
+  .clear-btn{
+    margin-left:auto; background:none; border:none; color:var(--text-3);
+    font-size:11.5px; font-family:var(--font-body); font-weight:500; cursor:pointer;
+    padding:4px 8px; border-radius:6px; transition:color .15s ease, background .15s ease;
+  }
+  .clear-btn:hover{color:var(--text-1); background:rgba(255,255,255,0.06);}
+  .clear-btn.confirm{color:var(--amber); background:var(--amber-soft);}
+
+  .big-num{
+    font-family:var(--font-display); font-size:34px; font-weight:700; line-height:1;
+  }
+  .big-num .unit{font-size:14px; font-weight:500; color:var(--text-3); margin-left:4px;}
+  .delta-chip{
+    display:inline-flex; align-items:center; gap:3px;
+    background:var(--green-soft); color:var(--green);
+    font-size:11px; font-weight:600; padding:2px 7px; border-radius:20px;
+    margin-left:8px; font-family:var(--font-mono);
+  }
+
+  /* span helpers */
+  .col-4{grid-column:span 4;}
+  .col-5{grid-column:span 5;}
+  .col-3{grid-column:span 3;}
+  .col-6{grid-column:span 6;}
+  .col-7{grid-column:span 7;}
+  .col-8{grid-column:span 8;}
+  .col-12{grid-column:span 12;}
+
+  @media (max-width:1180px){
+    .col-4,.col-5,.col-3,.col-6,.col-7,.col-8{grid-column:span 12;}
+  }
+
+  .view{display:none;}
+  .view.active{display:block;}
+
+  /* ---------- Focus blobs (timer page) ---------- */
+  .blob-row{
+    display:flex; align-items:center; justify-content:center;
+    gap:14px; margin:8px 0; height:150px; position:relative;
+  }
+  .blob{
+    border-radius:50%; display:flex; flex-direction:column;
+    align-items:center; justify-content:center;
+    font-family:var(--font-display); font-weight:700; color:#fff;
+  }
+  .blob small{font-family:var(--font-body); font-weight:500; font-size:10.5px; opacity:0.8;}
+  .blob-deep{width:132px;height:132px; background:linear-gradient(160deg,var(--violet),var(--blue)); font-size:22px;}
+  .blob-study{width:96px;height:96px; background:linear-gradient(160deg,#232b3d,#151b28); font-size:17px; border:1px solid var(--border);}
+  .blob-break{width:64px;height:64px; background:linear-gradient(160deg,var(--green),#1b8c68); font-size:13px;}
+
+  .timer-controls{display:flex; gap:8px; margin-top:6px; max-width:260px;}
+  .timer-controls button{
+    flex:1; padding:11px 0; border-radius:10px; border:1px solid var(--border);
+    background:var(--surface-2); color:var(--text-1); font-size:12.5px; font-weight:600;
+  }
+  .timer-controls button.primary{background:var(--blue); border-color:var(--blue); color:#fff;}
+
+  /* ---------- Habit tracker grid (Habit Tracker page) ---------- */
+  .tracker-toolbar{
+    display:flex; align-items:flex-start; justify-content:space-between; gap:16px;
+    margin-bottom:18px; flex-wrap:wrap;
+  }
+  .tracker-title-input{
+    background:none; border:none; font-family:var(--font-display); font-weight:700;
+    font-size:21px; color:var(--text-1); outline:none; padding:2px 0; border-bottom:1px solid transparent; width:220px;
+  }
+  .tracker-title-input:focus{border-bottom:1px solid var(--border);}
+  .tracker-tagline-input{
+    background:none; border:none; font-size:13px; color:var(--text-2); outline:none;
+    text-align:right; border-bottom:1px solid transparent; padding:6px 0; width:220px;
+  }
+  .tracker-tagline-input:focus{border-bottom:1px solid var(--border);}
+  .tracker-scroll{overflow-x:auto; border-radius:12px; border:1px solid var(--border-soft);}
+  .tracker-scroll.compact{max-height:280px; overflow-y:auto;}
+  .tracker-scroll.compact .tracker-habit-cell{min-width:130px;}
+  .tracker-table{border-collapse:collapse; width:100%; font-size:12px;}
+  .tracker-table th, .tracker-table td{border:1px solid var(--border-soft); text-align:center; padding:0;}
+  .tracker-table th{
+    font-family:var(--font-mono); font-weight:500; color:var(--text-3);
+    background:rgba(255,255,255,0.025); height:36px; min-width:32px;
+  }
+  .tracker-habit-cell{
+    text-align:left!important; padding:9px 12px!important; font-size:12.5px; font-weight:500;
+    color:var(--text-1); white-space:nowrap; min-width:160px;
+    display:flex; align-items:center; justify-content:space-between; gap:8px;
+    position:sticky; left:0; background:var(--surface-2); backdrop-filter:blur(6px);
+  }
+  .tracker-habit-cell .rm{
+    background:none; border:none; color:var(--text-3); font-size:15px; opacity:0;
+    cursor:pointer; line-height:1; padding:0 2px;
+  }
+  .tracker-table tr:hover .tracker-habit-cell .rm{opacity:1;}
+  .tracker-cell{width:32px; height:32px; cursor:pointer; position:relative;}
+  .tracker-cell:hover{background:rgba(255,255,255,0.05);}
+  .tracker-cell.checked::after{
+    content:'\2713';
+    position:absolute; inset:0;
+    display:flex; align-items:center; justify-content:center;
+    color:var(--green); font-size:15px; font-weight:800;
+    background:transparent;
+  }
+  .tracker-total-row td{
+    font-weight:700; font-family:var(--font-mono); color:var(--text-1);
+    background:rgba(255,255,255,0.03); height:32px;
+  }
+  .tracker-total-row .tracker-habit-cell{background:rgba(255,255,255,0.03); font-weight:700;}
+  .tracker-add-row{display:flex; gap:8px; margin-top:14px; max-width:420px;}
+  .tracker-add-row input{
+    flex:1; background:var(--surface-2); border:1px solid var(--border); color:var(--text-1);
+    border-radius:8px; padding:8px 10px; font-size:12.5px; outline:none; font-family:var(--font-body);
+  }
+  .tracker-add-row button{
+    background:var(--blue); border:none; color:#fff; border-radius:8px; padding:0 14px; font-size:12.5px; font-weight:600;
+  }
+
+  /* ---------- Mini calendar (Calendar page) ---------- */
+  .mini-cal{display:grid; grid-template-columns:repeat(7,1fr); gap:6px;}
+  .mini-cal .dow{font-size:10.5px; color:var(--text-3); text-align:center; padding-bottom:4px; font-family:var(--font-mono);}
+  .mini-cal .day-cell{
+    aspect-ratio:1; border-radius:9px; border:1px solid var(--border-soft);
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    font-size:12.5px; color:var(--text-2); cursor:pointer; position:relative; gap:3px;
+  }
+  .mini-cal .day-cell:hover{background:rgba(255,255,255,0.04);}
+  .mini-cal .day-cell.empty{border:none; cursor:default;}
+  .mini-cal .day-cell.today{border-color:var(--blue); color:var(--text-1); font-weight:700;}
+
+  .mini-cal .day-cell.has-event{
+    align-items:center; justify-content:center; padding:5px 4px;
+    background:rgba(255,157,61,0.08); border-color:rgba(255,157,61,0.32);
+  }
+  .mini-cal .day-cell.has-event .day-num{
+    position:absolute; top:4px; left:6px;
+    font-size:9.5px; font-family:var(--font-mono); color:var(--text-3); font-weight:500;
+  }
+  .mini-cal .day-cell.has-event.today .day-num{color:#ffcf7d;}
+  .mini-cal .day-cell.has-event .evt-label{
+    font-size:9px; font-weight:600; color:#ffcf7d; line-height:1.2; text-align:center;
+    display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;
+    padding:0 2px; margin-top:6px;
+  }
+  .mini-cal .day-cell.has-event .evt-more{
+    font-size:8px; color:var(--text-3); position:absolute; bottom:4px;
+  }
+
+  .goal-actions{display:flex; gap:6px; align-items:center;}
+  .goal-actions button{
+    width:22px; height:22px; border-radius:6px; border:1px solid var(--border);
+    background:var(--surface-2); color:var(--text-2); font-size:13px; line-height:1;
+  }
+
+  .stat-list{display:flex; flex-direction:column; gap:12px; margin-top:6px;}
+  .scroll-list{max-height:280px; overflow-y:auto; padding-right:6px;}
+  #habitQuickList.scroll-list{max-height:190px;}
+  .quick-row{
+    display:flex; align-items:center; gap:10px;
+    padding:8px 2px; border-bottom:1px solid var(--border-soft);
+  }
+  .quick-row:last-child{border-bottom:none;}
+  .quick-label{font-size:13px; color:var(--text-1);}
+  .stat-row{display:flex; align-items:center; gap:10px; font-size:12.5px;}
+  .stat-row .stat-label{flex:1; color:var(--text-2);}
+  .track{flex:2; height:6px; border-radius:6px; background:var(--surface-2); overflow:hidden;}
+  .track .fill{height:100%; border-radius:6px;}
+
+  /* ---------- To-do card ---------- */
+  .todo-body{display:flex; gap:16px; align-items:flex-start;}
+  .todo-list{flex:1; display:flex; flex-direction:column; gap:10px;}
+  .todo-row{display:flex; align-items:center; gap:10px;}
+  .chk{
+    appearance:none; -webkit-appearance:none;
+    width:18px; height:18px; flex:0 0 auto;
+    border:1.5px solid rgba(255,255,255,0.28);
+    border-radius:6px;
+    background:transparent;
+    position:relative;
+    cursor:pointer;
+    transition:background .15s ease, border-color .15s ease;
+  }
+  .chk:hover{border-color:rgba(255,255,255,0.5);}
+  .chk:checked{
+    background:var(--c, var(--blue));
+    border-color:var(--c, var(--blue));
+  }
+  .chk:checked::after{
+    content:'';
+    position:absolute; left:5px; top:1px;
+    width:5px; height:9px;
+    border:solid #fff;
+    border-width:0 2px 2px 0;
+    transform:rotate(45deg);
+  }
+  .todo-row label{font-size:13px; color:var(--text-1);}
+  .todo-row.done label{color:var(--text-3); text-decoration:line-through;}
+  .todo-add{
+    display:flex; gap:8px; margin-top:12px;
+  }
+  .todo-add input{
+    flex:1; background:var(--surface-2); border:1px solid var(--border); color:var(--text-1);
+    border-radius:8px; padding:8px 10px; font-size:12.5px; outline:none; font-family:var(--font-body);
+  }
+  .todo-add button{
+    background:var(--blue); border:none; color:#fff; border-radius:8px; padding:0 14px; font-size:13px; font-weight:600;
+  }
+  .ring-wrap{flex:0 0 auto; position:relative; width:120px; height:120px;}
+  .ring-wrap svg{transform:rotate(-90deg);}
+  .ring-center{
+    position:absolute; inset:0; display:flex; flex-direction:column;
+    align-items:center; justify-content:center;
+  }
+  .ring-center .n{font-family:var(--font-display); font-size:22px; font-weight:700;}
+  .ring-center small{font-size:10px; color:var(--text-3);}
+
+  /* ---------- Weekly progress (dark feature card) ---------- */
+  .feature-card{
+    background:rgba(255,255,255,0.025);
+    border:1px solid var(--border-soft);
+  }
+  .browser-chrome{
+    display:flex; align-items:center; gap:7px;
+    margin:-4px 0 16px 0; padding-bottom:12px;
+    border-bottom:1px solid var(--border-soft);
+  }
+  .browser-chrome .dot{width:9px;height:9px;border-radius:50%; opacity:0.85;}
+  .browser-chrome .url{
+    margin-left:10px; font-family:var(--font-mono); font-size:11px; color:var(--text-3);
+    background:rgba(255,255,255,0.04); padding:3px 10px; border-radius:6px;
+  }
+  .toggle-pill{
+    display:flex; background:var(--surface); border:1px solid var(--border); border-radius:9px; padding:3px;
+  }
+  .toggle-pill button{
+    border:none; background:none; color:var(--text-3); font-size:12px; padding:6px 12px; border-radius:7px; font-weight:500;
+  }
+  .toggle-pill button.active{background:var(--blue-soft); color:#bcd2ff;}
+  .metric-pair{display:flex; gap:34px; margin:6px 0 22px 0;}
+  .metric{display:flex; align-items:center; gap:8px;}
+  .metric .bar{width:5px; height:34px; border-radius:4px;}
+  .metric .val{font-family:var(--font-display); font-size:24px; font-weight:700;}
+  .metric .val .u{font-size:13px; color:var(--text-3); font-weight:500; margin-left:2px;}
+  .metric .cap{font-size:11.5px; color:var(--text-3); margin-top:2px;}
+
+  .bars{display:flex; align-items:flex-end; gap:14px; height:120px; padding:0 4px;}
+  .bar-col{flex:1; display:flex; flex-direction:column; align-items:center; gap:8px;}
+  .bar-shell{width:100%; display:flex; justify-content:center; align-items:flex-end; height:90px; gap:5px;}
+  .bar-mini{width:9px; border-radius:5px 5px 2px 2px;}
+  .bar-col .day{font-size:10.5px; color:var(--text-3); font-family:var(--font-mono);}
+
+  /* ---------- Notes: layered gradient glass-card deck ---------- */
+  .notes-glow-wrap{
+    position:relative;
+    padding:6px;
+  }
+  .note-deck{
+    display:grid;
+    grid-template-columns:repeat(auto-fill, minmax(210px, 1fr));
+    gap:16px;
+  }
+  .note-card{
+    position:relative;
+    padding:18px 16px;
+    border-radius:18px;
+    background:linear-gradient(165deg, rgba(255,255,255,0.06), rgba(255,255,255,0.015));
+    border:1px solid rgba(255,255,255,0.1);
+    backdrop-filter:blur(14px);
+    -webkit-backdrop-filter:blur(14px);
+    display:flex; flex-direction:column; gap:10px; min-height:150px;
+    transition:transform .18s ease, border-color .18s ease;
+  }
+  .note-card:nth-child(3n+2){ transform:translateY(10px); }
+  .note-card:nth-child(3n+3){ transform:translateY(-4px); }
+  .note-card:hover{ transform:translateY(-4px); border-color:rgba(255,255,255,0.22); }
+  .note-pill{
+    display:inline-flex; align-items:center; gap:6px; align-self:flex-start;
+    font-size:10.5px; font-weight:600; letter-spacing:0.2px;
+    padding:5px 10px 5px 8px; border-radius:20px;
+    background:rgba(255,255,255,0.07); border:1px solid rgba(255,255,255,0.1);
+    color:var(--text-2);
+  }
+  .note-pill .dot{width:6px; height:6px; border-radius:50%; flex:0 0 auto;}
+  .note-card h5{
+    margin:0; font-family:var(--font-display); font-weight:700; font-size:15.5px;
+    line-height:1.3; color:var(--text-1);
+  }
+  .note-card p{margin:0; font-size:12px; color:var(--text-2); line-height:1.5; flex:1;}
+  .note-card .rm{
+    align-self:flex-end; background:none; border:none; color:var(--text-3); font-size:15px;
+    cursor:pointer; opacity:0; transition:opacity .15s ease;
+  }
+  .note-card:hover .rm{opacity:1;}
+
+  .note-add-tile{
+    align-items:center; justify-content:center; text-align:center;
+    border-style:dashed; border-color:rgba(255,255,255,0.16);
+    background:rgba(255,255,255,0.015); cursor:pointer; gap:6px;
+  }
+  .note-add-tile:hover{border-color:rgba(255,255,255,0.32); background:rgba(255,255,255,0.03);}
+  .note-add-tile .add-icon{
+    width:32px; height:32px; border-radius:50%; display:flex; align-items:center; justify-content:center;
+    background:rgba(255,255,255,0.06); color:var(--text-2); font-size:18px; font-weight:600; line-height:1;
+  }
+  .note-add-tile .add-label{font-size:12.5px; color:var(--text-3); font-weight:500;}
+  .note-add-tile.editing{
+    cursor:default; align-items:stretch; text-align:left; border-style:solid; border-color:rgba(255,255,255,0.14);
+  }
+  .note-add-tile .note-add-input{
+    flex:1; background:var(--surface-2); border:1px solid var(--border); color:var(--text-1);
+    border-radius:8px; padding:8px 10px; font-size:12.5px; outline:none; font-family:var(--font-body); resize:none;
+  }
+  .note-add-tile .note-add-confirm{
+    margin-top:8px; background:var(--blue); border:none; color:#fff; border-radius:8px;
+    padding:7px 0; font-size:12px; font-weight:600; cursor:pointer;
+  }
+
+  .goal-item{margin-bottom:16px;}
+  .goal-top{display:flex; justify-content:space-between; margin-bottom:6px; font-size:12.5px;}
+  .goal-top .g-name{color:var(--text-1); font-weight:500;}
+  .goal-top .g-pct{color:var(--text-3); font-family:var(--font-mono);}
+
+  .event-row{display:flex; gap:12px; align-items:center; padding:10px 0; border-bottom:1px solid var(--border-soft);}
+  .event-row.next-event{
+    background:linear-gradient(90deg, rgba(91,139,255,0.12), rgba(139,108,247,0.06));
+    border:1px solid rgba(91,139,255,0.35); border-radius:12px; padding:12px 14px; margin-bottom:2px;
+  }
+  .event-row.next-event .event-date{background:var(--gradient-accent); border-color:transparent;}
+  .event-row.next-event .event-date .d, .event-row.next-event .event-date .m{color:#fff;}
+  .event-row.next-event .event-title{font-weight:700;}
+  .event-row.past-event{opacity:0.5;}
+  .event-row.past-event .event-title{color:var(--text-2); font-weight:400;}
+  .event-divider{
+    display:flex; align-items:center; gap:10px; margin:14px 0 6px 0;
+    font-size:10.5px; font-weight:600; letter-spacing:0.4px; text-transform:uppercase; color:var(--text-3);
+  }
+  .event-divider::after{content:''; flex:1; height:1px; background:var(--border-soft);}
+  .event-row:last-child{border-bottom:none;}
+  .event-date{
+    width:44px; height:44px; border-radius:10px; background:var(--surface-2); border:1px solid var(--border);
+    display:flex; flex-direction:column; align-items:center; justify-content:center; flex:0 0 auto;
+  }
+  .event-date .d{font-family:var(--font-mono); font-weight:700; font-size:14px; line-height:1;}
+  .event-date .m{font-size:9px; color:var(--text-3); text-transform:uppercase;}
+  .event-title{font-size:13px; font-weight:500;}
+  .event-sub{font-size:11.5px; color:var(--text-3);}
+
+  .event-empty{font-size:12px; color:var(--text-3); padding:6px 0;}
+  .event-view-all{
+    display:inline-block; margin-top:8px; font-size:11.5px; color:var(--blue); cursor:pointer;
+  }
+
+  /* ---------- Creative monthly progress graph ---------- */
+  .progress-summary{
+    font-size:13px; color:var(--text-2); line-height:1.6; margin:0 0 18px 0; max-width:640px;
+  }
+  .progress-summary b{color:var(--text-1); font-weight:600;}
+  .progress-scroll{overflow-x:auto; padding-bottom:4px;}
+
+  .add-inline{display:flex; gap:8px; margin-top:10px;}
+
+  .day-nav{
+    display:flex; align-items:center; gap:10px; margin-bottom:16px;
+  }
+  .day-nav button{
+    width:30px; height:30px; border-radius:8px; border:1px solid var(--border);
+    background:var(--surface-2); color:var(--text-2); font-size:14px; cursor:pointer;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .day-nav button:hover:not(:disabled){color:var(--text-1); border-color:rgba(255,255,255,0.22);}
+  .day-nav button:disabled{opacity:0.35; cursor:not-allowed;}
+  .day-nav #todoDayLabel{
+    font-family:var(--font-display); font-weight:600; font-size:14px; color:var(--text-1);
+    min-width:110px;
+  }
+  .day-nav #todoTodayBtn{
+    width:auto; padding:0 12px; margin-left:6px; font-size:11.5px; font-weight:500;
+    font-family:var(--font-body); color:var(--text-2);
+  }
+  .add-inline input{
+    flex:1; background:var(--surface-2); border:1px solid var(--border); color:var(--text-1);
+    border-radius:8px; padding:8px 10px; font-size:12px; outline:none; font-family:var(--font-body);
+  }
+  .add-inline button{
+    background:var(--surface-raised); border:1px solid var(--border); color:var(--text-1); border-radius:8px; padding:0 12px; font-size:12px;
+  }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-mark">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M12 2l6 4M12 2L6 6"/><circle cx="12" cy="15" r="5"/></svg>
+      </div>
+      <div class="brand-name grad-text">Voyage</div>
+    </div>
+
+    <nav class="nav">
+      <a class="nav-item active" data-view="dashboard">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>
+        <span>Dashboard</span>
+      </a>
+      <a class="nav-item" data-view="notes">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h13l3 3v13H4z"/><path d="M8 9h9M8 13h9M8 17h5"/></svg>
+        <span>Notes</span>
+      </a>
+      <a class="nav-item" data-view="habits">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 17 9 11 13 15 21 6"/><polyline points="15 6 21 6 21 12"/></svg>
+        <span>Habit Tracker</span>
+      </a>
+      <a class="nav-item" data-view="timer">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l3 2M9 2h6"/></svg>
+        <span>Timer</span>
+      </a>
+      <a class="nav-item" data-view="todo">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+        <span>To&#8209;Do</span>
+        <span class="badge" id="todoBadge">0</span>
+      </a>
+      <a class="nav-item" data-view="goals">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/></svg>
+        <span>Goals</span>
+      </a>
+      <a class="nav-item" data-view="calendar">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+        <span>Calendar</span>
+      </a>
+    </nav>
+
+    <div class="sidebar-footer">
+      <div class="account-item">
+        <div class="avatar" id="avatarInitial">V</div>
+        <div class="account-text">
+          <div class="account-name">Welcome back</div>
+          <div class="account-sub">Let's make today count</div>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="main">
+
+    <div class="topbar">
+      <div class="search-wrap">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+        <input type="text" placeholder="Search notes, tasks, goals...">
+      </div>
+
+      <div class="topbar-right">
+        <div class="streak-pill">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2c1 3-2 4-2 7a3 3 0 006 0c1 2 1 4 0 6a7 7 0 11-9-9c1-1 2-2 5-4z"/></svg>
+          <span class="num" id="streakCount">0</span>
+          <span class="lbl">day streak</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="page-head">
+      <div>
+        <h1 id="greeting">Good evening, Voyager</h1>
+        <p>Take control of your day.</p>
+      </div>
+      <div class="date-badge">
+        <span class="date-text" id="todayDate">-</span>
+        <div class="today-chip">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+          Today
+        </div>
+      </div>
+    </div>
+
+    <div class="view active" id="view-dashboard">
+    <div class="grid">
+
+      <!-- TODO -->
+      <section class="card col-6">
+        <div class="card-head">
+          <div class="card-icon" style="background:var(--green-soft);color:var(--green);">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+          </div>
+          <span class="card-title">Today's To-Do</span>
+          <button class="clear-btn" id="todoClearBtn">Clear all</button>
+        </div>
+        <div class="todo-body">
+          <div class="todo-list js-todo-list" id="todoList"></div>
+          <div class="ring-wrap">
+            <svg width="120" height="120" viewBox="0 0 120 120">
+              <circle cx="60" cy="60" r="50" fill="none" stroke="var(--surface-2)" stroke-width="10"/>
+              <circle id="todoRing" cx="60" cy="60" r="50" fill="none" stroke="url(#ringGrad)" stroke-width="10" stroke-linecap="round" stroke-dasharray="314" stroke-dashoffset="314"/>
+              <defs>
+                <linearGradient id="ringGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stop-color="var(--violet)"/>
+                  <stop offset="100%" stop-color="var(--blue)"/>
+                </linearGradient>
+              </defs>
+            </svg>
+            <div class="ring-center">
+              <div class="n grad-text" id="todoDone">0</div>
+              <small id="todoTotalLbl">of 0 tasks</small>
+            </div>
+          </div>
+        </div>
+        <div class="todo-add">
+          <input type="text" id="todoInput" placeholder="Add a task...">
+          <button id="todoAddBtn">Add</button>
+        </div>
+      </section>
+
+      <!-- HABIT TRACKER (linked to the Habit Tracker page) -->
+      <section class="card col-6">
+        <div class="card-head">
+          <div class="card-icon" style="background:var(--amber-soft);color:var(--amber);">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 17 9 11 13 15 21 6"/><polyline points="15 6 21 6 21 12"/></svg>
+          </div>
+          <span class="card-title">Habit Tracker</span>
+          <span class="card-more" id="goToHabits" style="cursor:pointer;">&rarr;</span>
+        </div>
+        <div class="stat-list scroll-list" id="habitQuickList"></div>
+      </section>
+
+      <!-- UPCOMING EVENTS (compact) -->
+      <section class="card col-4">
+        <div class="card-head">
+          <div class="card-icon" style="background:var(--blue-soft);color:var(--blue);">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+          </div>
+          <span class="card-title">Upcoming Events</span>
+          <span class="card-more" id="goToCalendar" style="cursor:pointer;">&rarr;</span>
+        </div>
+        <div id="eventList" class="js-event-list scroll-list" data-compact="true"></div>
+      </section>
+
+      <!-- NOTES -->
+      <section class="card col-8">
+        <div class="card-head">
+          <div class="card-icon" style="background:var(--green-soft);color:var(--green);">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h13l3 3v13H4z"/><path d="M8 9h9M8 13h9M8 17h5"/></svg>
+          </div>
+          <span class="card-title">Quick Notes</span>
+          <span class="card-more">&#8942;</span>
+        </div>
+        <div class="notes-glow-wrap">
+          <div id="noteList" class="js-note-list note-deck"></div>
+        </div>
+      </section>
+
+      <!-- WEEKLY PROGRESS (feature card) -->
+      <section class="card feature-card col-8">
+        <div class="browser-chrome">
+          <span class="dot" style="background:#ff5f57;"></span>
+          <span class="dot" style="background:#febc2e;"></span>
+          <span class="dot" style="background:#28c840;"></span>
+          <span class="url">voyage.app/dashboard</span>
+        </div>
+        <div class="card-head">
+          <div class="card-icon" style="background:rgba(255,255,255,0.06);color:var(--text-1);">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="M7 15l4-5 3 3 5-7"/></svg>
+          </div>
+          <span class="card-title">Weekly Progress</span>
+          <div class="toggle-pill" style="margin-left:auto;">
+            <button class="active">Weekly</button>
+          </div>
+        </div>
+        <div class="metric-pair">
+          <div class="metric">
+            <div class="bar" style="background:var(--amber);"></div>
+            <div>
+              <div class="val grad-text" id="metricTasks">0<span class="u">tasks</span></div>
+              <div class="cap">Completed this week</div>
+            </div>
+          </div>
+          <div class="metric">
+            <div class="bar" style="background:var(--blue);"></div>
+            <div>
+              <div class="val grad-text" id="metricHabits">0<span class="u">habits</span></div>
+              <div class="cap">Checked off this week</div>
+            </div>
+          </div>
+        </div>
+        <div class="bars" id="barsChart"></div>
+      </section>
+
+      <!-- GOALS -->
+      <section class="card col-4">
+        <div class="card-head">
+          <div class="card-icon" style="background:var(--violet-soft);color:var(--violet);">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/></svg>
+          </div>
+          <span class="card-title">Goals</span>
+          <span class="card-more">&#8942;</span>
+        </div>
+        <div id="goalList" class="js-goal-list"></div>
+        <div class="add-inline">
+          <input type="text" id="goalInput" placeholder="New goal...">
+          <button id="goalAddBtn">Add</button>
+        </div>
+      </section>
+
+    </div>
+    </div>
+    <!-- /view-dashboard -->
+
+    <!-- NOTES PAGE -->
+    <div class="view" id="view-notes">
+      <div class="grid">
+        <section class="card col-12">
+          <div class="card-head">
+            <div class="card-icon" style="background:var(--green-soft);color:var(--green);">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h13l3 3v13H4z"/><path d="M8 9h9M8 13h9M8 17h5"/></svg>
+            </div>
+            <span class="card-title">All Notes</span>
+          </div>
+          <div class="notes-glow-wrap">
+            <div id="pageNoteList" class="js-note-list note-deck"></div>
+          </div>
+        </section>
+      </div>
+    </div>
+
+    <!-- HABIT TRACKER PAGE -->
+    <div class="view" id="view-habits">
+      <div class="grid">
+        <section class="card col-12">
+          <div class="tracker-toolbar">
+            <div>
+              <input type="text" id="trackerTitle" class="tracker-title-input" value="">
+              <div style="font-size:11.5px;color:var(--text-3);margin-top:2px;">Monthly habit grid &middot; tap a cell to check it off, click habit names to rename</div>
+            </div>
+            <input type="text" id="trackerTagline" class="tracker-tagline-input" value="">
+          </div>
+          <div class="tracker-scroll">
+            <table class="tracker-table js-tracker-table" id="trackerTable"></table>
+          </div>
+          <div class="tracker-add-row">
+            <input type="text" id="trackerHabitInput" placeholder="Add a habit row...">
+            <button id="trackerHabitAddBtn">Add habit</button>
+          </div>
+        </section>
+
+        <section class="card col-12">
+          <div class="card-head">
+            <div class="card-icon" style="background:var(--amber-soft);color:var(--amber);">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="M7 15l4-5 3 3 5-7"/></svg>
+            </div>
+            <span class="card-title">Monthly Progress</span>
+          </div>
+          <div class="progress-scroll">
+            <div id="progressGraph"></div>
+          </div>
+        </section>
+      </div>
+    </div>
+
+    <!-- TIMER PAGE -->
+    <div class="view" id="view-timer">
+      <div class="grid">
+        <section class="card col-6">
+          <div class="card-head">
+            <div class="card-icon" style="background:var(--blue-soft);color:var(--blue);">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l3 2M9 2h6"/></svg>
+            </div>
+            <span class="card-title">Focus Timer</span>
+          </div>
+          <div class="big-num grad-text" id="timerDisplay" style="font-size:48px;">25:00</div>
+          <div style="font-size:12px;color:var(--text-3);margin:4px 0 20px 0;" id="timerState">Ready to focus</div>
+          <div class="timer-controls">
+            <button class="primary" id="timerStart">Start</button>
+            <button id="timerReset">Reset</button>
+          </div>
+        </section>
+      </div>
+    </div>
+
+    <!-- TODO PAGE -->
+    <div class="view" id="view-todo">
+      <div class="grid">
+        <section class="card col-12">
+          <div class="card-head">
+            <div class="card-icon" style="background:var(--green-soft);color:var(--green);">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+            </div>
+            <span class="card-title">Tasks</span>
+            <button class="clear-btn" id="pageTodoClearBtn">Clear all</button>
+          </div>
+
+          <div class="day-nav">
+            <button id="todoPrevDay" title="Previous day">&larr;</button>
+            <span id="todoDayLabel">Today</span>
+            <button id="todoNextDay" title="Next day">&rarr;</button>
+            <button id="todoTodayBtn">Jump to Today</button>
+          </div>
+
+          <div class="todo-list js-todo-list" id="pageTodoList" style="max-width:560px;"></div>
+          <div class="todo-add" id="pageTodoAddRow" style="max-width:560px;">
+            <input type="text" id="pageTodoInput" placeholder="Add a task...">
+            <button id="pageTodoAddBtn">Add</button>
+          </div>
+          <div class="event-empty" id="pageTodoHistoryNote" style="display:none;max-width:560px;">Viewing a past day — switch back to Today to add new tasks.</div>
+        </section>
+      </div>
+    </div>
+
+    <!-- GOALS PAGE -->
+    <div class="view" id="view-goals">
+      <div class="grid">
+        <section class="card col-12">
+          <div class="card-head">
+            <div class="card-icon" style="background:var(--violet-soft);color:var(--violet);">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/></svg>
+            </div>
+            <span class="card-title">All Goals</span>
+          </div>
+          <div id="pageGoalList" class="js-goal-list" style="max-width:640px;"></div>
+          <div class="add-inline" style="max-width:420px;">
+            <input type="text" id="pageGoalInput" placeholder="New goal...">
+            <button id="pageGoalAddBtn">Add</button>
+          </div>
+        </section>
+      </div>
+    </div>
+
+    <!-- CALENDAR PAGE -->
+    <div class="view" id="view-calendar">
+      <div class="grid">
+        <section class="card col-7">
+          <div class="card-head">
+            <div class="card-icon" style="background:var(--blue-soft);color:var(--blue);">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+            </div>
+            <span class="card-title" id="calMonthLabel">Calendar</span>
+          </div>
+          <div id="miniCalendar"></div>
+        </section>
+        <section class="card col-5">
+          <div class="card-head">
+            <div class="card-icon" style="background:var(--amber-soft);color:var(--amber);">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 8v4l3 3"/><circle cx="12" cy="12" r="9"/></svg>
+            </div>
+            <span class="card-title">Upcoming Events</span>
+          </div>
+          <div id="pageEventList" class="js-event-list" style="display:grid;grid-template-columns:1fr;gap:4px;"></div>
+          <div class="add-inline" style="flex-wrap:wrap;">
+            <input type="text" id="pageEventInput" placeholder="Event name" style="flex:1 1 100%;">
+            <input type="date" id="pageEventDate">
+            <button id="pageEventAddBtn">Add</button>
+          </div>
+        </section>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<script>
+/* ---------------- Storage helpers ---------------- */
+const KEY = 'voyage:';
+let memoryStore = {}; // fallback if localStorage is unavailable (e.g. sandboxed preview)
+let storageOK = true;
+try { localStorage.setItem(KEY+'__test__','1'); localStorage.removeItem(KEY+'__test__'); } catch(e){ storageOK = false; }
+
+const load = (k, fallback) => {
+  try {
+    if (!storageOK) return (k in memoryStore) ? JSON.parse(JSON.stringify(memoryStore[k])) : fallback;
+    const v = localStorage.getItem(KEY+k);
+    return v ? JSON.parse(v) : fallback;
+  } catch(e){ return fallback; }
+};
+const save = (k, v) => {
+  try {
+    if (!storageOK) { memoryStore[k] = v; return; }
+    localStorage.setItem(KEY+k, JSON.stringify(v));
+  } catch(e){ memoryStore[k] = v; storageOK = false; }
+};
+const uid = () => Math.random().toString(36).slice(2,9);
+function escapeHtml(str){
+  return String(str).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+}
+function nextDate(days){
+  const d = new Date(); d.setDate(d.getDate()+days);
+  return d.toISOString().slice(0,10);
+}
+function todayISO(){ return new Date().toISOString().slice(0,10); }
+
+/* ---------------- Seed data (first run) ---------------- */
+if (load('todos', null) === null) {
+  save('todos', [
+    { id: uid(), text: 'Review weekly goals', done: true },
+    { id: uid(), text: 'Deep work: portfolio site', done: false },
+    { id: uid(), text: 'Evening walk', done: false },
+  ]);
+}
+if (load('goals', null) === null) {
+  save('goals', [
+    { id: uid(), name: 'Launch Voyage v1', pct: 65 },
+    { id: uid(), name: 'Read 4 books this quarter', pct: 40 },
+  ]);
+}
+if (load('events', null) === null) {
+  save('events', [
+    { id: uid(), name: 'Design review', date: nextDate(3) },
+    { id: uid(), name: 'Monthly goal check-in', date: nextDate(9) },
+  ]);
+}
+if (load('notes', null) === null) {
+  save('notes', [
+    { id: uid(), text: 'Idea: link goals to todo sub-tasks.' },
+    { id: uid(), text: 'Try IndexedDB for note history.' },
+  ]);
+}
+if (load('streak', null) === null) save('streak', 6);
+
+if (load('habitGrid', null) === null) {
+  const now = new Date();
+  const monthName = now.toLocaleString(undefined, { month: 'long' });
+  const autoTitle = `${monthName} ${now.getFullYear()}`;
+  save('habitGrid', {
+    title: autoTitle,
+    tagline: '1% better everyday',
+    habits: [
+      { id: uid(), name: 'Breakfast' },
+      { id: uid(), name: 'Water 3L' },
+      { id: uid(), name: 'Read 5 pages' },
+      { id: uid(), name: 'Gym' },
+      { id: uid(), name: 'Guitar' },
+      { id: uid(), name: 'Meditate' },
+      { id: uid(), name: 'Code' },
+      { id: uid(), name: 'Study' },
+    ],
+    marks: {},
+    monthKey: `${now.getFullYear()}-${now.getMonth()}`,
+    lastAutoTitle: autoTitle
+  });
+}
+
+/* ---------------- Greeting + date ---------------- */
+const hour = new Date().getHours();
+const greetingText = (hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening') + ', Voyager';
+document.getElementById('greeting').textContent = greetingText;
+document.getElementById('todayDate').textContent = new Date().toLocaleDateString(undefined, { day:'numeric', month:'long', year:'numeric' });
+
+/* ---------------- Streak ---------------- */
+document.getElementById('streakCount').textContent = load('streak', 0);
+// real value gets computed and set once computeStreak() is defined further down, via updateStreakDisplay() in the init block
+
+/* ---------------- Generic "add" wiring helper ---------------- */
+function wireAdd(btnId, inputId, handler){
+  const btn = document.getElementById(btnId), input = document.getElementById(inputId);
+  if (!btn || !input) return;
+  const go = () => { if (!input.value.trim()) return; handler(input.value.trim()); input.value=''; };
+  btn.addEventListener('click', go);
+  input.addEventListener('keydown', e => { if (e.key==='Enter') go(); });
+}
+
+/* ---------------- TODOS (dashboard = always Today, page = browsable by day) ---------------- */
+let pageTodoDate = todayISO();
+
+function addTodo(text){
+  const items = load('todos', []);
+  items.push({ id: uid(), text, done:false, date: todayISO() });
+  save('todos', items);
+  renderTodos();
+}
+
+function renderTodoRows(containerId, items, todayKey){
+  const list = document.getElementById(containerId);
+  if (!list) return;
+  list.innerHTML = '';
+  if (!items.length){
+    list.innerHTML = `<div class="event-empty">No tasks for this day.</div>`;
+    return;
+  }
+  items.forEach(t => {
+    const row = document.createElement('div');
+    row.className = 'todo-row' + (t.done ? ' done' : '');
+    row.innerHTML = `<input type="checkbox" class="chk" style="--c:var(--blue);" ${t.done?'checked':''}><label>${escapeHtml(t.text)}</label>`;
+    row.querySelector('input').addEventListener('change', e => {
+      const arr = load('todos', []);
+      const item = arr.find(x => x.id === t.id);
+      item.done = e.target.checked;
+      save('todos', arr);
+      const hist = load('todoHistory', {});
+      const key = t.date || todayKey;
+      hist[key] = Math.max(0, (hist[key]||0) + (e.target.checked ? 1 : -1));
+      save('todoHistory', hist);
+      renderTodos();
+      renderBars();
+    });
+    list.appendChild(row);
+  });
+}
+
+function renderTodos(){
+  const todos = load('todos', []);
+  const todayKey = todayISO();
+
+  const todosToday = todos.filter(t => (t.date || todayKey) === todayKey);
+  renderTodoRows('todoList', todosToday, todayKey);
+
+  const todosSelected = todos.filter(t => (t.date || todayKey) === pageTodoDate);
+  renderTodoRows('pageTodoList', todosSelected, todayKey);
+
+  // dashboard stats always reflect Today, regardless of which day the page is browsing
+  const total = todosToday.length;
+  const done = todosToday.filter(t=>t.done).length;
+  const doneEl = document.getElementById('todoDone'); if (doneEl) doneEl.textContent = done;
+  const totalLbl = document.getElementById('todoTotalLbl'); if (totalLbl) totalLbl.textContent = `of ${total} tasks`;
+  const badge = document.getElementById('todoBadge'); if (badge) badge.textContent = total - done;
+  const ring = document.getElementById('todoRing');
+  if (ring){
+    const circumference = 314;
+    const pct = total ? done/total : 0;
+    ring.style.strokeDashoffset = circumference - (circumference*pct);
+  }
+  const metricTasks = document.getElementById('metricTasks');
+  if (metricTasks) metricTasks.innerHTML = `${done}<span class="u">tasks</span>`;
+
+  updateTodoDayLabel();
+  updateStreakDisplay();
+}
+wireAdd('todoAddBtn','todoInput', addTodo);
+wireAdd('pageTodoAddBtn','pageTodoInput', addTodo);
+
+function updateTodoDayLabel(){
+  const label = document.getElementById('todoDayLabel');
+  if (!label) return;
+  const isToday = pageTodoDate === todayISO();
+  const d = new Date(pageTodoDate + 'T00:00:00');
+  label.textContent = isToday ? 'Today' : d.toLocaleDateString(undefined, { weekday:'short', day:'numeric', month:'short', year: d.getFullYear()!==new Date().getFullYear() ? 'numeric' : undefined });
+  const nextBtn = document.getElementById('todoNextDay');
+  if (nextBtn) nextBtn.disabled = isToday;
+  const addRow = document.getElementById('pageTodoAddRow');
+  const note = document.getElementById('pageTodoHistoryNote');
+  if (addRow) addRow.style.display = isToday ? 'flex' : 'none';
+  if (note) note.style.display = isToday ? 'none' : 'block';
+}
+function shiftTodoDay(delta){
+  const d = new Date(pageTodoDate + 'T00:00:00');
+  d.setDate(d.getDate() + delta);
+  const next = d.toISOString().slice(0,10);
+  if (next > todayISO()) return; // no browsing into the future
+  pageTodoDate = next;
+  renderTodos();
+}
+const todoPrevBtn = document.getElementById('todoPrevDay');
+const todoNextBtn = document.getElementById('todoNextDay');
+const todoTodayBtn = document.getElementById('todoTodayBtn');
+if (todoPrevBtn) todoPrevBtn.addEventListener('click', () => shiftTodoDay(-1));
+if (todoNextBtn) todoNextBtn.addEventListener('click', () => shiftTodoDay(1));
+if (todoTodayBtn) todoTodayBtn.addEventListener('click', () => { pageTodoDate = todayISO(); renderTodos(); });
+
+function wireClearDay(btnId, getDateKey){
+  const btn = document.getElementById(btnId);
+  if (!btn) return;
+  let confirming = false, timer = null;
+  btn.addEventListener('click', () => {
+    const dateKey = getDateKey();
+    const all = load('todos', []);
+    const todayKey = todayISO();
+    const relevant = all.filter(t => (t.date || todayKey) === dateKey);
+    if (!relevant.length) return;
+    if (!confirming){
+      confirming = true;
+      btn.textContent = 'Click again to clear';
+      btn.classList.add('confirm');
+      timer = setTimeout(() => { confirming = false; btn.textContent = 'Clear all'; btn.classList.remove('confirm'); }, 3000);
+    } else {
+      clearTimeout(timer);
+      confirming = false;
+      btn.textContent = 'Clear all';
+      btn.classList.remove('confirm');
+      const remaining = all.filter(t => (t.date || todayKey) !== dateKey);
+      save('todos', remaining);
+      renderTodos();
+      renderBars();
+    }
+  });
+}
+wireClearDay('todoClearBtn', () => todayISO());
+wireClearDay('pageTodoClearBtn', () => pageTodoDate);
+
+// keep everything correct if the tab is left open across midnight
+let watchedDay = todayISO();
+setInterval(() => {
+  const now = todayISO();
+  if (now !== watchedDay){
+    if (pageTodoDate === watchedDay) pageTodoDate = now;
+    watchedDay = now;
+    renderTodos();
+    renderBars();
+  }
+}, 60000);
+
+/* ---------------- HABIT TRACKER GRID (monthly table — linked across Dashboard + Habit Tracker page) ---------------- */
+function daysInCurrentMonth(){
+  const now = new Date();
+  return new Date(now.getFullYear(), now.getMonth()+1, 0).getDate();
+}
+function currentMonthKey(){
+  const now = new Date();
+  return `${now.getFullYear()}-${now.getMonth()}`;
+}
+function markKey(habitId, day){
+  return `${habitId}_${currentMonthKey()}_${day}`;
+}
+function markKeyForDate(habitId, dateObj){
+  return `${habitId}_${dateObj.getFullYear()}-${dateObj.getMonth()}_${dateObj.getDate()}`;
+}
+
+/* ---------------- Streak: consecutive days with at least one completed task OR habit ---------------- */
+function dayHasActivity(dateObj){
+  const iso = dateObj.toISOString().slice(0,10);
+  const todoHist = load('todoHistory', {});
+  if ((todoHist[iso]||0) > 0) return true;
+  const todos = load('todos', []);
+  if (todos.some(t => t.date === iso && t.done)) return true;
+  const grid = load('habitGrid', null);
+  if (grid && grid.habits.some(h => grid.marks[markKeyForDate(h.id, dateObj)])) return true;
+  return false;
+}
+function computeStreak(){
+  const cursor = new Date();
+  if (!dayHasActivity(cursor)){
+    cursor.setDate(cursor.getDate()-1); // grace period: today not done yet doesn't zero out yesterday's streak
+  }
+  let streak = 0;
+  while (dayHasActivity(cursor)){
+    streak++;
+    cursor.setDate(cursor.getDate()-1);
+  }
+  return streak;
+}
+function updateStreakDisplay(){
+  const streak = computeStreak();
+  save('streak', streak);
+  const el = document.getElementById('streakCount');
+  if (el) el.textContent = streak;
+}
+function rolloverHabitGridMonth(grid){
+  const nowKey = currentMonthKey();
+  if (grid.monthKey === nowKey) return grid;
+  const now = new Date();
+  const autoTitle = `${now.toLocaleString(undefined,{month:'long'})} ${now.getFullYear()}`;
+  // only overwrite the title if the person never customized it away from last month's auto title
+  const wasAutoTitle = !grid.lastAutoTitle || grid.title === grid.lastAutoTitle;
+  grid.monthKey = nowKey;
+  if (wasAutoTitle) grid.title = autoTitle;
+  grid.lastAutoTitle = autoTitle;
+  save('habitGrid', grid);
+  return grid;
+}
+function renderHabitGrid(){
+  let grid = load('habitGrid', null);
+  if (!grid) return;
+  grid = rolloverHabitGridMonth(grid);
+  const titleInput = document.getElementById('trackerTitle');
+  const taglineInput = document.getElementById('trackerTagline');
+  if (titleInput && document.activeElement !== titleInput) titleInput.value = grid.title;
+  if (taglineInput && document.activeElement !== taglineInput) taglineInput.value = grid.tagline;
+
+  const days = daysInCurrentMonth();
+  let html = '<thead><tr><th style="min-width:160px;position:sticky;left:0;background:rgba(255,255,255,0.025);">Habit</th>';
+  for (let d=1; d<=days; d++) html += `<th>${d}</th>`;
+  html += '</tr></thead><tbody>';
+
+  grid.habits.forEach(h => {
+    html += `<tr><td class="tracker-habit-cell"><span>${escapeHtml(h.name)}</span><button class="rm" data-rm="${h.id}" title="Remove habit">&times;</button></td>`;
+    for (let d=1; d<=days; d++){
+      const key = markKey(h.id, d);
+      const checked = !!grid.marks[key];
+      html += `<td class="tracker-cell${checked?' checked':''}" data-h="${h.id}" data-d="${d}"></td>`;
+    }
+    html += '</tr>';
+  });
+
+  html += '<tr class="tracker-total-row"><td class="tracker-habit-cell">Total points</td>';
+  for (let d=1; d<=days; d++){
+    let total = 0;
+    grid.habits.forEach(h => { if (grid.marks[markKey(h.id, d)]) total++; });
+    html += `<td>${total || ''}</td>`;
+  }
+  html += '</tr></tbody>';
+
+  document.querySelectorAll('.js-tracker-table').forEach(table => {
+    table.innerHTML = html;
+
+    table.querySelectorAll('.tracker-cell').forEach(cell => {
+      cell.addEventListener('click', () => {
+        const g = load('habitGrid', grid);
+        const key = markKey(cell.dataset.h, cell.dataset.d);
+        if (g.marks[key]) delete g.marks[key]; else g.marks[key] = true;
+        save('habitGrid', g);
+        renderHabitGrid();
+      });
+    });
+    table.querySelectorAll('.rm').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const g = load('habitGrid', grid);
+        g.habits = g.habits.filter(h => h.id !== btn.dataset.rm);
+        Object.keys(g.marks).forEach(k => { if (k.startsWith(btn.dataset.rm+'_')) delete g.marks[k]; });
+        save('habitGrid', g);
+        renderHabitGrid();
+      });
+    });
+  });
+
+  updateWeeklyHabitMetric();
+  renderHabitQuickList();
+  renderBars();
+  renderProgressGraph();
+  updateStreakDisplay();
+}
+
+/* ---------------- Habit Tracker: dashboard quick checklist (linked to habitGrid) ---------------- */
+function renderHabitQuickList(){
+  const list = document.getElementById('habitQuickList');
+  if (!list) return;
+  const grid = load('habitGrid', null);
+  if (!grid) return;
+
+  const today = new Date().getDate();
+  const colors = ['var(--blue)','var(--green)','var(--amber)','var(--violet)'];
+
+  if (!grid.habits.length){
+    list.innerHTML = `<div class="event-empty">No habits yet — add one on the Habit Tracker page.</div>`;
+    return;
+  }
+
+  list.innerHTML = '';
+  grid.habits.forEach((h, i) => {
+    const color = colors[i % colors.length];
+    const key = markKey(h.id, today);
+    const checked = !!grid.marks[key];
+
+    const row = document.createElement('div');
+    row.className = 'quick-row';
+    row.innerHTML = `
+      <input type="checkbox" class="chk" style="--c:${color};" ${checked?'checked':''}>
+      <span class="quick-label">${escapeHtml(h.name)}</span>
+    `;
+    row.querySelector('input').addEventListener('change', e => {
+      const g = load('habitGrid', grid);
+      if (e.target.checked) g.marks[key] = true; else delete g.marks[key];
+      save('habitGrid', g);
+      renderHabitGrid();
+    });
+    list.appendChild(row);
+  });
+}
+
+/* ---------------- Creative monthly progress graph ---------------- */
+function renderProgressGraph(){
+  const wrap = document.getElementById('progressGraph');
+  if (!wrap) return;
+  const grid = load('habitGrid', null);
+  if (!grid) return;
+
+  const days = daysInCurrentMonth();
+  const habitCount = Math.max(1, grid.habits.length);
+  const values = [];
+  for (let d=1; d<=days; d++){
+    let total = 0;
+    grid.habits.forEach(h => { if (grid.marks[markKey(h.id, d)]) total++; });
+    values.push(total);
+  }
+  const maxVal = Math.max(...values, habitCount, 1);
+  const today = new Date().getDate();
+
+  const barW = 22, gap = 10, padX = 30, padTop = 20, padBottom = 34;
+  const chartH = 170;
+  const w = padX*2 + days*(barW+gap) - gap;
+  const h = padTop + chartH + padBottom;
+
+  let bars = '';
+  for (let i=0; i<days; i++){
+    const d = i+1;
+    const v = values[i];
+    const x = padX + i*(barW+gap);
+    const bh = v > 0 ? Math.max(4, (v/maxVal)*chartH) : 2;
+    const y = padTop + chartH - bh;
+    const isToday = d === today;
+    const isFuture = d > today;
+    const fillId = isToday ? 'gradToday' : (isFuture ? 'gradFuture' : 'gradPast');
+    const opacity = isFuture ? 0.35 : (v > 0 ? 1 : 0.25);
+    bars += `<rect x="${x}" y="${y}" width="${barW}" height="${bh}" rx="7" fill="url(#${fillId})" opacity="${opacity}"/>`;
+    bars += `<text x="${x+barW/2}" y="${padTop+chartH+18}" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="10" fill="${isToday ? '#ffcf7d' : 'rgba(255,255,255,0.35)'}">${d}</text>`;
+  }
+
+  wrap.innerHTML = `
+  <svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" style="display:block;">
+    <defs>
+      <linearGradient id="gradPast" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="var(--violet)"/>
+        <stop offset="100%" stop-color="var(--blue)"/>
+      </linearGradient>
+      <linearGradient id="gradToday" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="#ffcf7d"/>
+        <stop offset="100%" stop-color="var(--amber)"/>
+      </linearGradient>
+      <linearGradient id="gradFuture" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="#3a4256"/>
+        <stop offset="100%" stop-color="#232a3a"/>
+      </linearGradient>
+    </defs>
+    ${[0,0.25,0.5,0.75,1].map(f => `<line x1="${padX-8}" y1="${padTop+chartH*(1-f)}" x2="${w-padX+8}" y2="${padTop+chartH*(1-f)}" stroke="rgba(255,255,255,0.045)" stroke-width="1"/>`).join('')}
+    ${bars}
+  </svg>`;
+}
+
+/* ---------------- Feed dashboard's "habits this week" metric from habitGrid ---------------- */
+function updateWeeklyHabitMetric(){
+  const grid = load('habitGrid', null);
+  if (!grid) return;
+  const days = daysInCurrentMonth();
+  const values = [];
+  for (let d=1; d<=days; d++){
+    let total = 0;
+    grid.habits.forEach(h => { if (grid.marks[markKey(h.id, d)]) total++; });
+    values.push(total);
+  }
+  const now = new Date();
+  const dow = (now.getDay()+6)%7; // Mon=0
+  const weekStart = Math.max(1, now.getDate()-dow);
+  const weekEnd = Math.min(days, weekStart+6);
+  let weekTotal = 0;
+  for (let d=weekStart; d<=weekEnd; d++) weekTotal += (values[d-1]||0);
+  const metricHabits = document.getElementById('metricHabits');
+  if (metricHabits) metricHabits.innerHTML = `${weekTotal}<span class="u">habits</span>`;
+}
+function bindTrackerToolbar(){
+  const titleInput = document.getElementById('trackerTitle');
+  const taglineInput = document.getElementById('trackerTagline');
+  if (titleInput) titleInput.addEventListener('input', () => {
+    const g = load('habitGrid', {}); g.title = titleInput.value; save('habitGrid', g);
+  });
+  if (taglineInput) taglineInput.addEventListener('input', () => {
+    const g = load('habitGrid', {}); g.tagline = taglineInput.value; save('habitGrid', g);
+  });
+  wireAdd('trackerHabitAddBtn','trackerHabitInput', (name) => {
+    const g = load('habitGrid', {});
+    g.habits.push({ id: uid(), name });
+    save('habitGrid', g);
+    renderHabitGrid();
+  });
+}
+bindTrackerToolbar();
+
+/* ---------------- GOALS ---------------- */
+function addGoal(name){
+  const items = load('goals', []);
+  items.push({ id: uid(), name, pct: 0 });
+  save('goals', items);
+  renderGoals();
+}
+function renderGoals(){
+  const goals = load('goals', []);
+  document.querySelectorAll('.js-goal-list').forEach(list => {
+    list.innerHTML = '';
+    goals.forEach(g => {
+      const row = document.createElement('div');
+      row.className = 'goal-item';
+      row.innerHTML = `
+        <div class="goal-top">
+          <span class="g-name">${escapeHtml(g.name)}</span>
+          <span class="goal-actions">
+            <button data-act="minus">&minus;</button>
+            <span class="g-pct">${g.pct}%</span>
+            <button data-act="plus">+</button>
+          </span>
+        </div>
+        <div class="track"><div class="fill" style="width:${g.pct}%;background:var(--gradient-accent);"></div></div>
+      `;
+      row.querySelectorAll('button').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const arr = load('goals', []);
+          const item = arr.find(x => x.id === g.id);
+          item.pct = Math.max(0, Math.min(100, item.pct + (btn.dataset.act === 'plus' ? 10 : -10)));
+          save('goals', arr);
+          renderGoals();
+        });
+      });
+      list.appendChild(row);
+    });
+  });
+}
+wireAdd('goalAddBtn','goalInput', addGoal);
+wireAdd('pageGoalAddBtn','pageGoalInput', addGoal);
+
+/* ---------------- EVENTS ---------------- */
+function addEvent(name, date){
+  const items = load('events', []);
+  items.push({ id: uid(), name, date: date || todayISO() });
+  save('events', items);
+  renderEvents();
+  renderMiniCalendar();
+}
+function wireEventAdd(btnId, nameId, dateId){
+  const btn = document.getElementById(btnId), nameInput = document.getElementById(nameId), dateInput = document.getElementById(dateId);
+  if (!btn || !nameInput || !dateInput) return;
+  const go = () => {
+    if (!nameInput.value.trim()) { nameInput.focus(); return; }
+    addEvent(nameInput.value.trim(), dateInput.value || todayISO());
+    nameInput.value=''; dateInput.value='';
+  };
+  btn.addEventListener('click', go);
+  nameInput.addEventListener('keydown', e => { if (e.key==='Enter') go(); });
+  dateInput.addEventListener('keydown', e => { if (e.key==='Enter') go(); });
+}
+function renderEvents(){
+  const events = load('events', []).slice().sort((a,b)=> new Date(a.date) - new Date(b.date));
+  const todayStart = new Date(new Date().toDateString());
+
+  document.querySelectorAll('.js-event-list').forEach(list => {
+    const compact = list.dataset.compact === 'true';
+    list.innerHTML = '';
+
+    if (!events.length){
+      list.innerHTML = `<div class="event-empty">No upcoming events${compact ? '' : ' yet — add one below'}.</div>`;
+      if (compact){
+        const link = document.createElement('span');
+        link.className = 'event-view-all';
+        link.textContent = 'Add one on the Calendar page →';
+        link.addEventListener('click', () => showView('calendar'));
+        list.appendChild(link);
+      }
+      return;
+    }
+
+    function buildRow(ev, isNext){
+      const d = new Date(ev.date + 'T00:00:00');
+      const isPast = d < todayStart;
+      const row = document.createElement('div');
+      row.className = 'event-row' + (isNext ? ' next-event' : '') + (isPast ? ' past-event' : '');
+      row.innerHTML = `
+        <div class="event-date"><div class="d">${d.getDate()}</div><div class="m">${d.toLocaleString(undefined,{month:'short'})}</div></div>
+        <div style="flex:1;"><div class="event-title">${escapeHtml(ev.name)}</div><div class="event-sub">${d.toLocaleDateString(undefined,{weekday:'long'})}</div></div>
+        <button class="rm" data-rm="${ev.id}" title="Remove" style="background:none;border:none;color:var(--text-3);font-size:16px;cursor:pointer;">&times;</button>
+      `;
+      row.querySelector('.rm').addEventListener('click', () => {
+        const arr = load('events', []).filter(x => x.id !== ev.id);
+        save('events', arr);
+        renderEvents();
+        renderMiniCalendar();
+      });
+      return row;
+    }
+
+    // nearest upcoming first (highlighted), past events pushed below a divider — same design everywhere
+    const upcoming = events.filter(ev => new Date(ev.date+'T00:00:00') >= todayStart);
+    const past = events.filter(ev => new Date(ev.date+'T00:00:00') < todayStart).sort((a,b)=> new Date(b.date) - new Date(a.date));
+
+    if (!upcoming.length){
+      list.innerHTML += `<div class="event-empty">No upcoming events${compact ? '' : ' — add one below'}.</div>`;
+    } else {
+      upcoming.forEach((ev, i) => list.appendChild(buildRow(ev, i === 0)));
+    }
+    if (past.length){
+      const divider = document.createElement('div');
+      divider.className = 'event-divider';
+      divider.textContent = 'Past';
+      list.appendChild(divider);
+      past.forEach(ev => list.appendChild(buildRow(ev, false)));
+    }
+
+    if (compact){
+      const link = document.createElement('span');
+      link.className = 'event-view-all';
+      link.textContent = 'Manage on Calendar →';
+      link.addEventListener('click', () => showView('calendar'));
+      list.appendChild(link);
+    }
+  });
+}
+wireEventAdd('eventAddBtn','eventInput','eventDate');
+wireEventAdd('pageEventAddBtn','pageEventInput','pageEventDate');
+const goToCalendarLink = document.getElementById('goToCalendar');
+if (goToCalendarLink) goToCalendarLink.addEventListener('click', () => showView('calendar'));
+const goToHabitsLink = document.getElementById('goToHabits');
+if (goToHabitsLink) goToHabitsLink.addEventListener('click', () => showView('habits'));
+
+/* ---------------- MINI CALENDAR ---------------- */
+function renderMiniCalendar(){
+  const wrap = document.getElementById('miniCalendar');
+  if (!wrap) return;
+  const now = new Date();
+  const year = now.getFullYear(), month = now.getMonth();
+  const label = document.getElementById('calMonthLabel');
+  if (label) label.textContent = now.toLocaleString(undefined,{month:'long'}) + ' ' + year;
+
+  const events = load('events', []);
+  const eventsByDay = {};
+  events.forEach(e => {
+    const d = new Date(e.date+'T00:00:00');
+    if (d.getFullYear()===year && d.getMonth()===month){
+      const day = d.getDate();
+      (eventsByDay[day] = eventsByDay[day] || []).push(e);
+    }
+  });
+
+  const firstDow = (new Date(year, month, 1).getDay()+6)%7; // Mon=0
+  const daysCount = new Date(year, month+1, 0).getDate();
+  const todayNum = now.getDate();
+
+  let html = '<div class="mini-cal">';
+  ['Mo','Tu','We','Th','Fr','Sa','Su'].forEach(d => html += `<div class="dow">${d}</div>`);
+  for (let i=0;i<firstDow;i++) html += '<div class="day-cell empty"></div>';
+  for (let d=1; d<=daysCount; d++){
+    const isToday = d === todayNum;
+    const dayEvents = eventsByDay[d];
+    if (dayEvents && dayEvents.length){
+      const extra = dayEvents.length - 1;
+      html += `<div class="day-cell has-event${isToday?' today':''}" data-day="${d}" title="${escapeHtml(dayEvents.map(e=>e.name).join(', '))}">
+        <span class="day-num">${d}</span>
+        <span class="evt-label">${escapeHtml(dayEvents[0].name)}</span>
+        ${extra > 0 ? `<span class="evt-more">+${extra} more</span>` : ''}
+      </div>`;
+    } else {
+      html += `<div class="day-cell${isToday?' today':''}" data-day="${d}">${d}</div>`;
+    }
+  }
+  html += '</div>';
+  wrap.innerHTML = html;
+
+  wrap.querySelectorAll('.day-cell[data-day]').forEach(cell => {
+    cell.addEventListener('click', () => {
+      const d = String(cell.dataset.day).padStart(2,'0');
+      const m = String(month+1).padStart(2,'0');
+      const dateInput = document.getElementById('pageEventDate');
+      const nameInput = document.getElementById('pageEventInput');
+      if (dateInput) dateInput.value = `${year}-${m}-${d}`;
+      if (nameInput) nameInput.focus();
+    });
+  });
+}
+
+/* ---------------- NOTES ---------------- */
+const NOTE_TAGS = [
+  { label: 'Idea',     color: 'var(--violet)' },
+  { label: 'Task',     color: 'var(--blue)' },
+  { label: 'Reminder', color: 'var(--amber)' },
+  { label: 'Journal',  color: 'var(--green)' },
+];
+function addNote(text){
+  const items = load('notes', []);
+  const tag = NOTE_TAGS[items.length % NOTE_TAGS.length];
+  items.unshift({ id: uid(), text, tagLabel: tag.label, tagColor: tag.color });
+  save('notes', items);
+  renderNotes();
+}
+function renderNotes(){
+  const notes = load('notes', []);
+  document.querySelectorAll('.js-note-list').forEach(list => {
+    list.innerHTML = '';
+    list.appendChild(buildAddNoteTile());
+    if (!notes.length){
+      const empty = document.createElement('div');
+      empty.className = 'event-empty';
+      empty.style.gridColumn = '1 / -1';
+      empty.textContent = 'No notes yet — tap the card to add one.';
+      list.appendChild(empty);
+      return;
+    }
+    notes.forEach((n, i) => {
+      const tag = n.tagLabel ? { label: n.tagLabel, color: n.tagColor } : NOTE_TAGS[i % NOTE_TAGS.length];
+      const words = n.text.split(' ');
+      const heading = words.slice(0, 6).join(' ') + (words.length > 6 ? '…' : '');
+      const body = words.length > 6 ? words.slice(6).join(' ') : 'Tap to keep this in view.';
+      const el = document.createElement('div');
+      el.className = 'note-card';
+      el.innerHTML = `
+        <span class="note-pill"><span class="dot" style="background:${tag.color};"></span>${tag.label}</span>
+        <h5>${escapeHtml(heading)}</h5>
+        <p>${escapeHtml(body)}</p>
+        <button class="rm" data-rm="${n.id}" title="Remove">&times;</button>
+      `;
+      el.querySelector('.rm').addEventListener('click', () => {
+        const arr = load('notes', []).filter(x => x.id !== n.id);
+        save('notes', arr);
+        renderNotes();
+      });
+      list.appendChild(el);
+    });
+  });
+}
+function buildAddNoteTile(){
+  const tile = document.createElement('div');
+  tile.className = 'note-card note-add-tile';
+  tile.innerHTML = `<span class="add-icon">+</span><span class="add-label">Add note</span>`;
+
+  const openEditor = () => {
+    tile.classList.add('editing');
+    tile.innerHTML = `
+      <textarea class="note-add-input" rows="3" placeholder="Jot something down..."></textarea>
+      <button class="note-add-confirm">Add note</button>
+    `;
+    const input = tile.querySelector('.note-add-input');
+    input.focus();
+    const commit = () => {
+      const val = input.value.trim();
+      if (val) addNote(val); else renderNotes();
+    };
+    tile.querySelector('.note-add-confirm').addEventListener('click', (e) => { e.stopPropagation(); commit(); });
+    input.addEventListener('keydown', e => {
+      if (e.key === 'Enter' && !e.shiftKey){ e.preventDefault(); commit(); }
+      if (e.key === 'Escape') renderNotes();
+    });
+    input.addEventListener('click', e => e.stopPropagation());
+  };
+  tile.addEventListener('click', () => { if (!tile.classList.contains('editing')) openEditor(); });
+  return tile;
+}
+
+/* ---------------- WEEKLY BAR CHART (real data: to-dos + habit tracker) ---------------- */
+function renderBars(){
+  const container = document.getElementById('barsChart');
+  if (!container) return;
+
+  const dayLabels = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+  const now = new Date();
+  const dow = (now.getDay()+6)%7; // Mon=0
+  const monday = new Date(now); monday.setDate(now.getDate()-dow);
+
+  const grid = load('habitGrid', { habits: [], marks: {} });
+  const todoHist = load('todoHistory', {});
+
+  const habitVals = [];
+  const taskVals = [];
+  const dates = [];
+  for (let i=0; i<7; i++){
+    const d = new Date(monday); d.setDate(monday.getDate()+i);
+    dates.push(d);
+    const sameMonth = d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+    let hv = 0;
+    if (sameMonth){
+      grid.habits.forEach(h => { if (grid.marks[markKey(h.id, d.getDate())]) hv++; });
+    }
+    habitVals.push(hv);
+    taskVals.push(todoHist[d.toISOString().slice(0,10)] || 0);
+  }
+
+  const maxHabit = Math.max(...habitVals, grid.habits.length, 1);
+  const maxTask = Math.max(...taskVals, 1);
+  const todayIdx = dow;
+
+  container.innerHTML = '';
+  dayLabels.forEach((label, i) => {
+    const col = document.createElement('div');
+    col.className = 'bar-col';
+    const isFuture = dates[i] > now && dates[i].toDateString() !== now.toDateString();
+    const h1 = taskVals[i] > 0 ? Math.max(4, (taskVals[i]/maxTask)*90) : 2;
+    const h2 = habitVals[i] > 0 ? Math.max(4, (habitVals[i]/maxHabit)*90) : 2;
+    const color1 = i === todayIdx ? 'var(--amber)' : (isFuture ? 'rgba(255,157,61,0.18)' : 'var(--amber)');
+    const color2 = i === todayIdx ? 'linear-gradient(180deg, #ffcf7d, var(--violet))' : (isFuture ? 'rgba(255,255,255,0.06)' : 'linear-gradient(180deg, var(--violet), var(--blue))');
+    col.title = `${label}: ${taskVals[i]} task${taskVals[i]===1?'':'s'}, ${habitVals[i]} habit${habitVals[i]===1?'':'s'}`;
+    const op1 = isFuture ? 0.4 : (taskVals[i] > 0 ? 1 : 0.2);
+    const op2 = isFuture ? 0.4 : (habitVals[i] > 0 ? 1 : 0.2);
+    col.innerHTML = `
+      <div class="bar-shell">
+        <div class="bar-mini" style="height:${h1}px;background:${color1};opacity:${op1};"></div>
+        <div class="bar-mini" style="height:${h2}px;background:${color2};opacity:${op2};"></div>
+      </div>
+      <div class="day">${label}</div>
+    `;
+    container.appendChild(col);
+  });
+}
+
+/* ---------------- POMODORO TIMER (Timer page) ---------------- */
+let timerSeconds = 25*60;
+let timerInterval = null;
+let sessions = load('sessions', { deep: 0, study: 0, brk: 0 });
+function updateTimerDisplay(){
+  const el = document.getElementById('timerDisplay');
+  if (!el) return;
+  const m = String(Math.floor(timerSeconds/60)).padStart(2,'0');
+  const s = String(timerSeconds%60).padStart(2,'0');
+  el.textContent = `${m}:${s}`;
+}
+function renderBlobs(){
+  const a = document.getElementById('blobDeep'), b = document.getElementById('blobStudy'), c = document.getElementById('blobBreak');
+  if (a) a.innerHTML = `${sessions.deep}<small>deep work</small>`;
+  if (b) b.innerHTML = `${sessions.study}<small>study</small>`;
+  if (c) c.innerHTML = `${sessions.brk}<small>break</small>`;
+}
+const timerStartBtn = document.getElementById('timerStart');
+if (timerStartBtn){
+  timerStartBtn.addEventListener('click', (e) => {
+    if (timerInterval){
+      clearInterval(timerInterval);
+      timerInterval = null;
+      e.target.textContent = 'Start';
+      document.getElementById('timerState').textContent = 'Paused';
+      return;
+    }
+    e.target.textContent = 'Pause';
+    document.getElementById('timerState').textContent = 'Focusing...';
+    timerInterval = setInterval(() => {
+      timerSeconds--;
+      if (timerSeconds <= 0){
+        clearInterval(timerInterval);
+        timerInterval = null;
+        timerSeconds = 25*60;
+        sessions.deep++;
+        save('sessions', sessions);
+        renderBlobs();
+        timerStartBtn.textContent = 'Start';
+        document.getElementById('timerState').textContent = 'Session complete';
+        updateTimerDisplay();
+        return;
+      }
+      updateTimerDisplay();
+    }, 1000);
+  });
+  document.getElementById('timerReset').addEventListener('click', () => {
+    clearInterval(timerInterval);
+    timerInterval = null;
+    timerSeconds = 25*60;
+    timerStartBtn.textContent = 'Start';
+    document.getElementById('timerState').textContent = 'Ready to focus';
+    updateTimerDisplay();
+  });
+}
+
+/* ---------------- View routing (sidebar navigation) ---------------- */
+const pageMeta = {
+  notes:    { title: 'Notes',         sub: 'Capture ideas before they slip away.' },
+  habits:   { title: 'Habit Tracker', sub: 'Stay consistent, one day at a time.' },
+  timer:    { title: 'Focus Timer',   sub: 'Deep work, tracked automatically.' },
+  todo:     { title: 'To-Do',         sub: 'Everything on your plate today.' },
+  goals:    { title: 'Goals',         sub: 'Chart your long-term course.' },
+  calendar: { title: 'Calendar',      sub: 'Plan ahead and never miss a date.' },
+};
+function showView(view){
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  const target = document.getElementById('view-' + view);
+  if (target) target.classList.add('active');
+
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  const navItem = document.querySelector(`.nav-item[data-view="${view}"]`);
+  if (navItem) navItem.classList.add('active');
+
+  const h1 = document.getElementById('greeting');
+  const sub = h1 ? h1.nextElementSibling : null;
+  if (view === 'dashboard'){
+    if (h1) h1.textContent = greetingText;
+    if (sub) sub.textContent = 'Take control of your day.';
+  } else if (pageMeta[view]){
+    if (h1) h1.textContent = pageMeta[view].title;
+    if (sub) sub.textContent = pageMeta[view].sub;
+  }
+
+  if (view === 'habits') renderHabitGrid();
+  if (view === 'calendar') renderMiniCalendar();
+}
+document.querySelectorAll('.nav-item[data-view]').forEach(item => {
+  item.addEventListener('click', () => showView(item.dataset.view));
+});
+const ctaBtn = document.getElementById('ctaBtn');
+if (ctaBtn) ctaBtn.addEventListener('click', () => {
+  showView('goals');
+  const gi = document.getElementById('pageGoalInput');
+  if (gi) gi.focus();
+});
+
+/* ---------------- Init ---------------- */
+renderTodos();
+renderHabitGrid();
+renderGoals();
+renderEvents();
+renderNotes();
+renderBars();
+renderMiniCalendar();
+updateTimerDisplay();
+renderBlobs();
+</script>
+</body>
+</html>
