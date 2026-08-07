@@ -316,27 +316,61 @@
   .view{display:none;}
   .view.active{display:block;}
 
-  /* ---------- Focus blobs (timer page) ---------- */
-  .blob-row{
-    display:flex; align-items:center; justify-content:center;
-    gap:14px; margin:8px 0; height:150px; position:relative;
+  /* ---------- Flip clock (Timer page) ---------- */
+  .flip-clock{display:flex; flex-direction:column; align-items:center; gap:18px; margin:8px 0 28px 0;}
+  .flip-label{
+    align-self:flex-start; font-family:var(--font-mono); font-size:11px; font-weight:600;
+    letter-spacing:1px; color:var(--text-3); background:rgba(255,255,255,0.05);
+    padding:4px 10px; border-radius:6px; border:1px solid var(--border-soft);
   }
-  .blob{
-    border-radius:50%; display:flex; flex-direction:column;
-    align-items:center; justify-content:center;
-    font-family:var(--font-display); font-weight:700; color:#fff;
+  .flip-row{display:flex; align-items:center; gap:18px;}
+  .flip-group{display:flex; gap:8px;}
+  .flip-colon{
+    font-family:var(--font-display); font-size:56px; font-weight:800; color:var(--text-3);
+    line-height:1; padding-bottom:10px;
   }
-  .blob small{font-family:var(--font-body); font-weight:500; font-size:10.5px; opacity:0.8;}
-  .blob-deep{width:132px;height:132px; background:linear-gradient(160deg,var(--violet),var(--blue)); font-size:22px;}
-  .blob-study{width:96px;height:96px; background:linear-gradient(160deg,#232b3d,#151b28); font-size:17px; border:1px solid var(--border);}
-  .blob-break{width:64px;height:64px; background:linear-gradient(160deg,var(--green),#1b8c68); font-size:13px;}
+  .flip-tile{
+    position:relative; width:104px; height:144px; border-radius:16px;
+    background:linear-gradient(180deg,#15181f,#0a0c10);
+    display:flex; align-items:center; justify-content:center; overflow:hidden;
+    box-shadow:0 14px 30px -10px rgba(0,0,0,0.65), inset 0 1px 0 rgba(255,255,255,0.05);
+    border:1px solid rgba(255,255,255,0.06);
+    perspective:300px;
+  }
+  .flip-tile span{
+    font-family:'JetBrains Mono', monospace; font-weight:800; font-size:76px;
+    color:#dbe1ec; line-height:1; display:inline-block;
+    transition:transform .22s cubic-bezier(.4,0,.2,1), opacity .22s ease;
+    transform-style:preserve-3d;
+  }
+  .flip-tile.flip span{transform:rotateX(90deg); opacity:0.4;}
+  .flip-tile::after{
+    content:''; position:absolute; left:0; right:0; top:50%; height:2px;
+    background:rgba(0,0,0,0.55); transform:translateY(-1px); z-index:2;
+  }
+  .flip-tile::before{
+    content:''; position:absolute; inset:0; border-radius:16px;
+    background:linear-gradient(180deg, rgba(255,255,255,0.03), transparent 40%);
+    pointer-events:none;
+  }
 
-  .timer-controls{display:flex; gap:8px; margin-top:6px; max-width:260px;}
-  .timer-controls button{
-    flex:1; padding:11px 0; border-radius:10px; border:1px solid var(--border);
-    background:var(--surface-2); color:var(--text-1); font-size:12.5px; font-weight:600;
+  .timer-controls{
+    display:flex; gap:4px; margin-top:6px;
+    background:var(--surface); border:1px solid var(--border); border-radius:999px; padding:5px;
   }
-  .timer-controls button.primary{background:var(--blue); border-color:var(--blue); color:#fff;}
+  .timer-controls button{
+    flex:1; padding:14px 34px; border-radius:999px; border:none;
+    background:none; color:var(--text-2); font-size:14px; font-weight:600;
+    cursor:pointer; transition:transform .15s ease, box-shadow .15s ease, background .15s ease, color .15s ease;
+  }
+  .timer-controls button:hover{color:var(--text-1);}
+  .timer-controls button:active{transform:scale(0.97);}
+  .timer-controls button.primary{
+    background:linear-gradient(135deg, var(--blue), var(--violet));
+    color:#fff;
+    box-shadow:0 8px 20px -8px rgba(91,139,255,0.6);
+  }
+  .timer-controls button.primary:hover{box-shadow:0 10px 24px -8px rgba(91,139,255,0.75);}
 
   /* ---------- Habit tracker grid (Habit Tracker page) ---------- */
   .tracker-toolbar{
@@ -398,11 +432,11 @@
 
   /* ---------- Mini calendar (Calendar page) ---------- */
   .mini-cal{display:grid; grid-template-columns:repeat(7,1fr); gap:6px;}
-  .mini-cal .dow{font-size:10.5px; color:var(--text-3); text-align:center; padding-bottom:4px; font-family:var(--font-mono);}
+  .mini-cal .dow{font-size:12.5px; color:var(--text-3); text-align:center; padding-bottom:4px; font-family:var(--font-mono);}
   .mini-cal .day-cell{
     aspect-ratio:1; border-radius:9px; border:1px solid var(--border-soft);
     display:flex; flex-direction:column; align-items:center; justify-content:center;
-    font-size:12.5px; color:var(--text-2); cursor:pointer; position:relative; gap:3px;
+    font-size:16px; color:var(--text-2); cursor:pointer; position:relative; gap:3px;
   }
   .mini-cal .day-cell:hover{background:rgba(255,255,255,0.04);}
   .mini-cal .day-cell.empty{border:none; cursor:default;}
@@ -414,16 +448,16 @@
   }
   .mini-cal .day-cell.has-event .day-num{
     position:absolute; top:4px; left:6px;
-    font-size:9.5px; font-family:var(--font-mono); color:var(--text-3); font-weight:500;
+    font-size:11px; font-family:var(--font-mono); color:var(--text-3); font-weight:500;
   }
   .mini-cal .day-cell.has-event.today .day-num{color:#ffcf7d;}
   .mini-cal .day-cell.has-event .evt-label{
-    font-size:9px; font-weight:600; color:#ffcf7d; line-height:1.2; text-align:center;
+    font-size:10.5px; font-weight:600; color:#ffcf7d; line-height:1.2; text-align:center;
     display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;
     padding:0 2px; margin-top:6px;
   }
   .mini-cal .day-cell.has-event .evt-more{
-    font-size:8px; color:var(--text-3); position:absolute; bottom:4px;
+    font-size:9px; color:var(--text-3); position:absolute; bottom:4px;
   }
 
   .goal-actions{display:flex; gap:6px; align-items:center;}
@@ -841,9 +875,6 @@
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="M7 15l4-5 3 3 5-7"/></svg>
           </div>
           <span class="card-title">Weekly Progress</span>
-          <div class="toggle-pill" style="margin-left:auto;">
-            <button class="active">Weekly</button>
-          </div>
         </div>
         <div class="metric-pair">
           <div class="metric">
@@ -938,15 +969,34 @@
     <!-- TIMER PAGE -->
     <div class="view" id="view-timer">
       <div class="grid">
-        <section class="card col-6">
-          <div class="card-head">
+        <section class="card col-12" style="display:flex; flex-direction:column; align-items:center; padding:36px 20px;">
+          <div class="card-head" style="align-self:flex-start; margin-bottom:22px;">
             <div class="card-icon" style="background:var(--blue-soft);color:var(--blue);">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l3 2M9 2h6"/></svg>
             </div>
             <span class="card-title">Focus Timer</span>
+            <div class="toggle-pill" style="margin-left:auto;">
+              <button class="active" id="modeTimerBtn">Timer</button>
+              <button id="modePomodoroBtn">Pomodoro</button>
+            </div>
           </div>
-          <div class="big-num grad-text" id="timerDisplay" style="font-size:48px;">25:00</div>
-          <div style="font-size:12px;color:var(--text-3);margin:4px 0 20px 0;" id="timerState">Ready to focus</div>
+
+          <div class="flip-clock" id="flipClock">
+            <div class="flip-label" id="flipPhaseLabel">TIMER</div>
+            <div class="flip-row">
+              <div class="flip-group">
+                <div class="flip-tile" id="tileM1"><span>0</span></div>
+                <div class="flip-tile" id="tileM2"><span>0</span></div>
+              </div>
+              <div class="flip-colon">:</div>
+              <div class="flip-group">
+                <div class="flip-tile" id="tileS1"><span>0</span></div>
+                <div class="flip-tile" id="tileS2"><span>0</span></div>
+              </div>
+            </div>
+          </div>
+
+          <div style="font-size:12.5px;color:var(--text-3);margin:20px 0 4px 0;" id="timerState">Ready to start</div>
           <div class="timer-controls">
             <button class="primary" id="timerStart">Start</button>
             <button id="timerReset">Reset</button>
@@ -1115,6 +1165,28 @@ if (load('habitGrid', null) === null) {
     lastAutoTitle: autoTitle
   });
 }
+
+// one-time migration: recover marks saved under the old unscoped key format (habitId_day)
+// so data isn't silently lost after the month-scoping fix
+(function migrateLegacyHabitMarks(){
+  const grid = load('habitGrid', null);
+  if (!grid || !grid.marks) return;
+  const now = new Date();
+  const monthKeyNow = `${now.getFullYear()}-${now.getMonth()}`;
+  let changed = false;
+  const habitIds = new Set(grid.habits.map(h => h.id));
+  Object.keys(grid.marks).forEach(key => {
+    const parts = key.split('_');
+    // legacy format: `${habitId}_${day}` -> exactly 2 parts, second part is a plain number
+    if (parts.length === 2 && habitIds.has(parts[0]) && /^\d+$/.test(parts[1])){
+      const newKey = `${parts[0]}_${monthKeyNow}_${parts[1]}`;
+      if (!(newKey in grid.marks)) grid.marks[newKey] = grid.marks[key];
+      delete grid.marks[key];
+      changed = true;
+    }
+  });
+  if (changed) save('habitGrid', grid);
+})();
 
 /* ---------------- Greeting + date ---------------- */
 const hour = new Date().getHours();
@@ -1804,7 +1876,8 @@ function renderBars(){
   const monday = new Date(now); monday.setDate(now.getDate()-dow);
 
   const grid = load('habitGrid', { habits: [], marks: {} });
-  const todoHist = load('todoHistory', {});
+  const todos = load('todos', []);
+  const todayKeyStr = todayISO();
 
   const habitVals = [];
   const taskVals = [];
@@ -1818,7 +1891,9 @@ function renderBars(){
       grid.habits.forEach(h => { if (grid.marks[markKey(h.id, d.getDate())]) hv++; });
     }
     habitVals.push(hv);
-    taskVals.push(todoHist[d.toISOString().slice(0,10)] || 0);
+    const iso = d.toISOString().slice(0,10);
+    const tv = todos.filter(t => (t.date || todayKeyStr) === iso && t.done).length;
+    taskVals.push(tv);
   }
 
   const maxHabit = Math.max(...habitVals, grid.habits.length, 1);
@@ -1848,60 +1923,98 @@ function renderBars(){
   });
 }
 
-/* ---------------- POMODORO TIMER (Timer page) ---------------- */
-let timerSeconds = 25*60;
+/* ---------------- TIMER (flip-clock display, Timer + Pomodoro modes) ---------------- */
+let timerMode = 'timer';       // 'timer' | 'pomodoro'
+let pomodoroPhase = 'work';    // 'work' | 'break'
+let timerSeconds = 0;
 let timerInterval = null;
-let sessions = load('sessions', { deep: 0, study: 0, brk: 0 });
+let lastShownDigits = ['0','0','0','0'];
+
+function secondsForCurrentMode(){
+  return pomodoroPhase === 'work' ? 25*60 : 5*60;
+}
+
+function flipTile(id, newDigit){
+  const tile = document.getElementById(id);
+  if (!tile) return;
+  const span = tile.querySelector('span');
+  if (span.textContent === newDigit) return;
+  tile.classList.add('flip');
+  setTimeout(() => {
+    span.textContent = newDigit;
+    tile.classList.remove('flip');
+  }, 110);
+}
 function updateTimerDisplay(){
-  const el = document.getElementById('timerDisplay');
-  if (!el) return;
-  const m = String(Math.floor(timerSeconds/60)).padStart(2,'0');
+  const totalMin = Math.floor(timerSeconds/60);
+  const m = String(totalMin % 100).padStart(2,'0');
   const s = String(timerSeconds%60).padStart(2,'0');
-  el.textContent = `${m}:${s}`;
+  const digits = [m[0], m[1], s[0], s[1]];
+  flipTile('tileM1', digits[0]);
+  flipTile('tileM2', digits[1]);
+  flipTile('tileS1', digits[2]);
+  flipTile('tileS2', digits[3]);
+  lastShownDigits = digits;
+
+  const label = document.getElementById('flipPhaseLabel');
+  if (label){
+    label.textContent = timerMode === 'pomodoro' ? (pomodoroPhase === 'work' ? 'FOCUS' : 'BREAK') : 'TIMER';
+  }
 }
-function renderBlobs(){
-  const a = document.getElementById('blobDeep'), b = document.getElementById('blobStudy'), c = document.getElementById('blobBreak');
-  if (a) a.innerHTML = `${sessions.deep}<small>deep work</small>`;
-  if (b) b.innerHTML = `${sessions.study}<small>study</small>`;
-  if (c) c.innerHTML = `${sessions.brk}<small>break</small>`;
+function stopTimerInterval(){
+  clearInterval(timerInterval);
+  timerInterval = null;
+  const btn = document.getElementById('timerStart');
+  if (btn) btn.textContent = 'Start';
 }
+function resetTimer(){
+  stopTimerInterval();
+  if (timerMode === 'pomodoro') pomodoroPhase = 'work';
+  timerSeconds = timerMode === 'timer' ? 0 : secondsForCurrentMode();
+  updateTimerDisplay();
+  const stateEl = document.getElementById('timerState');
+  if (stateEl) stateEl.textContent = timerMode === 'pomodoro' ? 'Ready to focus' : 'Ready to start';
+}
+function setMode(mode){
+  timerMode = mode;
+  document.getElementById('modeTimerBtn').classList.toggle('active', mode === 'timer');
+  document.getElementById('modePomodoroBtn').classList.toggle('active', mode === 'pomodoro');
+  resetTimer();
+}
+
 const timerStartBtn = document.getElementById('timerStart');
 if (timerStartBtn){
-  timerStartBtn.addEventListener('click', (e) => {
+  timerStartBtn.addEventListener('click', () => {
     if (timerInterval){
-      clearInterval(timerInterval);
-      timerInterval = null;
-      e.target.textContent = 'Start';
+      stopTimerInterval();
       document.getElementById('timerState').textContent = 'Paused';
       return;
     }
-    e.target.textContent = 'Pause';
-    document.getElementById('timerState').textContent = 'Focusing...';
+    timerStartBtn.textContent = 'Pause';
+    document.getElementById('timerState').textContent = timerMode === 'pomodoro'
+      ? (pomodoroPhase === 'work' ? 'Focusing...' : 'On a break...')
+      : 'Counting up...';
     timerInterval = setInterval(() => {
+      if (timerMode === 'timer'){
+        timerSeconds++;
+        updateTimerDisplay();
+        return;
+      }
       timerSeconds--;
       if (timerSeconds <= 0){
-        clearInterval(timerInterval);
-        timerInterval = null;
-        timerSeconds = 25*60;
-        sessions.deep++;
-        save('sessions', sessions);
-        renderBlobs();
-        timerStartBtn.textContent = 'Start';
-        document.getElementById('timerState').textContent = 'Session complete';
+        pomodoroPhase = pomodoroPhase === 'work' ? 'break' : 'work';
+        timerSeconds = secondsForCurrentMode();
         updateTimerDisplay();
+        document.getElementById('timerState').textContent = pomodoroPhase === 'work' ? 'Focusing...' : 'On a break...';
+        updateStreakDisplay();
         return;
       }
       updateTimerDisplay();
     }, 1000);
   });
-  document.getElementById('timerReset').addEventListener('click', () => {
-    clearInterval(timerInterval);
-    timerInterval = null;
-    timerSeconds = 25*60;
-    timerStartBtn.textContent = 'Start';
-    document.getElementById('timerState').textContent = 'Ready to focus';
-    updateTimerDisplay();
-  });
+  document.getElementById('timerReset').addEventListener('click', resetTimer);
+  document.getElementById('modeTimerBtn').addEventListener('click', () => setMode('timer'));
+  document.getElementById('modePomodoroBtn').addEventListener('click', () => setMode('pomodoro'));
 }
 
 /* ---------------- View routing (sidebar navigation) ---------------- */
@@ -1954,7 +2067,6 @@ renderNotes();
 renderBars();
 renderMiniCalendar();
 updateTimerDisplay();
-renderBlobs();
 </script>
 </body>
 </html>
