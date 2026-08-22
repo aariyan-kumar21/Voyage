@@ -344,20 +344,57 @@
 
     <!-- GOALS PAGE -->
     <div class="view" id="view-goals">
-      <div class="grid">
-        <section class="card col-12">
+      <div class="goals-layout">
+
+        <!-- ROADMAPS AREA -->
+        <section class="card goals-roadmaps-section">
           <div class="card-head">
             <div class="card-icon" style="background:var(--violet-soft);color:var(--violet);">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/></svg>
             </div>
-            <span class="card-title">All Goals</span>
+            <span class="card-title">My Roadmaps</span>
           </div>
-          <div id="pageGoalList" class="js-goal-list" style="max-width:640px;"></div>
-          <div class="add-inline" style="max-width:420px;">
-            <input type="text" id="pageGoalInput" placeholder="New goal...">
-            <button id="pageGoalAddBtn">Add</button>
+          <div id="roadmapsContainer" class="roadmaps-container">
+            <div class="roadmap-empty-state">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 20H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h3.9a2 2 0 0 1 1.69.9l.81 1.2a2 2 0 0 0 1.67.9H20a2 2 0 0 1 2 2v5"/><circle cx="13" cy="17" r="3"/><path d="m16 20 2 2 4-4"/></svg>
+              <p>No roadmaps yet &mdash; plan one below.</p>
+            </div>
           </div>
         </section>
+
+        <!-- CHAT PANEL -->
+        <section class="card goals-chat-section">
+          <div class="card-head">
+            <div class="card-icon" style="background:var(--blue-soft);color:var(--blue);">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+            </div>
+            <span class="card-title">Goal Planner <span class="chat-ai-badge">AI</span></span>
+            <button id="goalChatResetBtn" class="chat-reset-btn" title="Start a new conversation">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+              New conversation
+            </button>
+          </div>
+
+          <div id="goalChatMessages" class="chat-messages">
+            <div class="chat-msg chat-msg-assistant">
+              <div class="chat-bubble">
+                Hey! I'm your goal planning coach. Tell me about a goal you'd like to work toward &mdash; could be anything from learning a skill to a fitness goal or a career ambition. What's on your mind?
+              </div>
+            </div>
+          </div>
+
+          <div class="chat-thinking" id="goalChatThinking" style="display:none;">
+            <span></span><span></span><span></span>
+          </div>
+
+          <div class="chat-input-row">
+            <input type="text" id="goalChatInput" placeholder="Describe your goal or answer a question..." autocomplete="off">
+            <button id="goalChatSendBtn" class="chat-send-btn">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+            </button>
+          </div>
+        </section>
+
       </div>
     </div>
 

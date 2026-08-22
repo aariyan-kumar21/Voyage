@@ -41,10 +41,7 @@ if (load('todos', null) === null) {
   ]);
 }
 if (load('goals', null) === null) {
-  save('goals', [
-    { id: uid(), name: 'Launch Voyage v1', pct: 65 },
-    { id: uid(), name: 'Read 4 books this quarter', pct: 40 },
-  ]);
+  save('goals', []);
 }
 if (load('events', null) === null) {
   save('events', [
@@ -517,46 +514,248 @@ function bindTrackerToolbar(){
 }
 bindTrackerToolbar();
 
-/* ---------------- GOALS ---------------- */
-function addGoal(name){
-  const items = load('goals', []);
-  items.push({ id: uid(), name, pct: 0 });
-  save('goals', items);
-  renderGoals();
-}
-function renderGoals(){
-  const goals = load('goals', []);
-  document.querySelectorAll('.js-goal-list').forEach(list => {
-    list.innerHTML = '';
-    goals.forEach(g => {
+/* ---------------- GOALS: Dashboard mini-card (read-only roadmap summary) ---------------- */
+// The dashboard card (view-dashboard) still renders as a Goals mini-preview of saved roadmaps.
+// goalInput / goalAddBtn / goalList remain in the HTML (per "don't touch Dashboard") but are
+// repurposed: the add input is hidden via JS and the list shows roadmap titles instead.
+(function initDashboardGoalCard() {
+  const goalList  = document.getElementById('goalList');
+  const goalInput = document.getElementById('goalInput');
+  const goalAddBtn = document.getElementById('goalAddBtn');
+  // Hide the old add-inline row on the dashboard (it has no function anymore)
+  if (goalInput) goalInput.closest('.add-inline').style.display = 'none';
+
+  function renderDashboardGoals() {
+    if (!goalList) return;
+    const roadmaps = load('roadmaps', []);
+    goalList.innerHTML = '';
+    if (!roadmaps.length) {
+      goalList.innerHTML = `<div class="event-empty" style="padding:8px 0;">Plan a goal on the Goals page to see your roadmaps here.</div>`;
+      return;
+    }
+    const recent = roadmaps.slice(-3).reverse();
+    recent.forEach((rm, ri) => {
+      const actualIdx = roadmaps.length - 1 - ri;
+      const total = (rm.milestones || []).length;
+      const checks = load(`roadmap_checks_${actualIdx}`, {});
+      const done   = Object.values(checks).filter(Boolean).length;
+      const pct    = total > 0 ? Math.round((done / total) * 100) : 0;
       const row = document.createElement('div');
       row.className = 'goal-item';
       row.innerHTML = `
         <div class="goal-top">
-          <span class="g-name">${escapeHtml(g.name)}</span>
-          <span class="goal-actions">
-            <button data-act="minus">&minus;</button>
-            <span class="g-pct">${g.pct}%</span>
-            <button data-act="plus">+</button>
-          </span>
+          <span class="g-name" style="font-size:12.5px;font-weight:500;color:var(--text-1);">${escapeHtml(rm.goalTitle)}</span>
+          <span class="g-pct">${pct}%</span>
         </div>
-        <div class="track"><div class="fill" style="width:${g.pct}%;background:var(--gradient-accent);"></div></div>
+        <div class="track"><div class="fill" style="width:${pct}%;background:var(--gradient-accent);"></div></div>
       `;
-      row.querySelectorAll('button').forEach(btn => {
-        btn.addEventListener('click', () => {
-          const arr = load('goals', []);
-          const item = arr.find(x => x.id === g.id);
-          item.pct = Math.max(0, Math.min(100, item.pct + (btn.dataset.act === 'plus' ? 10 : -10)));
-          save('goals', arr);
-          renderGoals();
-        });
-      });
-      list.appendChild(row);
+      goalList.appendChild(row);
     });
+  }
+  renderDashboardGoals();
+  // expose so renderRoadmaps can refresh the dashboard too
+  window._renderDashboardGoals = renderDashboardGoals;
+})();
+
+/* ---------------- GOALS: AI Roadmap + Chat ---------------- */
+
+const GOALS_SYSTEM_INSTRUCTION = "You are a goal-planning coach inside a personal productivity app called Voyage. Your job is to help the person turn a vague goal into a concrete, realistic roadmap. Ask focused questions one or two at a time (not a huge list at once) to learn: what the goal actually is, their target timeframe, their current starting point/experience level, and any real constraints (time available per week, obstacles). Keep your tone encouraging and concise — this is a chat UI, not an essay. Once you have enough to propose a genuinely useful roadmap (usually after 3-5 exchanges), set roadmapReady to true and fill in the roadmap field with 4-8 concrete, sequential milestones with realistic timeframes. Keep asking questions (roadmapReady: false, roadmap: null) until you actually have enough information — don't rush to generate a generic roadmap from a one-line goal.";
+
+const GOALS_RESPONSE_SCHEMA = {
+  type: "object",
+  properties: {
+    reply: { type: "string" },
+    roadmapReady: { type: "boolean" },
+    roadmap: {
+      type: "object",
+      nullable: true,
+      properties: {
+        goalTitle: { type: "string" },
+        summary: { type: "string" },
+        milestones: {
+          type: "array",
+          items: {
+            type: "object",
+            properties: {
+              title: { type: "string" },
+              timeframe: { type: "string" },
+              description: { type: "string" }
+            },
+            required: ["title", "timeframe"]
+          }
+        }
+      },
+      required: ["goalTitle", "milestones"]
+    }
+  },
+  required: ["reply", "roadmapReady"]
+};
+
+const INITIAL_CHAT_MSG = "Hey! I'm your goal planning coach. Tell me about a goal you'd like to work toward \u2014 could be anything from learning a skill to a fitness goal or a career ambition. What's on your mind?";
+
+let goalConversation = []; // { role: 'user'|'model', text: '...' }
+
+function renderRoadmaps() {
+  const container = document.getElementById('roadmapsContainer');
+  if (!container) return;
+  const roadmaps = load('roadmaps', []);
+
+  if (!roadmaps.length) {
+    container.innerHTML = `
+      <div class="roadmap-empty-state">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 20H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h3.9a2 2 0 0 1 1.69.9l.81 1.2a2 2 0 0 0 1.67.9H20a2 2 0 0 1 2 2v5"/><circle cx="13" cy="17" r="3"/><path d="m16 20 2 2 4-4"/></svg>
+        <p>No roadmaps yet &mdash; plan one below.</p>
+      </div>`;
+    return;
+  }
+
+  container.innerHTML = '';
+  roadmaps.forEach((rm, rmIdx) => {
+    const card = document.createElement('div');
+    card.className = 'roadmap-card';
+    const totalMilestones = (rm.milestones || []).length;
+    const checkedKey = `roadmap_checks_${rmIdx}`;
+    const checks = load(checkedKey, {});
+    const checkedCount = Object.values(checks).filter(Boolean).length;
+    const pct = totalMilestones > 0 ? Math.round((checkedCount / totalMilestones) * 100) : 0;
+
+    let milestonesHtml = '';
+    (rm.milestones || []).forEach((ms, msIdx) => {
+      const isChecked = !!checks[msIdx];
+      milestonesHtml += `
+        <label class="roadmap-milestone${isChecked ? ' milestone-done' : ''}" data-rm="${rmIdx}" data-ms="${msIdx}">
+          <input type="checkbox" class="chk roadmap-chk" style="--c:var(--violet);" ${isChecked ? 'checked' : ''}>
+          <div class="milestone-info">
+            <span class="milestone-title">${escapeHtml(ms.title)}</span>
+            <span class="milestone-timeframe">${escapeHtml(ms.timeframe)}</span>
+          </div>
+        </label>`;
+    });
+
+    card.innerHTML = `
+      <div class="roadmap-card-header">
+        <div>
+          <h3 class="roadmap-title">${escapeHtml(rm.goalTitle)}</h3>
+          ${rm.summary ? `<p class="roadmap-summary">${escapeHtml(rm.summary)}</p>` : ''}
+        </div>
+        <div class="roadmap-pct-wrap">
+          <span class="roadmap-pct grad-text">${pct}%</span>
+        </div>
+      </div>
+      <div class="roadmap-progress-bar">
+        <div class="roadmap-progress-fill" style="width:${pct}%"></div>
+      </div>
+      <div class="roadmap-milestones">${milestonesHtml}</div>
+    `;
+
+    card.querySelectorAll('.roadmap-chk').forEach(chk => {
+      chk.addEventListener('change', () => {
+        const ri = parseInt(chk.closest('[data-rm]').dataset.rm);
+        const mi = parseInt(chk.closest('[data-ms]').dataset.ms);
+        const ck = `roadmap_checks_${ri}`;
+        const c = load(ck, {});
+        c[mi] = chk.checked;
+        save(ck, c);
+        renderRoadmaps();
+      });
+    });
+
+    container.prepend(card); // newest first
   });
 }
-wireAdd('goalAddBtn','goalInput', addGoal);
-wireAdd('pageGoalAddBtn','pageGoalInput', addGoal);
+
+function appendChatMsg(role, text) {
+  const messages = document.getElementById('goalChatMessages');
+  if (!messages) return;
+  const div = document.createElement('div');
+  div.className = `chat-msg chat-msg-${role === 'user' ? 'user' : 'assistant'}`;
+  div.innerHTML = `<div class="chat-bubble">${escapeHtml(text).replace(/\n/g, '<br>')}</div>`;
+  messages.appendChild(div);
+  messages.scrollTop = messages.scrollHeight;
+}
+
+function setGoalChatLoading(loading) {
+  const input = document.getElementById('goalChatInput');
+  const sendBtn = document.getElementById('goalChatSendBtn');
+  const thinking = document.getElementById('goalChatThinking');
+  if (input) input.disabled = loading;
+  if (sendBtn) sendBtn.disabled = loading;
+  if (thinking) thinking.style.display = loading ? 'flex' : 'none';
+  if (!loading && input) input.focus();
+}
+
+async function sendGoalMessage() {
+  const input = document.getElementById('goalChatInput');
+  if (!input) return;
+  const text = input.value.trim();
+  if (!text) return;
+
+  input.value = '';
+  appendChatMsg('user', text);
+  goalConversation.push({ role: 'user', text });
+
+  setGoalChatLoading(true);
+
+  try {
+    const res = await fetch('/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        messages: goalConversation,
+        systemInstruction: GOALS_SYSTEM_INSTRUCTION,
+        responseSchema: GOALS_RESPONSE_SCHEMA
+      })
+    });
+
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+    const data = await res.json();
+    let parsed;
+    try { parsed = JSON.parse(data.text); } catch(e) {
+      throw new Error('Could not parse AI response.');
+    }
+
+    const { reply, roadmap } = parsed;
+
+    appendChatMsg('assistant', reply);
+    goalConversation.push({ role: 'model', text: reply });
+
+    if (roadmap && roadmap.goalTitle && roadmap.milestones && roadmap.milestones.length) {
+      const roadmaps = load('roadmaps', []);
+      roadmaps.push(roadmap);
+      save('roadmaps', roadmaps);
+      renderRoadmaps();
+      if (window._renderDashboardGoals) window._renderDashboardGoals();
+      appendChatMsg('assistant', 'Roadmap added above \u2191');
+    }
+
+  } catch(err) {
+    appendChatMsg('assistant', "Gemini's a bit busy \u2014 try again in a moment.");
+    console.error('[GoalChat]', err);
+  } finally {
+    setGoalChatLoading(false);
+  }
+}
+
+function resetGoalChat() {
+  goalConversation = [];
+  const messages = document.getElementById('goalChatMessages');
+  if (messages) {
+    messages.innerHTML = '';
+    appendChatMsg('assistant', INITIAL_CHAT_MSG);
+  }
+  const input = document.getElementById('goalChatInput');
+  if (input) { input.value = ''; input.focus(); }
+}
+
+(function initGoalChat() {
+  const sendBtn = document.getElementById('goalChatSendBtn');
+  const input = document.getElementById('goalChatInput');
+  const resetBtn = document.getElementById('goalChatResetBtn');
+  if (sendBtn) sendBtn.addEventListener('click', sendGoalMessage);
+  if (input) input.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) sendGoalMessage(); });
+  if (resetBtn) resetBtn.addEventListener('click', resetGoalChat);
+})();
 
 /* ---------------- EVENTS ---------------- */
 function addEvent(name, date){
@@ -971,14 +1170,12 @@ document.querySelectorAll('.nav-item[data-view]').forEach(item => {
 const ctaBtn = document.getElementById('ctaBtn');
 if (ctaBtn) ctaBtn.addEventListener('click', () => {
   showView('goals');
-  const gi = document.getElementById('pageGoalInput');
-  if (gi) gi.focus();
 });
 
 /* ---------------- Init ---------------- */
 renderTodos();
 renderHabitGrid();
-renderGoals();
+renderRoadmaps();
 renderEvents();
 renderNotes();
 renderBars();
