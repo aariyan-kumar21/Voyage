@@ -1,5 +1,5 @@
 /**
- * /api/chat.js — Vercel Serverless Function (Node.js runtime)
+ * /api/chat.js ï¿½ Vercel Serverless Function (Node.js runtime)
  *
  * Acts as a secure server-side proxy between the Voyage front end and Google's
  * Gemini API. The browser never touches the API key directly.
@@ -96,7 +96,7 @@ export default async function handler(req, res) {
 
   // --- Call Gemini ----------------------------------------------------------
 
-  const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`;
+  const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${GEMINI_API_KEY}`;
 
   let geminiResponse;
 
@@ -122,7 +122,7 @@ export default async function handler(req, res) {
       const errBody = await geminiResponse.json();
       errorDetail = errBody?.error?.message || errorDetail;
     } catch {
-      // response body wasn't JSON — keep the default message
+      // response body wasn't JSON ï¿½ keep the default message
     }
 
     console.error(`[/api/chat] Gemini error ${geminiResponse.status}:`, errorDetail);
@@ -138,7 +138,7 @@ export default async function handler(req, res) {
     const text = data?.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
 
     // Return a simple, consistent shape to the front end.
-    // If JSON mode was used, `text` is already a JSON string — the front end
+    // If JSON mode was used, `text` is already a JSON string ï¿½ the front end
     // is responsible for parsing it with JSON.parse().
     return res.status(200).json({ text });
   } catch (parseErr) {
