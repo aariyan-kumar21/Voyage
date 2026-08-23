@@ -5,6 +5,11 @@
  * POST /api/user/data             → body: { userId, data } — upserts data field
  */
 
+import dns from 'dns';
+try { dns.setServers(['8.8.8.8', '1.1.1.1']); } catch(e) {}
+
+import fs from 'fs';
+import path from 'path';
 import { MongoClient, ObjectId, ServerApiVersion } from 'mongodb';
 
 const CORS_HEADERS = {
@@ -15,8 +20,25 @@ const CORS_HEADERS = {
 
 let cachedClient = null;
 
+function getMongoUri() {
+  let uri = process.env.MONGODB_URI;
+  if (!uri || uri.includes('<username>') || uri.includes('<cluster>')) {
+    try {
+      const envPath = path.resolve(process.cwd(), '.env.local');
+      if (fs.existsSync(envPath)) {
+        const content = fs.readFileSync(envPath, 'utf8');
+        const match = content.match(/^MONGODB_URI=(.*)$/m);
+        if (match && match[1]) {
+          uri = match[1].trim().replace(/^["']|["']$/g, '');
+        }
+      }
+    } catch (e) {}
+  }
+  return uri;
+}
+
 async function getDb() {
-  const uri = process.env.MONGODB_URI;
+  const uri = getMongoUri();
   if (!uri || uri.includes('<username>') || uri.includes('<cluster>')) {
     throw new Error('MONGODB_URI is not configured.');
   }
