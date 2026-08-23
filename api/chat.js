@@ -94,39 +94,51 @@ export default async function handler(req, res) {
     };
   }
 
-  // --- Call Gemini ----------------------------------------------------------
+  // --- Call Gemini with Model Fallback for High Availability ----------------
 
-  const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${GEMINI_API_KEY}`;
+  const CANDIDATE_MODELS = [
+    "gemini-3.6-flash",
+    "gemini-3.5-flash",
+    "gemini-3.1-flash-lite",
+    "gemini-flash-lite-latest",
+    "gemini-flash-latest"
+  ];
 
-  let geminiResponse;
+  let geminiResponse = null;
+  let lastErrorDetail = "Unknown Gemini API error";
+  let lastStatusCode = 502;
 
-  try {
-    geminiResponse = await fetch(GEMINI_URL, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(geminiBody),
-    });
-  } catch (networkErr) {
-    console.error("[/api/chat] Network error calling Gemini:", networkErr);
-    return res.status(502).json({
-      error: "Failed to reach the Gemini API. Check your network/firewall.",
-    });
+  for (const model of CANDIDATE_MODELS) {
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GEMINI_API_KEY}`;
+    try {
+      const response = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(geminiBody),
+      });
+
+      if (response.ok) {
+        geminiResponse = response;
+        break;
+      }
+
+      lastStatusCode = response.status === 429 ? 429 : 502;
+      try {
+        const errBody = await response.json();
+        lastErrorDetail = errBody?.error?.message || `Gemini API returned ${response.status}`;
+      } catch {
+        lastErrorDetail = `Gemini API returned ${response.status}`;
+      }
+      console.warn(`[/api/chat] Model ${model} returned ${response.status}: ${lastErrorDetail}. Trying fallback model if available.`);
+    } catch (networkErr) {
+      console.error(`[/api/chat] Network error calling Gemini model ${model}:`, networkErr);
+      lastErrorDetail = "Failed to reach the Gemini API. Check your network/firewall.";
+    }
   }
 
-  // Pass 429 (rate-limit) through directly so the front end can handle it
-  if (!geminiResponse.ok) {
-    const statusCode = geminiResponse.status === 429 ? 429 : 502;
-    let errorDetail = `Gemini API returned ${geminiResponse.status}`;
-
-    try {
-      const errBody = await geminiResponse.json();
-      errorDetail = errBody?.error?.message || errorDetail;
-    } catch {
-      // response body wasn't JSON � keep the default message
-    }
-
-    console.error(`[/api/chat] Gemini error ${geminiResponse.status}:`, errorDetail);
-    return res.status(statusCode).json({ error: errorDetail });
+  if (!geminiResponse) {
+    console.error("[/api/chat] All candidate Gemini models failed.");
+    return res.status(lastStatusCode).json({ error: lastErrorDetail });
   }
 
   // --- Extract and return the reply -----------------------------------------
