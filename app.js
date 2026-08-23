@@ -32,30 +32,35 @@ function nextDate(days){
 }
 function todayISO(){ return new Date().toISOString().slice(0,10); }
 
-/* ---------------- Seed data (first run) ---------------- */
+/* ---------------- Clear existing stored data ---------------- */
+(function clearAllStoredData() {
+  try {
+    if (storageOK) {
+      const keysToRemove = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const k = localStorage.key(i);
+        if (k && k.startsWith(KEY)) keysToRemove.push(k);
+      }
+      keysToRemove.forEach(k => localStorage.removeItem(k));
+    }
+  } catch(e){}
+  memoryStore = {};
+})();
+
+/* ---------------- Storage defaults (clean / empty initial state) ---------------- */
 if (load('todos', null) === null) {
-  save('todos', [
-    { id: uid(), text: 'Review weekly goals', done: true },
-    { id: uid(), text: 'Deep work: portfolio site', done: false },
-    { id: uid(), text: 'Evening walk', done: false },
-  ]);
+  save('todos', []);
 }
 if (load('goals', null) === null) {
   save('goals', []);
 }
 if (load('events', null) === null) {
-  save('events', [
-    { id: uid(), name: 'Design review', date: nextDate(3) },
-    { id: uid(), name: 'Monthly goal check-in', date: nextDate(9) },
-  ]);
+  save('events', []);
 }
 if (load('notes', null) === null) {
-  save('notes', [
-    { id: uid(), text: 'Idea: link goals to todo sub-tasks.' },
-    { id: uid(), text: 'Try IndexedDB for note history.' },
-  ]);
+  save('notes', []);
 }
-if (load('streak', null) === null) save('streak', 6);
+if (load('streak', null) === null) save('streak', 0);
 
 if (load('habitGrid', null) === null) {
   const now = new Date();
@@ -64,16 +69,7 @@ if (load('habitGrid', null) === null) {
   save('habitGrid', {
     title: autoTitle,
     tagline: '1% better everyday',
-    habits: [
-      { id: uid(), name: 'Breakfast' },
-      { id: uid(), name: 'Water 3L' },
-      { id: uid(), name: 'Read 5 pages' },
-      { id: uid(), name: 'Gym' },
-      { id: uid(), name: 'Guitar' },
-      { id: uid(), name: 'Meditate' },
-      { id: uid(), name: 'Code' },
-      { id: uid(), name: 'Study' },
-    ],
+    habits: [],
     marks: {},
     monthKey: `${now.getFullYear()}-${now.getMonth()}`,
     lastAutoTitle: autoTitle
