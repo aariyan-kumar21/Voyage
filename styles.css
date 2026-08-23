@@ -1025,3 +1025,278 @@ button{font-family:inherit;cursor:pointer;}
 .chat-send-btn:hover { transform: scale(1.06); box-shadow: 0 6px 18px -6px rgba(91,139,255,0.75); }
 .chat-send-btn:active { transform: scale(0.96); }
 .chat-send-btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+
+/* ================================================
+   AUTH OVERLAY
+   ================================================ */
+#auth-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(ellipse at 50% 0%, #100d1f 0%, #05060b 55%, #040509 100%);
+  overflow: hidden;
+}
+#auth-overlay.auth-hidden {
+  display: none;
+}
+
+/* Animated background orbs */
+.auth-bg-orbs { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
+.auth-orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(80px);
+  opacity: 0.28;
+  animation: orbFloat 14s ease-in-out infinite alternate;
+}
+.auth-orb-1 {
+  width: 420px; height: 420px;
+  background: var(--violet);
+  top: -120px; left: -80px;
+  animation-duration: 16s;
+}
+.auth-orb-2 {
+  width: 340px; height: 340px;
+  background: var(--blue);
+  bottom: -100px; right: -60px;
+  animation-duration: 12s;
+  animation-delay: -4s;
+}
+.auth-orb-3 {
+  width: 260px; height: 260px;
+  background: var(--amber);
+  top: 55%; left: 65%;
+  opacity: 0.14;
+  animation-duration: 20s;
+  animation-delay: -8s;
+}
+@keyframes orbFloat {
+  from { transform: translate(0, 0) scale(1); }
+  to   { transform: translate(30px, 20px) scale(1.08); }
+}
+
+/* Auth card */
+.auth-card {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: 420px;
+  background: rgba(255,255,255,0.035);
+  backdrop-filter: blur(32px);
+  -webkit-backdrop-filter: blur(32px);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 24px;
+  padding: 40px 36px 36px;
+  box-shadow: 0 30px 80px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.08);
+  animation: cardSlideIn .45s cubic-bezier(.22,1,.36,1) both;
+}
+@keyframes cardSlideIn {
+  from { opacity: 0; transform: translateY(28px) scale(0.97); }
+  to   { opacity: 1; transform: none; }
+}
+
+/* Brand */
+.auth-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 6px;
+}
+.auth-brand-mark {
+  width: 36px; height: 36px;
+  background: var(--gradient-accent);
+  border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.auth-brand-mark svg { width: 20px; height: 20px; }
+.auth-brand-name {
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 700;
+  background: var(--gradient-accent);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.auth-tagline {
+  font-size: 13px;
+  color: var(--text-3);
+  margin: 0 0 24px;
+}
+
+/* Tabs */
+.auth-tabs {
+  display: flex;
+  gap: 4px;
+  background: rgba(255,255,255,0.04);
+  border-radius: 12px;
+  padding: 4px;
+  margin-bottom: 24px;
+}
+.auth-tab {
+  flex: 1;
+  padding: 8px 0;
+  border: none;
+  border-radius: 9px;
+  background: transparent;
+  color: var(--text-3);
+  font-size: 13.5px;
+  font-weight: 500;
+  font-family: var(--font-body);
+  cursor: pointer;
+  transition: all .2s ease;
+}
+.auth-tab.active {
+  background: rgba(255,255,255,0.09);
+  color: var(--text-1);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+}
+.auth-tab:hover:not(.active) { color: var(--text-2); }
+
+/* Forms */
+.auth-form { display: none; flex-direction: column; gap: 16px; }
+.auth-form.active { display: flex; }
+.auth-field { display: flex; flex-direction: column; gap: 6px; }
+.auth-field label {
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--text-2);
+  letter-spacing: 0.01em;
+}
+.auth-field input {
+  width: 100%;
+  padding: 11px 14px;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 12px;
+  color: var(--text-1);
+  font-size: 14px;
+  font-family: var(--font-body);
+  outline: none;
+  transition: border-color .2s, box-shadow .2s, background .2s;
+}
+.auth-field input:focus {
+  border-color: var(--violet);
+  background: rgba(139,108,247,0.07);
+  box-shadow: 0 0 0 3px rgba(139,108,247,0.18);
+}
+.auth-field input::placeholder { color: var(--text-3); }
+
+/* Error */
+.auth-error {
+  font-size: 12.5px;
+  color: #ff6b8a;
+  min-height: 18px;
+  padding: 0 2px;
+  animation: fadeIn .2s ease;
+}
+
+/* Submit button */
+.auth-submit {
+  margin-top: 4px;
+  width: 100%;
+  padding: 13px;
+  background: linear-gradient(135deg, var(--violet), var(--blue));
+  border: none;
+  border-radius: 12px;
+  color: #fff;
+  font-size: 14.5px;
+  font-weight: 600;
+  font-family: var(--font-body);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  box-shadow: 0 6px 20px -6px rgba(91,139,255,0.55);
+  transition: transform .15s ease, box-shadow .15s ease, opacity .15s ease;
+}
+.auth-submit:hover { transform: translateY(-1px); box-shadow: 0 10px 26px -6px rgba(91,139,255,0.65); }
+.auth-submit:active { transform: translateY(0); }
+.auth-submit:disabled { opacity: 0.55; cursor: not-allowed; transform: none; }
+
+/* Spinner */
+.auth-spinner {
+  width: 18px; height: 18px;
+  border: 2.5px solid rgba(255,255,255,0.3);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin .7s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+/* Footer note */
+.auth-footer-note {
+  text-align: center;
+  font-size: 12.5px;
+  color: var(--text-3);
+  margin: 18px 0 0;
+}
+.auth-footer-note a {
+  color: var(--blue);
+  text-decoration: none;
+}
+.auth-footer-note a:hover { text-decoration: underline; }
+
+/* ================================================
+   LOGOUT BUTTON
+   ================================================ */
+.account-item { display: flex; align-items: center; gap: 10px; flex: 1; min-width: 0; }
+.logout-btn {
+  flex-shrink: 0;
+  width: 30px; height: 30px;
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 8px;
+  background: rgba(255,255,255,0.04);
+  color: var(--text-3);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  transition: color .2s, background .2s, border-color .2s;
+  padding: 0;
+  opacity: 0;
+  pointer-events: none;
+}
+.sidebar:hover .logout-btn {
+  opacity: 1;
+  pointer-events: auto;
+}
+.logout-btn svg { width: 14px; height: 14px; }
+.logout-btn:hover { color: #ff6b8a; border-color: rgba(255,107,138,0.3); background: rgba(255,107,138,0.08); }
+
+/* Cloud sync indicator */
+.sync-indicator {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  font-size: 11px;
+  color: var(--text-3);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 20px;
+  opacity: 0;
+  transition: opacity .3s ease;
+  z-index: 200;
+  pointer-events: none;
+}
+.sync-indicator.visible { opacity: 1; }
+.sync-indicator .sync-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--green);
+  animation: syncPulse 1.2s ease-in-out infinite;
+}
+.sync-indicator.syncing .sync-dot { background: var(--amber); }
+.sync-indicator.error .sync-dot { background: #ff6b8a; animation: none; }
+@keyframes syncPulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%       { opacity: 0.4; transform: scale(0.7); }
+}

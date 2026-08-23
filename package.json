@@ -1,0 +1,25 @@
+{
+  "name": "voyage",
+  "version": "1.0.0",
+  "description": "",
+  "main": "app.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/aariyan-kumar21/Voyage.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "bugs": {
+    "url": "https://github.com/aariyan-kumar21/Voyage/issues"
+  },
+  "homepage": "https://github.com/aariyan-kumar21/Voyage#readme",
+  "dependencies": {
+    "bcryptjs": "^3.0.3",
+    "mongodb": "^7.5.0"
+  }
+}

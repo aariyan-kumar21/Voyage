@@ -5,7 +5,7 @@
 
 /* ---------------- Storage helpers ---------------- */
 const KEY = 'voyage:';
-let memoryStore = {}; // fallback if localStorage is unavailable (e.g. sandboxed preview)
+let memoryStore = {};
 let storageOK = true;
 try { localStorage.setItem(KEY+'__test__','1'); localStorage.removeItem(KEY+'__test__'); } catch(e){ storageOK = false; }
 
@@ -21,6 +21,8 @@ const save = (k, v) => {
     if (!storageOK) { memoryStore[k] = v; return; }
     localStorage.setItem(KEY+k, JSON.stringify(v));
   } catch(e){ memoryStore[k] = v; storageOK = false; }
+  // Trigger debounced cloud sync after every local save
+  scheduleCloudSync();
 };
 const uid = () => Math.random().toString(36).slice(2,9);
 function escapeHtml(str){
@@ -32,34 +34,264 @@ function nextDate(days){
 }
 function todayISO(){ return new Date().toISOString().slice(0,10); }
 
-/* ---------------- Clear existing stored data ---------------- */
-(function clearAllStoredData() {
+/* ============================================================
+   AUTH & SESSION MANAGEMENT
+   ============================================================ */
+
+let currentUser = null; // { userId, name }
+
+function getSession() {
+  try {
+    const s = localStorage.getItem('voyage_session');
+    return s ? JSON.parse(s) : null;
+  } catch(e){ return null; }
+}
+function saveSession(user) {
+  try { localStorage.setItem('voyage_session', JSON.stringify(user)); } catch(e){}
+}
+function clearSession() {
+  try { localStorage.removeItem('voyage_session'); } catch(e){}
+}
+
+function showAuthOverlay() {
+  const overlay = document.getElementById('auth-overlay');
+  if (overlay) { overlay.classList.remove('auth-hidden'); }
+}
+function hideAuthOverlay() {
+  const overlay = document.getElementById('auth-overlay');
+  if (overlay) { overlay.classList.add('auth-hidden'); }
+}
+
+window.switchAuthTab = function(tab) {
+  document.getElementById('form-login').classList.toggle('active', tab === 'login');
+  document.getElementById('form-signup').classList.toggle('active', tab === 'signup');
+  document.getElementById('tab-login').classList.toggle('active', tab === 'login');
+  document.getElementById('tab-signup').classList.toggle('active', tab === 'signup');
+  const note = document.getElementById('auth-switch-note');
+  if (note) {
+    note.innerHTML = tab === 'login'
+      ? `Don't have an account? <a href="#" onclick="switchAuthTab('signup');return false;">Sign Up</a>`
+      : `Already have an account? <a href="#" onclick="switchAuthTab('login');return false;">Log In</a>`;
+  }
+  document.getElementById(tab === 'login' ? 'login-error' : 'signup-error').textContent = '';
+};
+
+function setAuthLoading(formId, loading) {
+  const btn = document.getElementById(formId === 'login' ? 'login-btn' : 'signup-btn');
+  if (!btn) return;
+  btn.disabled = loading;
+  btn.querySelector('.auth-btn-text').style.display = loading ? 'none' : '';
+  btn.querySelector('.auth-spinner').style.display = loading ? 'block' : 'none';
+}
+
+window.handleLogin = async function() {
+  const email = document.getElementById('login-email').value.trim();
+  const password = document.getElementById('login-password').value;
+  const errEl = document.getElementById('login-error');
+  errEl.textContent = '';
+  if (!email || !password) { errEl.textContent = 'Please fill in all fields.'; return; }
+  setAuthLoading('login', true);
+  try {
+    const res = await fetch('/api/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password })
+    });
+    const data = await res.json();
+    if (!res.ok) { errEl.textContent = data.error || 'Login failed.'; return; }
+    await onAuthSuccess(data);
+  } catch(e) {
+    errEl.textContent = 'Network error. Please try again.';
+  } finally {
+    setAuthLoading('login', false);
+  }
+};
+
+window.handleSignup = async function() {
+  const name = document.getElementById('signup-name').value.trim();
+  const email = document.getElementById('signup-email').value.trim();
+  const password = document.getElementById('signup-password').value;
+  const errEl = document.getElementById('signup-error');
+  errEl.textContent = '';
+  if (!name || !email || !password) { errEl.textContent = 'Please fill in all fields.'; return; }
+  setAuthLoading('signup', true);
+  try {
+    const res = await fetch('/api/auth/signup', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, email, password })
+    });
+    const data = await res.json();
+    if (!res.ok) { errEl.textContent = data.error || 'Sign up failed.'; return; }
+    await onAuthSuccess(data);
+  } catch(e) {
+    errEl.textContent = 'Network error. Please try again.';
+  } finally {
+    setAuthLoading('signup', false);
+  }
+};
+
+async function onAuthSuccess(user) {
+  currentUser = user;
+  saveSession(user);
+  // Load cloud data into local state
+  await loadCloudData(user.userId);
+  updateUserUI(user.name);
+  hideAuthOverlay();
+}
+
+function updateUserUI(name) {
+  // Personalize greeting
+  const hour = new Date().getHours();
+  const greeting = (hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening') + ', ' + name;
+  const greetEl = document.getElementById('greeting');
+  if (greetEl) greetEl.textContent = greeting;
+  // Update sidebar
+  const nameEl = document.getElementById('sidebarUserName');
+  if (nameEl) nameEl.textContent = name;
+  const avatarEl = document.getElementById('avatarInitial');
+  if (avatarEl) avatarEl.textContent = name.charAt(0).toUpperCase();
+}
+
+async function loadCloudData(userId) {
+  try {
+    const res = await fetch(`/api/user/data?userId=${userId}`);
+    if (!res.ok) return;
+    const { data } = await res.json();
+    if (!data) return;
+    // Hydrate localStorage with cloud data (cloud wins)
+    const keys = ['todos','notes','events','goals','roadmaps','streak','todoHistory','habitGrid'];
+    keys.forEach(k => {
+      if (data[k] !== undefined && data[k] !== null) {
+        try {
+          if (storageOK) localStorage.setItem(KEY+k, JSON.stringify(data[k]));
+          else memoryStore[k] = data[k];
+        } catch(e){}
+      }
+    });
+    // Also restore any roadmap_checks_* keys
+    Object.keys(data).filter(k => k.startsWith('roadmap_checks_')).forEach(k => {
+      try {
+        if (storageOK) localStorage.setItem(KEY+k, JSON.stringify(data[k]));
+        else memoryStore[k] = data[k];
+      } catch(e){}
+    });
+  } catch(e) {
+    console.warn('[Voyage] Could not load cloud data:', e);
+  }
+}
+
+/* ---- Cloud sync (debounced) ---- */
+let _syncTimer = null;
+const SYNC_DELAY_MS = 1500;
+
+function scheduleCloudSync() {
+  if (!currentUser) return;
+  clearTimeout(_syncTimer);
+  _syncTimer = setTimeout(pushCloudData, SYNC_DELAY_MS);
+  showSyncState('syncing');
+}
+
+async function pushCloudData() {
+  if (!currentUser) return;
+  // Collect all voyage: keys from localStorage into one object
+  const data = {};
   try {
     if (storageOK) {
-      const keysToRemove = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const fullKey = localStorage.key(i);
+        if (fullKey && fullKey.startsWith(KEY)) {
+          const shortKey = fullKey.slice(KEY.length);
+          try { data[shortKey] = JSON.parse(localStorage.getItem(fullKey)); } catch(e){}
+        }
+      }
+    } else {
+      Object.assign(data, memoryStore);
+    }
+  } catch(e){}
+
+  try {
+    const res = await fetch('/api/user/data', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId: currentUser.userId, data })
+    });
+    if (res.ok) {
+      showSyncState('saved');
+    } else {
+      showSyncState('error');
+    }
+  } catch(e) {
+    showSyncState('error');
+  }
+}
+
+function showSyncState(state) {
+  const el = document.getElementById('syncIndicator');
+  const lbl = document.getElementById('syncLabel');
+  if (!el || !lbl) return;
+  el.classList.remove('syncing', 'error');
+  if (state === 'syncing') {
+    el.classList.add('visible', 'syncing');
+    lbl.textContent = 'Syncing…';
+  } else if (state === 'saved') {
+    el.classList.add('visible');
+    lbl.textContent = 'Saved';
+    setTimeout(() => el.classList.remove('visible'), 2000);
+  } else {
+    el.classList.add('visible', 'error');
+    lbl.textContent = 'Sync failed';
+    setTimeout(() => el.classList.remove('visible'), 3000);
+  }
+}
+
+/* ---- Logout ---- */
+function handleLogout() {
+  currentUser = null;
+  clearSession();
+  // Clear app data from localStorage so next user starts fresh
+  try {
+    if (storageOK) {
+      const toRemove = [];
       for (let i = 0; i < localStorage.length; i++) {
         const k = localStorage.key(i);
-        if (k && k.startsWith(KEY)) keysToRemove.push(k);
+        if (k && k.startsWith(KEY)) toRemove.push(k);
       }
-      keysToRemove.forEach(k => localStorage.removeItem(k));
+      toRemove.forEach(k => localStorage.removeItem(k));
     }
   } catch(e){}
   memoryStore = {};
+  showAuthOverlay();
+  // Reset UI to blank state
+  location.reload();
+}
+
+/* ============================================================
+   BOOT: check session → load cloud data or show auth
+   ============================================================ */
+(async function boot() {
+  const session = getSession();
+  if (session && session.userId) {
+    currentUser = session;
+    await loadCloudData(session.userId);
+    updateUserUI(session.name);
+    hideAuthOverlay();
+  } else {
+    showAuthOverlay();
+  }
 })();
 
-/* ---------------- Storage defaults (clean / empty initial state) ---------------- */
-if (load('todos', null) === null) {
-  save('todos', []);
-}
-if (load('goals', null) === null) {
-  save('goals', []);
-}
-if (load('events', null) === null) {
-  save('events', []);
-}
-if (load('notes', null) === null) {
-  save('notes', []);
-}
+/* ---------------- Wire logout button ---------------- */
+document.addEventListener('DOMContentLoaded', () => {
+  const logoutBtn = document.getElementById('logoutBtn');
+  if (logoutBtn) logoutBtn.addEventListener('click', handleLogout);
+});
+
+/* ---------------- Storage defaults (empty initial state for new accounts) ---------------- */
+if (load('todos', null) === null) save('todos', []);
+if (load('goals', null) === null) save('goals', []);
+if (load('events', null) === null) save('events', []);
+if (load('notes', null) === null) save('notes', []);
 if (load('streak', null) === null) save('streak', 0);
 
 if (load('habitGrid', null) === null) {
@@ -100,7 +332,10 @@ if (load('habitGrid', null) === null) {
 
 /* ---------------- Greeting + date ---------------- */
 const hour = new Date().getHours();
-const greetingText = (hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening') + ', Voyager';
+const greetText = currentUser
+  ? (hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening') + ', ' + currentUser.name
+  : (hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening') + ', Voyager';
+const greetingText = greetText;
 document.getElementById('greeting').textContent = greetingText;
 document.getElementById('todayDate').textContent = new Date().toLocaleDateString(undefined, { day:'numeric', month:'long', year:'numeric' });
 
