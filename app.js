@@ -62,6 +62,26 @@ function hideAuthOverlay() {
   if (overlay) { overlay.classList.add('auth-hidden'); }
 }
 
+/* Smart API fetch helper: routes to port 5000 if frontend is served on port 3000 static */
+async function apiFetch(path, options = {}) {
+  let initialUrl = path;
+  if (location.port === '3000' && (location.hostname === 'localhost' || location.hostname === '127.0.0.1')) {
+    initialUrl = 'http://localhost:5000' + path;
+  }
+  try {
+    const res = await fetch(initialUrl, options);
+    if (!res.ok && res.status === 404 && initialUrl !== path) {
+      return await fetch(path, options);
+    }
+    return res;
+  } catch(e) {
+    if (initialUrl !== path) {
+      return await fetch(path, options);
+    }
+    throw e;
+  }
+}
+
 window.togglePassword = function(inputId, btn) {
   const input = document.getElementById(inputId);
   if (!input) return;
@@ -75,17 +95,26 @@ window.togglePassword = function(inputId, btn) {
 };
 
 window.switchAuthTab = function(tab) {
-  document.getElementById('form-login').classList.toggle('active', tab === 'login');
-  document.getElementById('form-signup').classList.toggle('active', tab === 'signup');
-  document.getElementById('tab-login').classList.toggle('active', tab === 'login');
-  document.getElementById('tab-signup').classList.toggle('active', tab === 'signup');
+  const loginForm = document.getElementById('form-login');
+  const signupForm = document.getElementById('form-signup');
+  const loginTab = document.getElementById('tab-login');
+  const signupTab = document.getElementById('tab-signup');
+
+  if (loginForm) loginForm.classList.toggle('active', tab === 'login');
+  if (signupForm) signupForm.classList.toggle('active', tab === 'signup');
+  if (loginTab) loginTab.classList.toggle('active', tab === 'login');
+  if (signupTab) signupTab.classList.toggle('active', tab === 'signup');
+
   const note = document.getElementById('auth-switch-note');
   if (note) {
     note.innerHTML = tab === 'login'
       ? `Don't have an account? <a href="#" onclick="switchAuthTab('signup');return false;">Sign Up</a>`
       : `Already have an account? <a href="#" onclick="switchAuthTab('login');return false;">Log In</a>`;
   }
-  document.getElementById(tab === 'login' ? 'login-error' : 'signup-error').textContent = '';
+  const errLogin = document.getElementById('login-error');
+  const errSignup = document.getElementById('signup-error');
+  if (errLogin) errLogin.textContent = '';
+  if (errSignup) errSignup.textContent = '';
 };
 
 function setAuthLoading(formId, loading) {
@@ -104,7 +133,7 @@ window.handleLogin = async function() {
   if (!email || !password) { errEl.textContent = 'Please fill in all fields.'; return; }
   setAuthLoading('login', true);
   try {
-    const res = await fetch('/api/auth/login', {
+    const res = await apiFetch('/api/auth/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, password })
@@ -128,7 +157,7 @@ window.handleSignup = async function() {
   if (!name || !email || !password) { errEl.textContent = 'Please fill in all fields.'; return; }
   setAuthLoading('signup', true);
   try {
-    const res = await fetch('/api/auth/signup', {
+    const res = await apiFetch('/api/auth/signup', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ name, email, password })
@@ -167,7 +196,7 @@ function updateUserUI(name) {
 
 async function loadCloudData(userId) {
   try {
-    const res = await fetch(`/api/user/data?userId=${userId}`);
+    const res = await apiFetch(`/api/user/data?userId=${userId}`);
     if (!res.ok) return;
     const { data } = await res.json();
     if (!data) return;
@@ -223,11 +252,20 @@ async function pushCloudData() {
   } catch(e){}
 
   try {
-    const res = await fetch('/api/user/data', {
+    const res = await apiFetch('/api/user/data', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ userId: currentUser.userId, data })
     });
+    if (res.ok) {
+      showSyncState('saved');
+    } else {
+      showSyncState('error');
+    }
+  } catch(e) {
+    showSyncState('error');
+  }
+}
     if (res.ok) {
       showSyncState('saved');
     } else {
