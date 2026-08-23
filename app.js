@@ -172,7 +172,7 @@ async function loadCloudData(userId) {
     const { data } = await res.json();
     if (!data) return;
     // Hydrate localStorage with cloud data (cloud wins)
-    const keys = ['todos','notes','events','goals','roadmaps','streak','todoHistory','habitGrid'];
+    const keys = ['todos','notes','projects','events','goals','roadmaps','streak','todoHistory','habitGrid'];
     keys.forEach(k => {
       if (data[k] !== undefined && data[k] !== null) {
         try {
@@ -299,11 +299,52 @@ document.addEventListener('DOMContentLoaded', () => {
   if (logoutBtn) logoutBtn.addEventListener('click', handleLogout);
 });
 
-/* ---------------- Storage defaults (empty initial state for new accounts) ---------------- */
+/* ---------------- Storage defaults (reference design sample data if clean) ---------------- */
+const DEFAULT_PROJECTS = [
+  { id: 'p1', title: 'Workshop planning and ideas', color: '#8b6cf7', date: '27th April, 2026' },
+  { id: 'p2', title: 'Design exploration', color: '#34d399', date: '27th April, 2026' },
+  { id: 'p3', title: "Users' feedback", color: '#ff9d3d', date: '27th April, 2026' },
+  { id: 'p4', title: 'Plans for future & ideas', color: '#ffcf7d', date: '27th April, 2026' },
+  { id: 'p5', title: 'Testing results', color: '#ff6b8a', date: '27th April, 2026' },
+  { id: 'p6', title: 'Design system strategy', color: '#38bdf8', date: '27th April, 2026' }
+];
+
+const DEFAULT_NOTES = [
+  {
+    id: 'n1',
+    title: 'Plans for future and other directions, what needs to be done',
+    body: 'A Design Direction unifies everyone and adds meaning to web design. It is a combination of art and strategy that shapes how products feel.',
+    date: '27th April, 2026',
+    tags: [{ label: 'Workshops', color: '#8b6cf7' }, { label: 'Strategy', color: '#ffcf7d' }]
+  },
+  {
+    id: 'n2',
+    title: 'Design challenges',
+    body: 'What Is A Design Challenge? Design challenges are exercises or competitions that designers can do to boost creativity, create positive habits, and learn new methods for solving complex UX problems.',
+    date: '27th April, 2026',
+    tags: [{ label: 'Workshops', color: '#8b6cf7' }, { label: 'Design challenges', color: '#ff9d3d' }, { label: 'Work in progress', color: '#34d399' }]
+  },
+  {
+    id: 'n3',
+    title: 'How to conduct a user interview that could improve your product?',
+    body: 'You cannot understand good design if you do not understand people; design is made for people. User interviews are a tool that can help you get this understanding through active listening.',
+    date: '27th April, 2026',
+    tags: [{ label: 'Research', color: '#ffcf7d' }, { label: 'User Feedback', color: '#38bdf8' }]
+  },
+  {
+    id: 'n4',
+    title: 'Note B - Dribbble strategy & visual exploration',
+    body: 'Exploring new visual shots, micro-animations, and interactive components for the upcoming product showcase.',
+    date: '27th April, 2026',
+    tags: [{ label: 'Portfolio', color: '#ff6b8a' }, { label: 'Strategy', color: '#8b6cf7' }]
+  }
+];
+
 if (load('todos', null) === null) save('todos', []);
 if (load('goals', null) === null) save('goals', []);
 if (load('events', null) === null) save('events', []);
-if (load('notes', null) === null) save('notes', []);
+if (load('projects', null) === null) save('projects', DEFAULT_PROJECTS);
+if (load('notes', null) === null) save('notes', DEFAULT_NOTES);
 if (load('streak', null) === null) save('streak', 0);
 
 if (load('habitGrid', null) === null) {
@@ -1147,82 +1188,284 @@ function renderMiniCalendar(){
   });
 }
 
-/* ---------------- NOTES ---------------- */
-const NOTE_TAGS = [
-  { label: 'Idea',     color: 'var(--violet)' },
-  { label: 'Task',     color: 'var(--blue)' },
-  { label: 'Reminder', color: 'var(--amber)' },
-  { label: 'Journal',  color: 'var(--green)' },
-];
-function addNote(text){
-  const items = load('notes', []);
-  const tag = NOTE_TAGS[items.length % NOTE_TAGS.length];
-  items.unshift({ id: uid(), text, tagLabel: tag.label, tagColor: tag.color });
-  save('notes', items);
-  renderNotes();
+/* ---------------- PROJECTS & NOTES (Reference UI Design) ---------------- */
+
+let currentEditingNoteId = null;
+let selectedProjectColor = '#8b6cf7';
+
+function renderProjects() {
+  const container = document.getElementById('projectGrid');
+  if (!container) return;
+  const projects = load('projects', DEFAULT_PROJECTS);
+  container.innerHTML = '';
+
+  projects.forEach(p => {
+    const card = document.createElement('div');
+    card.className = 'folder-card';
+    card.innerHTML = `
+      <div class="folder-top-row">
+        <span class="folder-dot" style="background:${p.color}; color:${p.color};"></span>
+        <span class="folder-title">${escapeHtml(p.title)}</span>
+      </div>
+      <div class="folder-bottom-row">
+        <span>${escapeHtml(p.date || 'Today')}</span>
+        <button class="card-opts-btn" data-project-opts="${p.id}">•••</button>
+      </div>
+    `;
+
+    card.querySelector('[data-project-opts]').addEventListener('click', (e) => {
+      e.stopPropagation();
+      openCardMenu(e.currentTarget, [
+        { label: 'Delete Project', danger: true, action: () => deleteProject(p.id) }
+      ]);
+    });
+
+    container.appendChild(card);
+  });
+
+  // Add Project Tile
+  const addTile = document.createElement('div');
+  addTile.className = 'folder-add-tile';
+  addTile.innerHTML = `<span class="plus-icon">+</span><span>Add project</span>`;
+  addTile.addEventListener('click', openProjectModal);
+  container.appendChild(addTile);
 }
-function renderNotes(){
-  const notes = load('notes', []);
-  document.querySelectorAll('.js-note-list').forEach(list => {
-    list.innerHTML = '';
-    list.appendChild(buildAddNoteTile());
-    if (!notes.length){
-      const empty = document.createElement('div');
-      empty.className = 'event-empty';
-      empty.style.gridColumn = '1 / -1';
-      empty.textContent = 'No notes yet — tap the card to add one.';
-      list.appendChild(empty);
+
+function deleteProject(id) {
+  const projects = load('projects', []).filter(p => p.id !== id);
+  save('projects', projects);
+  renderProjects();
+}
+
+function renderNotes() {
+  const notes = load('notes', DEFAULT_NOTES);
+
+  // Render on Notes Page (#pageNoteList)
+  const pageContainer = document.getElementById('pageNoteList');
+  if (pageContainer) {
+    pageContainer.innerHTML = '';
+    notes.forEach(n => {
+      const card = document.createElement('div');
+      card.className = 'rich-note-card';
+
+      const tagHtml = (n.tags || []).map(t => {
+        const c = t.color || '#8b6cf7';
+        return `<span class="rich-tag-pill" style="--tag-bg:${c}1f; --tag-color:${c}; --tag-border:${c}40;">${escapeHtml(t.label)}</span>`;
+      }).join('');
+
+      card.innerHTML = `
+        <div class="rich-note-top">
+          <span>${escapeHtml(n.date || 'Today')}</span>
+          <button class="card-opts-btn" data-note-opts="${n.id}">•••</button>
+        </div>
+        <h4 class="rich-note-title">${escapeHtml(n.title)}</h4>
+        <p class="rich-note-body">${escapeHtml(n.body || '')}</p>
+        ${tagHtml ? `<div class="rich-note-tags">${tagHtml}</div>` : ''}
+      `;
+
+      card.querySelector('[data-note-opts]').addEventListener('click', (e) => {
+        e.stopPropagation();
+        openCardMenu(e.currentTarget, [
+          { label: 'Edit Note', action: () => openNoteModal(n) },
+          { label: 'Delete Note', danger: true, action: () => deleteNote(n.id) }
+        ]);
+      });
+
+      pageContainer.appendChild(card);
+    });
+
+    // Add Note Tile
+    const addTile = document.createElement('div');
+    addTile.className = 'rich-note-add-tile';
+    addTile.innerHTML = `<span style="font-size:22px;font-weight:300;">+</span><span>Add note</span>`;
+    addTile.addEventListener('click', () => openNoteModal());
+    pageContainer.appendChild(addTile);
+  }
+
+  // Render on Dashboard (#noteList)
+  const dashContainer = document.getElementById('noteList');
+  if (dashContainer) {
+    dashContainer.innerHTML = '';
+    if (!notes.length) {
+      dashContainer.innerHTML = `<div class="event-empty" style="grid-column:1/-1;">No notes yet &mdash; tap + to add one.</div>`;
       return;
     }
-    notes.forEach((n, i) => {
-      const tag = n.tagLabel ? { label: n.tagLabel, color: n.tagColor } : NOTE_TAGS[i % NOTE_TAGS.length];
-      const words = n.text.split(' ');
-      const heading = words.slice(0, 6).join(' ') + (words.length > 6 ? '…' : '');
-      const body = words.length > 6 ? words.slice(6).join(' ') : 'Tap to keep this in view.';
+    notes.slice(0, 4).forEach((n, i) => {
+      const tag = (n.tags && n.tags[0]) ? n.tags[0] : { label: 'Note', color: 'var(--violet)' };
       const el = document.createElement('div');
       el.className = 'note-card';
       el.innerHTML = `
-        <span class="note-pill"><span class="dot" style="background:${tag.color};"></span>${tag.label}</span>
-        <h5>${escapeHtml(heading)}</h5>
-        <p>${escapeHtml(body)}</p>
+        <span class="note-pill"><span class="dot" style="background:${tag.color};"></span>${escapeHtml(tag.label)}</span>
+        <h5>${escapeHtml(n.title)}</h5>
+        <p>${escapeHtml(n.body || '')}</p>
         <button class="rm" data-rm="${n.id}" title="Remove">&times;</button>
       `;
-      el.querySelector('.rm').addEventListener('click', () => {
-        const arr = load('notes', []).filter(x => x.id !== n.id);
-        save('notes', arr);
-        renderNotes();
+      el.querySelector('.rm').addEventListener('click', (e) => {
+        e.stopPropagation();
+        deleteNote(n.id);
       });
-      list.appendChild(el);
+      dashContainer.appendChild(el);
     });
-  });
+  }
 }
-function buildAddNoteTile(){
-  const tile = document.createElement('div');
-  tile.className = 'note-card note-add-tile';
-  tile.innerHTML = `<span class="add-icon">+</span><span class="add-label">Add note</span>`;
 
-  const openEditor = () => {
-    tile.classList.add('editing');
-    tile.innerHTML = `
-      <textarea class="note-add-input" rows="3" placeholder="Jot something down..."></textarea>
-      <button class="note-add-confirm">Add note</button>
-    `;
-    const input = tile.querySelector('.note-add-input');
-    input.focus();
-    const commit = () => {
-      const val = input.value.trim();
-      if (val) addNote(val); else renderNotes();
-    };
-    tile.querySelector('.note-add-confirm').addEventListener('click', (e) => { e.stopPropagation(); commit(); });
-    input.addEventListener('keydown', e => {
-      if (e.key === 'Enter' && !e.shiftKey){ e.preventDefault(); commit(); }
-      if (e.key === 'Escape') renderNotes();
-    });
-    input.addEventListener('click', e => e.stopPropagation());
-  };
-  tile.addEventListener('click', () => { if (!tile.classList.contains('editing')) openEditor(); });
-  return tile;
+function deleteNote(id) {
+  const notes = load('notes', []).filter(n => n.id !== id);
+  save('notes', notes);
+  renderNotes();
 }
+
+/* Card dropdown menu helper */
+let activeCardMenu = null;
+function closeCardMenu() {
+  if (activeCardMenu) {
+    activeCardMenu.remove();
+    activeCardMenu = null;
+  }
+}
+document.addEventListener('click', closeCardMenu);
+
+function openCardMenu(buttonEl, items) {
+  closeCardMenu();
+  const card = buttonEl.closest('.folder-card, .rich-note-card');
+  if (!card) return;
+  const menu = document.createElement('div');
+  menu.className = 'card-menu-dropdown';
+
+  items.forEach(item => {
+    const btn = document.createElement('button');
+    btn.className = 'card-menu-item' + (item.danger ? ' danger' : '');
+    btn.textContent = item.label;
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      closeCardMenu();
+      item.action();
+    });
+    menu.appendChild(btn);
+  });
+
+  card.appendChild(menu);
+  activeCardMenu = menu;
+}
+
+/* ---------- Modals Logic ---------- */
+function openProjectModal() {
+  const modal = document.getElementById('projectModal');
+  const input = document.getElementById('projectTitleInput');
+  if (!modal || !input) return;
+  input.value = '';
+  modal.style.display = 'flex';
+  input.focus();
+}
+window.closeProjectModal = function() {
+  const modal = document.getElementById('projectModal');
+  if (modal) modal.style.display = 'none';
+};
+
+function openNoteModal(noteToEdit = null) {
+  const modal = document.getElementById('noteModal');
+  const titleInput = document.getElementById('noteTitleInput');
+  const bodyInput = document.getElementById('noteBodyInput');
+  const tagsInput = document.getElementById('noteTagsInput');
+  const headerTitle = document.getElementById('noteModalHeaderTitle');
+  if (!modal) return;
+
+  if (noteToEdit) {
+    currentEditingNoteId = noteToEdit.id;
+    if (headerTitle) headerTitle.textContent = 'Edit Note';
+    if (titleInput) titleInput.value = noteToEdit.title || '';
+    if (bodyInput) bodyInput.value = noteToEdit.body || '';
+    if (tagsInput) tagsInput.value = (noteToEdit.tags || []).map(t => t.label).join(', ');
+  } else {
+    currentEditingNoteId = null;
+    if (headerTitle) headerTitle.textContent = 'Create New Note';
+    if (titleInput) titleInput.value = '';
+    if (bodyInput) bodyInput.value = '';
+    if (tagsInput) tagsInput.value = '';
+  }
+
+  modal.style.display = 'flex';
+  if (titleInput) titleInput.focus();
+}
+window.closeNoteModal = function() {
+  const modal = document.getElementById('noteModal');
+  if (modal) modal.style.display = 'none';
+};
+
+// Wire color picker & Save buttons
+document.addEventListener('DOMContentLoaded', () => {
+  const openProjBtn = document.getElementById('openProjectModalBtn');
+  if (openProjBtn) openProjBtn.addEventListener('click', openProjectModal);
+
+  const openNoteBtn = document.getElementById('openNoteModalBtn');
+  if (openNoteBtn) openNoteBtn.addEventListener('click', () => openNoteModal());
+
+  const saveProjBtn = document.getElementById('saveProjectBtn');
+  if (saveProjBtn) {
+    saveProjBtn.addEventListener('click', () => {
+      const input = document.getElementById('projectTitleInput');
+      const title = input ? input.value.trim() : '';
+      if (!title) return;
+      const projects = load('projects', DEFAULT_PROJECTS);
+      const now = new Date();
+      const dateStr = `${now.getDate()}th ${now.toLocaleString(undefined,{month:'short'})}, ${now.getFullYear()}`;
+      projects.unshift({ id: uid(), title, color: selectedProjectColor, date: dateStr });
+      save('projects', projects);
+      renderProjects();
+      closeProjectModal();
+    });
+  }
+
+  const saveNoteBtn = document.getElementById('saveNoteBtn');
+  if (saveNoteBtn) {
+    saveNoteBtn.addEventListener('click', () => {
+      const titleInput = document.getElementById('noteTitleInput');
+      const bodyInput = document.getElementById('noteBodyInput');
+      const tagsInput = document.getElementById('noteTagsInput');
+
+      const title = titleInput ? titleInput.value.trim() : '';
+      if (!title) return;
+
+      const body = bodyInput ? bodyInput.value.trim() : '';
+      const rawTags = tagsInput ? tagsInput.value.split(',').map(s => s.trim()).filter(Boolean) : [];
+      const tagColors = ['#8b6cf7', '#34d399', '#ff9d3d', '#ffcf7d', '#ff6b8a', '#38bdf8'];
+
+      const tags = rawTags.length > 0
+        ? rawTags.map((label, idx) => ({ label, color: tagColors[idx % tagColors.length] }))
+        : [{ label: 'General', color: '#8b6cf7' }];
+
+      const notes = load('notes', DEFAULT_NOTES);
+      const now = new Date();
+      const dateStr = `${now.getDate()}th ${now.toLocaleString(undefined,{month:'short'})}, ${now.getFullYear()}`;
+
+      if (currentEditingNoteId) {
+        const item = notes.find(n => n.id === currentEditingNoteId);
+        if (item) {
+          item.title = title;
+          item.body = body;
+          item.tags = tags;
+        }
+      } else {
+        notes.unshift({ id: uid(), title, body, date: dateStr, tags });
+      }
+
+      save('notes', notes);
+      renderNotes();
+      closeNoteModal();
+    });
+  }
+
+  const picker = document.getElementById('projectColorPicker');
+  if (picker) {
+    picker.querySelectorAll('.color-dot').forEach(dot => {
+      dot.addEventListener('click', () => {
+        picker.querySelectorAll('.color-dot').forEach(d => d.classList.remove('active'));
+        dot.classList.add('active');
+        selectedProjectColor = dot.dataset.color || '#8b6cf7';
+      });
+    });
+  }
+});
 
 /* ---------------- WEEKLY BAR CHART (real data: to-dos + habit tracker) ---------------- */
 function renderBars(){
@@ -1404,6 +1647,7 @@ function showView(view){
     if (sub) sub.textContent = pageMeta[view].sub;
   }
 
+  if (view === 'notes') { renderProjects(); renderNotes(); }
   if (view === 'habits') renderHabitGrid();
   if (view === 'calendar') renderMiniCalendar();
 }
@@ -1420,6 +1664,7 @@ renderTodos();
 renderHabitGrid();
 renderRoadmaps();
 renderEvents();
+renderProjects();
 renderNotes();
 renderBars();
 renderMiniCalendar();

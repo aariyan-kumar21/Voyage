@@ -307,18 +307,36 @@
 
     <!-- NOTES PAGE -->
     <div class="view" id="view-notes">
-      <div class="grid">
-        <section class="card col-12">
-          <div class="card-head">
-            <div class="card-icon" style="background:var(--green-soft);color:var(--green);">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h13l3 3v13H4z"/><path d="M8 9h9M8 13h9M8 17h5"/></svg>
+      <div class="notes-page-container">
+        
+        <!-- SECTION 1: MY PROJECTS (Folder Cards) -->
+        <div class="notes-section">
+          <div class="notes-section-head">
+            <div class="section-title-wrap">
+              <div class="card-icon" style="background:var(--violet-soft);color:var(--violet);">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+              </div>
+              <h2>My projects</h2>
             </div>
-            <span class="card-title">All Notes</span>
+            <button class="notes-head-action-btn" id="openProjectModalBtn">+ New Project</button>
           </div>
-          <div class="notes-glow-wrap">
-            <div id="pageNoteList" class="js-note-list note-deck"></div>
+          <div class="projects-grid" id="projectGrid"></div>
+        </div>
+
+        <!-- SECTION 2: MY NOTES (Rich Note Cards) -->
+        <div class="notes-section" style="margin-top:36px;">
+          <div class="notes-section-head">
+            <div class="section-title-wrap">
+              <div class="card-icon" style="background:var(--green-soft);color:var(--green);">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+              </div>
+              <h2>My notes</h2>
+            </div>
+            <button class="notes-head-action-btn" id="openNoteModalBtn">+ New Note</button>
           </div>
-        </section>
+          <div class="notes-grid" id="pageNoteList"></div>
+        </div>
+
       </div>
     </div>
 
@@ -510,6 +528,67 @@
     </div>
 
   </main>
+</div>
+
+<!-- PROJECT CREATION MODAL -->
+<div class="app-modal" id="projectModal" style="display:none;">
+  <div class="app-modal-backdrop" onclick="closeProjectModal()"></div>
+  <div class="app-modal-card">
+    <div class="app-modal-head">
+      <h3>Create New Project</h3>
+      <button class="app-modal-close" onclick="closeProjectModal()">&times;</button>
+    </div>
+    <div class="app-modal-body">
+      <div class="modal-field">
+        <label>Project Title</label>
+        <input type="text" id="projectTitleInput" placeholder="e.g. Design exploration" autocomplete="off">
+      </div>
+      <div class="modal-field">
+        <label>Theme Color</label>
+        <div class="color-picker-row" id="projectColorPicker">
+          <button type="button" class="color-dot active" data-color="#8b6cf7" style="background:#8b6cf7;"></button>
+          <button type="button" class="color-dot" data-color="#34d399" style="background:#34d399;"></button>
+          <button type="button" class="color-dot" data-color="#ff9d3d" style="background:#ff9d3d;"></button>
+          <button type="button" class="color-dot" data-color="#ffcf7d" style="background:#ffcf7d;"></button>
+          <button type="button" class="color-dot" data-color="#ff6b8a" style="background:#ff6b8a;"></button>
+          <button type="button" class="color-dot" data-color="#38bdf8" style="background:#38bdf8;"></button>
+        </div>
+      </div>
+    </div>
+    <div class="app-modal-foot">
+      <button class="modal-btn-cancel" onclick="closeProjectModal()">Cancel</button>
+      <button class="modal-btn-save" id="saveProjectBtn">Create Project</button>
+    </div>
+  </div>
+</div>
+
+<!-- NOTE CREATION MODAL -->
+<div class="app-modal" id="noteModal" style="display:none;">
+  <div class="app-modal-backdrop" onclick="closeNoteModal()"></div>
+  <div class="app-modal-card">
+    <div class="app-modal-head">
+      <h3 id="noteModalHeaderTitle">Create New Note</h3>
+      <button class="app-modal-close" onclick="closeNoteModal()">&times;</button>
+    </div>
+    <div class="app-modal-body">
+      <div class="modal-field">
+        <label>Title</label>
+        <input type="text" id="noteTitleInput" placeholder="e.g. Plans for future and other directions..." autocomplete="off">
+      </div>
+      <div class="modal-field">
+        <label>Content / Description</label>
+        <textarea id="noteBodyInput" rows="4" placeholder="Write your note thoughts here..."></textarea>
+      </div>
+      <div class="modal-field">
+        <label>Tags (comma separated)</label>
+        <input type="text" id="noteTagsInput" placeholder="Workshops, Design challenges, Work in progress">
+      </div>
+    </div>
+    <div class="app-modal-foot">
+      <button class="modal-btn-cancel" onclick="closeNoteModal()">Cancel</button>
+      <button class="modal-btn-save" id="saveNoteBtn">Save Note</button>
+    </div>
+  </div>
 </div>
 
 <!-- Cloud sync indicator -->
