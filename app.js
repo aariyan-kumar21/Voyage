@@ -62,6 +62,18 @@ function hideAuthOverlay() {
   if (overlay) { overlay.classList.add('auth-hidden'); }
 }
 
+window.togglePassword = function(inputId, btn) {
+  const input = document.getElementById(inputId);
+  if (!input) return;
+  const isHidden = input.type === 'password';
+  input.type = isHidden ? 'text' : 'password';
+  const eyeShow = btn.querySelector('.eye-show');
+  const eyeHide = btn.querySelector('.eye-hide');
+  if (eyeShow) eyeShow.style.display = isHidden ? 'none' : '';
+  if (eyeHide) eyeHide.style.display = isHidden ? '' : 'none';
+  btn.setAttribute('aria-label', isHidden ? 'Hide password' : 'Show password');
+};
+
 window.switchAuthTab = function(tab) {
   document.getElementById('form-login').classList.toggle('active', tab === 'login');
   document.getElementById('form-signup').classList.toggle('active', tab === 'signup');

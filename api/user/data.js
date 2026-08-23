@@ -16,15 +16,24 @@ const CORS_HEADERS = {
 let cachedClient = null;
 
 async function getDb() {
+  const uri = process.env.MONGODB_URI;
+  if (!uri || uri.includes('<username>') || uri.includes('<cluster>')) {
+    throw new Error('MONGODB_URI is not configured.');
+  }
   if (!cachedClient) {
-    cachedClient = new MongoClient(process.env.MONGODB_URI, {
+    cachedClient = new MongoClient(uri, {
       serverApi: {
         version: ServerApiVersion.v1,
         strict: true,
         deprecationErrors: true,
       },
     });
-    await cachedClient.connect();
+    try {
+      await cachedClient.connect();
+    } catch (e) {
+      cachedClient = null;
+      throw e;
+    }
   }
   return cachedClient.db('voyage');
 }

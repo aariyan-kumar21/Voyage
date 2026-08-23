@@ -17,15 +17,24 @@ const CORS_HEADERS = {
 let cachedClient = null;
 
 async function getDb() {
+  const uri = process.env.MONGODB_URI;
+  if (!uri || uri.includes('<username>') || uri.includes('<cluster>')) {
+    throw new Error('MONGODB_URI is not configured. Please set it in your .env.local file or Vercel environment variables.');
+  }
   if (!cachedClient) {
-    cachedClient = new MongoClient(process.env.MONGODB_URI, {
+    cachedClient = new MongoClient(uri, {
       serverApi: {
         version: ServerApiVersion.v1,
         strict: true,
         deprecationErrors: true,
       },
     });
-    await cachedClient.connect();
+    try {
+      await cachedClient.connect();
+    } catch (e) {
+      cachedClient = null;
+      throw e;
+    }
   }
   return cachedClient.db('voyage');
 }
@@ -84,6 +93,9 @@ export default async function handler(req, res) {
     });
   } catch (err) {
     console.error('[/api/auth/signup] Error:', err);
-    return res.status(500).json({ error: 'Server error. Please try again.' });
+    const msg = err.message && err.message.includes('MONGODB_URI')
+      ? err.message
+      : 'Could not connect to the database. Please check your MONGODB_URI configuration.';
+    return res.status(500).json({ error: msg });
   }
 }
