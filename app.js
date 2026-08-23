@@ -1188,131 +1188,405 @@ function renderMiniCalendar(){
   });
 }
 
-/* ---------------- PROJECTS & NOTES (Reference UI Design) ---------------- */
+/* ---------------- NOTION WORKSPACE & CANVAS EDITOR ---------------- */
 
-let currentEditingNoteId = null;
+const DEFAULT_PROJECTS = [
+  { id: 'proj-1', title: 'Product Roadmap', icon: '🚀', color: '#8b6cf7', date: 'Today' },
+  { id: 'proj-2', title: 'Design System Guidelines', icon: '🎨', color: '#34d399', date: 'Today' },
+  { id: 'proj-3', title: 'Brainstorming & Ideas', icon: '💡', color: '#ff9d3d', date: 'Today' }
+];
+
+const DEFAULT_NOTES = [
+  {
+    id: 'note-1',
+    projectId: 'proj-1',
+    title: 'Q3 Feature Specifications',
+    icon: '📝',
+    body: '<h1>Q3 Product Goals</h1><p>Key focus areas for this quarter include real-time cloud sync, Notion document canvas editor, and enhanced offline capabilities.</p><blockquote>Prioritize user experience and smooth micro-interactions.</blockquote>',
+    tags: 'Specs, Roadmap',
+    date: 'Today'
+  },
+  {
+    id: 'note-2',
+    projectId: 'proj-2',
+    title: 'Color Palette & Typography System',
+    icon: '🎨',
+    body: '<h2>Design System Specs</h2><p>Using Sora for display headings and Inter for body copy.</p><ul><li>Violet: #8b6cf7</li><li>Green: #34d399</li><li>Amber: #ff9d3d</li></ul>',
+    tags: 'Design, Specs',
+    date: 'Today'
+  },
+  {
+    id: 'note-3',
+    projectId: 'proj-3',
+    title: 'User Interview Feedback Syntheses',
+    icon: '💡',
+    body: '<h2>User Insights</h2><p>Users love the dark theme and seamless auto-sync. They requested a Notion-style document canvas for note taking.</p>',
+    tags: 'Research, Feedback',
+    date: 'Today'
+  }
+];
+
+let currentNotionView = 'projects'; // 'projects' | 'projectDetail' | 'editor'
+let currentProjectId = null;
+let currentNoteId = null;
+let selectedProjectEmoji = '🚀';
 let selectedProjectColor = '#8b6cf7';
+let editorAutoSaveTimer = null;
 
-function renderProjects() {
-  const container = document.getElementById('projectGrid');
+/* Subview Navigation */
+window.showNotionView = function(view, targetId = null) {
+  currentNotionView = view;
+  const projectsView = document.getElementById('notionViewProjects');
+  const projectDetailView = document.getElementById('notionViewProjectDetail');
+  const editorView = document.getElementById('notionViewEditor');
+  const breadcrumbs = document.getElementById('notionBreadcrumbs');
+
+  if (projectsView) projectsView.style.display = view === 'projects' ? 'block' : 'none';
+  if (projectDetailView) projectDetailView.style.display = view === 'projectDetail' ? 'block' : 'none';
+  if (editorView) editorView.style.display = view === 'editor' ? 'block' : 'none';
+
+  if (view === 'projects') {
+    currentProjectId = null;
+    currentNoteId = null;
+    if (breadcrumbs) {
+      breadcrumbs.innerHTML = `<span class="crumb active" onclick="showNotionView('projects')">📁 Projects</span>`;
+    }
+    renderNotionProjects();
+  } else if (view === 'projectDetail') {
+    currentProjectId = targetId;
+    currentNoteId = null;
+    renderProjectDetail(targetId);
+  } else if (view === 'editor') {
+    currentNoteId = targetId;
+    renderNotionEditor(targetId);
+  }
+};
+
+/* Render Projects View */
+function renderNotionProjects() {
+  const container = document.getElementById('notionProjectsGrid');
+  const allPagesContainer = document.getElementById('notionAllPagesList');
   if (!container) return;
-  const projects = load('projects', DEFAULT_PROJECTS);
-  container.innerHTML = '';
 
+  const projects = load('projects', DEFAULT_PROJECTS);
+  const notes = load('notes', DEFAULT_NOTES);
+
+  container.innerHTML = '';
   projects.forEach(p => {
+    const projPagesCount = notes.filter(n => n.projectId === p.id).length;
     const card = document.createElement('div');
-    card.className = 'folder-card';
+    card.className = 'notion-project-card';
     card.innerHTML = `
-      <div class="folder-top-row">
-        <span class="folder-dot" style="background:${p.color}; color:${p.color};"></span>
-        <span class="folder-title">${escapeHtml(p.title)}</span>
+      <div class="n-proj-top">
+        <span class="n-proj-icon">${p.icon || '📁'}</span>
+        <span class="n-proj-title">${escapeHtml(p.title)}</span>
       </div>
-      <div class="folder-bottom-row">
-        <span>${escapeHtml(p.date || 'Today')}</span>
-        <button class="card-opts-btn" data-project-opts="${p.id}">•••</button>
+      <div class="n-proj-bottom">
+        <span>${projPagesCount} ${projPagesCount === 1 ? 'page' : 'pages'}</span>
+        <button class="card-opts-btn" data-proj-opts="${p.id}">•••</button>
       </div>
     `;
 
-    card.querySelector('[data-project-opts]').addEventListener('click', (e) => {
+    card.addEventListener('click', (e) => {
+      if (e.target.closest('.card-opts-btn')) return;
+      showNotionView('projectDetail', p.id);
+    });
+
+    card.querySelector('[data-proj-opts]').addEventListener('click', (e) => {
       e.stopPropagation();
       openCardMenu(e.currentTarget, [
-        { label: 'Delete Project', danger: true, action: () => deleteProject(p.id) }
+        { label: 'Open Project', action: () => showNotionView('projectDetail', p.id) },
+        { label: 'Delete Project', danger: true, action: () => deleteNotionProject(p.id) }
       ]);
     });
 
     container.appendChild(card);
   });
 
-  // Add Project Tile
-  const addTile = document.createElement('div');
-  addTile.className = 'folder-add-tile';
-  addTile.innerHTML = `<span class="plus-icon">+</span><span>Add project</span>`;
-  addTile.addEventListener('click', openProjectModal);
-  container.appendChild(addTile);
-}
-
-function deleteProject(id) {
-  const projects = load('projects', []).filter(p => p.id !== id);
-  save('projects', projects);
-  renderProjects();
-}
-
-function renderNotes() {
-  const notes = load('notes', DEFAULT_NOTES);
-
-  // Render on Notes Page (#pageNoteList)
-  const pageContainer = document.getElementById('pageNoteList');
-  if (pageContainer) {
-    pageContainer.innerHTML = '';
+  // Render All Pages List
+  if (allPagesContainer) {
+    allPagesContainer.innerHTML = '';
+    if (!notes.length) {
+      allPagesContainer.innerHTML = `<div class="event-empty">No pages yet &mdash; click + New Page to create one.</div>`;
+      return;
+    }
     notes.forEach(n => {
-      const card = document.createElement('div');
-      card.className = 'rich-note-card';
-
-      const tagHtml = (n.tags || []).map(t => {
-        const c = t.color || '#8b6cf7';
-        return `<span class="rich-tag-pill" style="--tag-bg:${c}1f; --tag-color:${c}; --tag-border:${c}40;">${escapeHtml(t.label)}</span>`;
-      }).join('');
-
-      card.innerHTML = `
-        <div class="rich-note-top">
-          <span>${escapeHtml(n.date || 'Today')}</span>
-          <button class="card-opts-btn" data-note-opts="${n.id}">•••</button>
+      const parentProj = projects.find(p => p.id === n.projectId);
+      const row = document.createElement('div');
+      row.className = 'notion-page-row';
+      row.innerHTML = `
+        <div class="page-row-left">
+          <span class="page-row-icon">${n.icon || '📝'}</span>
+          <span class="page-row-title">${escapeHtml(n.title || 'Untitled')}</span>
+          ${parentProj ? `<span class="page-row-proj-badge">${escapeHtml(parentProj.title)}</span>` : ''}
         </div>
-        <h4 class="rich-note-title">${escapeHtml(n.title)}</h4>
-        <p class="rich-note-body">${escapeHtml(n.body || '')}</p>
-        ${tagHtml ? `<div class="rich-note-tags">${tagHtml}</div>` : ''}
+        <div class="page-row-right">
+          <span>${escapeHtml(n.date || 'Today')}</span>
+          <button class="card-opts-btn" data-page-opts="${n.id}">•••</button>
+        </div>
       `;
 
-      card.querySelector('[data-note-opts]').addEventListener('click', (e) => {
+      row.addEventListener('click', (e) => {
+        if (e.target.closest('.card-opts-btn')) return;
+        showNotionView('editor', n.id);
+      });
+
+      row.querySelector('[data-page-opts]').addEventListener('click', (e) => {
         e.stopPropagation();
         openCardMenu(e.currentTarget, [
-          { label: 'Edit Note', action: () => openNoteModal(n) },
-          { label: 'Delete Note', danger: true, action: () => deleteNote(n.id) }
+          { label: 'Open Page', action: () => showNotionView('editor', n.id) },
+          { label: 'Delete Page', danger: true, action: () => deleteNotionPage(n.id) }
         ]);
       });
 
-      pageContainer.appendChild(card);
+      allPagesContainer.appendChild(row);
     });
-
-    // Add Note Tile
-    const addTile = document.createElement('div');
-    addTile.className = 'rich-note-add-tile';
-    addTile.innerHTML = `<span style="font-size:22px;font-weight:300;">+</span><span>Add note</span>`;
-    addTile.addEventListener('click', () => openNoteModal());
-    pageContainer.appendChild(addTile);
   }
 
-  // Render on Dashboard (#noteList)
-  const dashContainer = document.getElementById('noteList');
-  if (dashContainer) {
-    dashContainer.innerHTML = '';
-    if (!notes.length) {
-      dashContainer.innerHTML = `<div class="event-empty" style="grid-column:1/-1;">No notes yet &mdash; tap + to add one.</div>`;
+  // Dashboard preview widget (#noteList)
+  renderDashboardNotesWidget(notes);
+}
+
+function deleteNotionProject(id) {
+  const projects = load('projects', []).filter(p => p.id !== id);
+  const notes = load('notes', []).filter(n => n.projectId !== id);
+  save('projects', projects);
+  save('notes', notes);
+  renderNotionProjects();
+}
+
+function deleteNotionPage(id) {
+  const notes = load('notes', []).filter(n => n.id !== id);
+  save('notes', notes);
+  if (currentNotionView === 'editor' && currentNoteId === id) {
+    showNotionView('projects');
+  } else if (currentNotionView === 'projectDetail') {
+    renderProjectDetail(currentProjectId);
+  } else {
+    renderNotionProjects();
+  }
+}
+
+/* Render Project Detail View */
+function renderProjectDetail(projectId) {
+  const projects = load('projects', DEFAULT_PROJECTS);
+  const notes = load('notes', DEFAULT_NOTES);
+  const project = projects.find(p => p.id === projectId);
+  if (!project) { showNotionView('projects'); return; }
+
+  const breadcrumbs = document.getElementById('notionBreadcrumbs');
+  if (breadcrumbs) {
+    breadcrumbs.innerHTML = `
+      <span class="crumb" onclick="showNotionView('projects')">📁 Projects</span>
+      <span class="sep">/</span>
+      <span class="crumb active">${escapeHtml(project.title)}</span>
+    `;
+  }
+
+  const iconEl = document.getElementById('projectDetailIcon');
+  const titleEl = document.getElementById('projectDetailTitle');
+  const metaEl = document.getElementById('projectDetailMeta');
+  if (iconEl) iconEl.textContent = project.icon || '📁';
+  if (titleEl) titleEl.textContent = project.title;
+
+  const projPages = notes.filter(n => n.projectId === projectId);
+  if (metaEl) metaEl.textContent = `${projPages.length} ${projPages.length === 1 ? 'page' : 'pages'} in this workspace`;
+
+  const container = document.getElementById('notionProjectPagesList');
+  if (container) {
+    container.innerHTML = '';
+    if (!projPages.length) {
+      container.innerHTML = `<div class="event-empty">No pages in this project yet &mdash; click + Add Page to Project to start writing.</div>`;
       return;
     }
-    notes.slice(0, 4).forEach((n, i) => {
-      const tag = (n.tags && n.tags[0]) ? n.tags[0] : { label: 'Note', color: 'var(--violet)' };
-      const el = document.createElement('div');
-      el.className = 'note-card';
-      el.innerHTML = `
-        <span class="note-pill"><span class="dot" style="background:${tag.color};"></span>${escapeHtml(tag.label)}</span>
-        <h5>${escapeHtml(n.title)}</h5>
-        <p>${escapeHtml(n.body || '')}</p>
-        <button class="rm" data-rm="${n.id}" title="Remove">&times;</button>
+    projPages.forEach(n => {
+      const row = document.createElement('div');
+      row.className = 'notion-page-row';
+      row.innerHTML = `
+        <div class="page-row-left">
+          <span class="page-row-icon">${n.icon || '📝'}</span>
+          <span class="page-row-title">${escapeHtml(n.title || 'Untitled')}</span>
+        </div>
+        <div class="page-row-right">
+          <span>${escapeHtml(n.date || 'Today')}</span>
+          <button class="card-opts-btn" data-page-opts="${n.id}">•••</button>
+        </div>
       `;
-      el.querySelector('.rm').addEventListener('click', (e) => {
-        e.stopPropagation();
-        deleteNote(n.id);
+
+      row.addEventListener('click', (e) => {
+        if (e.target.closest('.card-opts-btn')) return;
+        showNotionView('editor', n.id);
       });
-      dashContainer.appendChild(el);
+
+      row.querySelector('[data-page-opts]').addEventListener('click', (e) => {
+        e.stopPropagation();
+        openCardMenu(e.currentTarget, [
+          { label: 'Open Page', action: () => showNotionView('editor', n.id) },
+          { label: 'Delete Page', danger: true, action: () => deleteNotionPage(n.id) }
+        ]);
+      });
+
+      container.appendChild(row);
     });
   }
 }
 
-function deleteNote(id) {
-  const notes = load('notes', []).filter(n => n.id !== id);
+/* Create New Page & Open Editor */
+function createNewPage(projectId = null) {
+  const projects = load('projects', DEFAULT_PROJECTS);
+  const notes = load('notes', DEFAULT_NOTES);
+  const targetProjId = projectId || (projects[0] ? projects[0].id : null);
+  const now = new Date();
+  const dateStr = `${now.getDate()}th ${now.toLocaleString(undefined,{month:'short'})}, ${now.getFullYear()}`;
+
+  const newPage = {
+    id: uid(),
+    projectId: targetProjId,
+    title: '',
+    icon: '📝',
+    body: '',
+    tags: '',
+    date: dateStr
+  };
+
+  notes.unshift(newPage);
   save('notes', notes);
-  renderNotes();
+  showNotionView('editor', newPage.id);
+}
+
+/* Render Notion Canvas Editor */
+function renderNotionEditor(noteId) {
+  const projects = load('projects', DEFAULT_PROJECTS);
+  const notes = load('notes', DEFAULT_NOTES);
+  const note = notes.find(n => n.id === noteId);
+  if (!note) { showNotionView('projects'); return; }
+
+  const parentProj = projects.find(p => p.id === note.projectId);
+
+  const breadcrumbs = document.getElementById('notionBreadcrumbs');
+  if (breadcrumbs) {
+    let crumbsHtml = `<span class="crumb" onclick="showNotionView('projects')">📁 Projects</span>`;
+    if (parentProj) {
+      crumbsHtml += `
+        <span class="sep">/</span>
+        <span class="crumb" onclick="showNotionView('projectDetail', '${parentProj.id}')">${escapeHtml(parentProj.title)}</span>
+      `;
+    }
+    crumbsHtml += `
+      <span class="sep">/</span>
+      <span class="crumb active" id="crumbNoteTitle">${escapeHtml(note.title || 'Untitled')}</span>
+    `;
+    breadcrumbs.innerHTML = crumbsHtml;
+  }
+
+  const iconBtn = document.getElementById('notionPageIconBtn');
+  const titleInput = document.getElementById('notionPageTitleInput');
+  const projectSelect = document.getElementById('notionPageProjectSelect');
+  const tagsInput = document.getElementById('notionPageTagsInput');
+  const canvas = document.getElementById('notionEditorCanvas');
+
+  if (iconBtn) iconBtn.textContent = note.icon || '📝';
+  if (titleInput) titleInput.value = note.title || '';
+  if (tagsInput) tagsInput.value = note.tags || '';
+  if (canvas) canvas.innerHTML = note.body || '';
+
+  // Populate project select dropdown
+  if (projectSelect) {
+    projectSelect.innerHTML = projects.map(p =>
+      `<option value="${p.id}" ${p.id === note.projectId ? 'selected' : ''}>${escapeHtml(p.title)}</option>`
+    ).join('');
+  }
+
+  if (titleInput) {
+    if (!note.title) titleInput.focus();
+  }
+}
+
+/* Auto-Save Notion Editor Canvas */
+function saveCurrentNotionEditor() {
+  if (currentNotionView !== 'editor' || !currentNoteId) return;
+  const notes = load('notes', DEFAULT_NOTES);
+  const note = notes.find(n => n.id === currentNoteId);
+  if (!note) return;
+
+  const titleInput = document.getElementById('notionPageTitleInput');
+  const projectSelect = document.getElementById('notionPageProjectSelect');
+  const tagsInput = document.getElementById('notionPageTagsInput');
+  const canvas = document.getElementById('notionEditorCanvas');
+
+  if (titleInput) note.title = titleInput.value;
+  if (projectSelect) note.projectId = projectSelect.value;
+  if (tagsInput) note.tags = tagsInput.value;
+  if (canvas) note.body = canvas.innerHTML;
+
+  save('notes', notes);
+
+  const badge = document.getElementById('notionSaveBadge');
+  if (badge) {
+    badge.textContent = 'Saved';
+    badge.style.opacity = '1';
+    setTimeout(() => { if (badge) badge.style.opacity = '0.7'; }, 1000);
+  }
+
+  const crumbTitle = document.getElementById('crumbNoteTitle');
+  if (crumbTitle) crumbTitle.textContent = note.title || 'Untitled';
+}
+
+function scheduleEditorAutoSave() {
+  clearTimeout(editorAutoSaveTimer);
+  const badge = document.getElementById('notionSaveBadge');
+  if (badge) badge.textContent = 'Saving...';
+  editorAutoSaveTimer = setTimeout(saveCurrentNotionEditor, 600);
+}
+
+/* Slash Menu Helper Commands */
+function handleSlashCommand(cmd) {
+  const canvas = document.getElementById('notionEditorCanvas');
+  const menu = document.getElementById('notionSlashMenu');
+  if (!canvas || !menu) return;
+  menu.style.display = 'none';
+
+  canvas.focus();
+  if (cmd === 'h1') document.execCommand('formatBlock', false, '<h1>');
+  else if (cmd === 'h2') document.execCommand('formatBlock', false, '<h2>');
+  else if (cmd === 'bullet') document.execCommand('insertUnorderedList', false, null);
+  else if (cmd === 'quote') document.execCommand('formatBlock', false, '<blockquote>');
+  else if (cmd === 'code') document.execCommand('formatBlock', false, '<pre>');
+  else if (cmd === 'todo') document.execCommand('insertHTML', false, '<div>☑ Task checklist item</div>');
+  else if (cmd === 'callout') document.execCommand('insertHTML', false, '<div class="notion-callout">💡 <span>Callout note box...</span></div>');
+
+  scheduleEditorAutoSave();
+}
+
+/* Dashboard Notes Widget */
+function renderDashboardNotesWidget(notes) {
+  const dashContainer = document.getElementById('noteList');
+  if (!dashContainer) return;
+  dashContainer.innerHTML = '';
+  if (!notes.length) {
+    dashContainer.innerHTML = `<div class="event-empty" style="grid-column:1/-1;">No pages yet &mdash; click + to add one.</div>`;
+    return;
+  }
+  notes.slice(0, 4).forEach(n => {
+    const el = document.createElement('div');
+    el.className = 'note-card';
+    el.innerHTML = `
+      <span class="note-pill"><span class="dot" style="background:var(--violet);"></span>${escapeHtml(n.icon || '📝')}</span>
+      <h5>${escapeHtml(n.title || 'Untitled')}</h5>
+      <p>${escapeHtml((n.body || '').replace(/<[^>]*>/g, '').slice(0, 80))}</p>
+      <button class="rm" data-rm="${n.id}" title="Remove">&times;</button>
+    `;
+    el.addEventListener('click', (e) => {
+      if (e.target.closest('.rm')) return;
+      showView('notes');
+      showNotionView('editor', n.id);
+    });
+    el.querySelector('.rm').addEventListener('click', (e) => {
+      e.stopPropagation();
+      deleteNotionPage(n.id);
+    });
+    dashContainer.appendChild(el);
+  });
 }
 
 /* Card dropdown menu helper */
@@ -1327,7 +1601,7 @@ document.addEventListener('click', closeCardMenu);
 
 function openCardMenu(buttonEl, items) {
   closeCardMenu();
-  const card = buttonEl.closest('.folder-card, .rich-note-card');
+  const card = buttonEl.closest('.notion-project-card, .notion-page-row');
   if (!card) return;
   const menu = document.createElement('div');
   menu.className = 'card-menu-dropdown';
@@ -1348,7 +1622,7 @@ function openCardMenu(buttonEl, items) {
   activeCardMenu = menu;
 }
 
-/* ---------- Modals Logic ---------- */
+/* Project Modal Handler */
 function openProjectModal() {
   const modal = document.getElementById('projectModal');
   const input = document.getElementById('projectTitleInput');
@@ -1362,43 +1636,16 @@ window.closeProjectModal = function() {
   if (modal) modal.style.display = 'none';
 };
 
-function openNoteModal(noteToEdit = null) {
-  const modal = document.getElementById('noteModal');
-  const titleInput = document.getElementById('noteTitleInput');
-  const bodyInput = document.getElementById('noteBodyInput');
-  const tagsInput = document.getElementById('noteTagsInput');
-  const headerTitle = document.getElementById('noteModalHeaderTitle');
-  if (!modal) return;
-
-  if (noteToEdit) {
-    currentEditingNoteId = noteToEdit.id;
-    if (headerTitle) headerTitle.textContent = 'Edit Note';
-    if (titleInput) titleInput.value = noteToEdit.title || '';
-    if (bodyInput) bodyInput.value = noteToEdit.body || '';
-    if (tagsInput) tagsInput.value = (noteToEdit.tags || []).map(t => t.label).join(', ');
-  } else {
-    currentEditingNoteId = null;
-    if (headerTitle) headerTitle.textContent = 'Create New Note';
-    if (titleInput) titleInput.value = '';
-    if (bodyInput) bodyInput.value = '';
-    if (tagsInput) tagsInput.value = '';
-  }
-
-  modal.style.display = 'flex';
-  if (titleInput) titleInput.focus();
-}
-window.closeNoteModal = function() {
-  const modal = document.getElementById('noteModal');
-  if (modal) modal.style.display = 'none';
-};
-
-// Wire color picker & Save buttons
+/* DOM Event Wiring for Notion Workspace */
 document.addEventListener('DOMContentLoaded', () => {
-  const openProjBtn = document.getElementById('openProjectModalBtn');
-  if (openProjBtn) openProjBtn.addEventListener('click', openProjectModal);
+  const createProjBtn = document.getElementById('notionCreateProjectBtn');
+  if (createProjBtn) createProjBtn.addEventListener('click', openProjectModal);
 
-  const openNoteBtn = document.getElementById('openNoteModalBtn');
-  if (openNoteBtn) openNoteBtn.addEventListener('click', () => openNoteModal());
+  const createPageBtn = document.getElementById('notionCreatePageBtn');
+  if (createPageBtn) createPageBtn.addEventListener('click', () => createNewPage(currentProjectId));
+
+  const projAddPageBtn = document.getElementById('projectAddPageBtn');
+  if (projAddPageBtn) projAddPageBtn.addEventListener('click', () => createNewPage(currentProjectId));
 
   const saveProjBtn = document.getElementById('saveProjectBtn');
   if (saveProjBtn) {
@@ -1407,61 +1654,77 @@ document.addEventListener('DOMContentLoaded', () => {
       const title = input ? input.value.trim() : '';
       if (!title) return;
       const projects = load('projects', DEFAULT_PROJECTS);
-      const now = new Date();
-      const dateStr = `${now.getDate()}th ${now.toLocaleString(undefined,{month:'short'})}, ${now.getFullYear()}`;
-      projects.unshift({ id: uid(), title, color: selectedProjectColor, date: dateStr });
+      const newProj = {
+        id: uid(),
+        title,
+        icon: selectedProjectEmoji,
+        color: selectedProjectColor,
+        date: 'Today'
+      };
+      projects.unshift(newProj);
       save('projects', projects);
-      renderProjects();
       closeProjectModal();
+      showNotionView('projectDetail', newProj.id);
     });
   }
 
-  const saveNoteBtn = document.getElementById('saveNoteBtn');
-  if (saveNoteBtn) {
-    saveNoteBtn.addEventListener('click', () => {
-      const titleInput = document.getElementById('noteTitleInput');
-      const bodyInput = document.getElementById('noteBodyInput');
-      const tagsInput = document.getElementById('noteTagsInput');
-
-      const title = titleInput ? titleInput.value.trim() : '';
-      if (!title) return;
-
-      const body = bodyInput ? bodyInput.value.trim() : '';
-      const rawTags = tagsInput ? tagsInput.value.split(',').map(s => s.trim()).filter(Boolean) : [];
-      const tagColors = ['#8b6cf7', '#34d399', '#ff9d3d', '#ffcf7d', '#ff6b8a', '#38bdf8'];
-
-      const tags = rawTags.length > 0
-        ? rawTags.map((label, idx) => ({ label, color: tagColors[idx % tagColors.length] }))
-        : [{ label: 'General', color: '#8b6cf7' }];
-
-      const notes = load('notes', DEFAULT_NOTES);
-      const now = new Date();
-      const dateStr = `${now.getDate()}th ${now.toLocaleString(undefined,{month:'short'})}, ${now.getFullYear()}`;
-
-      if (currentEditingNoteId) {
-        const item = notes.find(n => n.id === currentEditingNoteId);
-        if (item) {
-          item.title = title;
-          item.body = body;
-          item.tags = tags;
-        }
-      } else {
-        notes.unshift({ id: uid(), title, body, date: dateStr, tags });
-      }
-
-      save('notes', notes);
-      renderNotes();
-      closeNoteModal();
+  // Emoji picker row
+  const emojiRow = document.getElementById('projectEmojiRow');
+  if (emojiRow) {
+    emojiRow.querySelectorAll('.emoji-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        emojiRow.querySelectorAll('.emoji-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        selectedProjectEmoji = btn.dataset.icon || '🚀';
+      });
     });
   }
 
-  const picker = document.getElementById('projectColorPicker');
-  if (picker) {
-    picker.querySelectorAll('.color-dot').forEach(dot => {
+  // Color picker row
+  const colorPicker = document.getElementById('projectColorPicker');
+  if (colorPicker) {
+    colorPicker.querySelectorAll('.color-dot').forEach(dot => {
       dot.addEventListener('click', () => {
-        picker.querySelectorAll('.color-dot').forEach(d => d.classList.remove('active'));
+        colorPicker.querySelectorAll('.color-dot').forEach(d => d.classList.remove('active'));
         dot.classList.add('active');
         selectedProjectColor = dot.dataset.color || '#8b6cf7';
+      });
+    });
+  }
+
+  // Notion Editor input auto-saving
+  const titleInput = document.getElementById('notionPageTitleInput');
+  const projectSelect = document.getElementById('notionPageProjectSelect');
+  const tagsInput = document.getElementById('notionPageTagsInput');
+  const canvas = document.getElementById('notionEditorCanvas');
+  const slashMenu = document.getElementById('notionSlashMenu');
+
+  if (titleInput) titleInput.addEventListener('input', scheduleEditorAutoSave);
+  if (projectSelect) projectSelect.addEventListener('change', scheduleEditorAutoSave);
+  if (tagsInput) tagsInput.addEventListener('input', scheduleEditorAutoSave);
+
+  if (canvas) {
+    canvas.addEventListener('input', (e) => {
+      scheduleEditorAutoSave();
+      // Show slash menu if user typed '/'
+      const text = canvas.innerText || '';
+      if (text.endsWith('/')) {
+        if (slashMenu) {
+          slashMenu.style.display = 'flex';
+          slashMenu.style.top = '140px';
+          slashMenu.style.left = '20px';
+        }
+      } else {
+        if (slashMenu) slashMenu.style.display = 'none';
+      }
+    });
+  }
+
+  // Slash menu items
+  if (slashMenu) {
+    slashMenu.querySelectorAll('.slash-item').forEach(item => {
+      item.addEventListener('click', () => {
+        handleSlashCommand(item.dataset.cmd);
       });
     });
   }
@@ -1647,7 +1910,7 @@ function showView(view){
     if (sub) sub.textContent = pageMeta[view].sub;
   }
 
-  if (view === 'notes') { renderProjects(); renderNotes(); }
+  if (view === 'notes') { showNotionView('projects'); }
   if (view === 'habits') renderHabitGrid();
   if (view === 'calendar') renderMiniCalendar();
 }
@@ -1664,8 +1927,7 @@ renderTodos();
 renderHabitGrid();
 renderRoadmaps();
 renderEvents();
-renderProjects();
-renderNotes();
+renderNotionProjects();
 renderBars();
 renderMiniCalendar();
 updateTimerDisplay();

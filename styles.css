@@ -1778,3 +1778,469 @@ button{font-family:inherit;cursor:pointer;}
   cursor: pointer;
 }
 
+/* ================================================
+   NOTION WORKSPACE & CANVAS EDITOR STYLES
+   ================================================ */
+.notion-workspace {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding-bottom: 60px;
+}
+
+/* Topbar Header & Breadcrumbs */
+.notion-header-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 14px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+.notion-breadcrumbs {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13.5px;
+  color: var(--text-3);
+}
+.notion-breadcrumbs .crumb {
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 6px;
+  transition: background .15s, color .15s;
+}
+.notion-breadcrumbs .crumb:hover {
+  background: rgba(255,255,255,0.06);
+  color: var(--text-1);
+}
+.notion-breadcrumbs .crumb.active {
+  color: var(--text-1);
+  font-weight: 600;
+}
+.notion-breadcrumbs .sep {
+  color: var(--text-3);
+  font-size: 12px;
+}
+
+.notion-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.notion-action-btn {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: var(--text-1);
+  padding: 7px 14px;
+  border-radius: 9px;
+  font-size: 12.5px;
+  font-weight: 500;
+  font-family: var(--font-body);
+  cursor: pointer;
+  transition: all .18s ease;
+}
+.notion-action-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+.notion-action-btn.primary {
+  background: var(--gradient-accent);
+  border: none;
+  color: #fff;
+  font-weight: 600;
+}
+.notion-action-btn.primary:hover {
+  box-shadow: 0 4px 16px rgba(139,108,247,0.35);
+}
+
+.notion-section-header {
+  margin-bottom: 14px;
+}
+.notion-section-header h3 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text-1);
+}
+.notion-section-header p {
+  margin: 4px 0 0;
+  font-size: 12.5px;
+  color: var(--text-3);
+}
+
+/* Projects Grid */
+.notion-projects-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  gap: 16px;
+}
+.notion-project-card {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: 16px;
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  min-height: 110px;
+  cursor: pointer;
+  transition: transform .18s ease, border-color .18s ease, box-shadow .18s ease;
+  position: relative;
+}
+.notion-project-card:hover {
+  transform: translateY(-3px);
+  border-color: rgba(255, 255, 255, 0.22);
+  box-shadow: 0 10px 28px rgba(0,0,0,0.35);
+  background: rgba(255, 255, 255, 0.045);
+}
+.n-proj-top {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.n-proj-icon {
+  font-size: 22px;
+  line-height: 1;
+}
+.n-proj-title {
+  font-family: var(--font-display);
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-1);
+  line-height: 1.3;
+}
+.n-proj-bottom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 16px;
+  font-size: 11.5px;
+  color: var(--text-3);
+}
+
+/* Pages List / Table Rows */
+.notion-pages-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.notion-page-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  background: rgba(255, 255, 255, 0.025);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 12px;
+  cursor: pointer;
+  transition: background .18s, border-color .18s, transform .15s;
+}
+.notion-page-row:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.16);
+  transform: translateX(3px);
+}
+.page-row-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+  min-width: 0;
+}
+.page-row-icon {
+  font-size: 18px;
+  line-height: 1;
+}
+.page-row-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-1);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.page-row-proj-badge {
+  font-size: 11px;
+  padding: 3px 8px;
+  border-radius: 6px;
+  background: rgba(255,255,255,0.06);
+  color: var(--text-3);
+  margin-left: 6px;
+}
+.page-row-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 11.5px;
+  color: var(--text-3);
+}
+
+/* Project Detail Banner */
+.project-detail-banner {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 24px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 20px;
+}
+.project-detail-icon {
+  font-size: 42px;
+  line-height: 1;
+}
+.project-detail-info h2 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 24px;
+  font-weight: 800;
+  color: var(--text-1);
+}
+.project-detail-meta {
+  font-size: 12.5px;
+  color: var(--text-3);
+  margin-top: 4px;
+}
+
+.project-pages-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 24px 0 14px 0;
+}
+.project-pages-toolbar h4 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-1);
+}
+
+/* ---------- NOTION DOCUMENT EDITOR CANVAS ---------- */
+.notion-editor-container {
+  max-width: 820px;
+  margin: 0 auto;
+  padding: 24px 0 60px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  position: relative;
+}
+
+.notion-page-icon-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.notion-icon-btn {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  font-size: 32px;
+  padding: 8px;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: background .15s, transform .15s;
+  line-height: 1;
+}
+.notion-icon-btn:hover {
+  background: rgba(255, 255, 255, 0.09);
+  transform: scale(1.06);
+}
+
+.notion-save-badge {
+  font-size: 11px;
+  color: var(--text-3);
+  padding: 4px 10px;
+  border-radius: 20px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.06);
+}
+
+/* Title Input (Notion style: large, borderless) */
+.notion-title-input {
+  width: 100%;
+  background: transparent;
+  border: none;
+  outline: none;
+  font-family: var(--font-display);
+  font-size: 36px;
+  font-weight: 800;
+  color: var(--text-1);
+  padding: 8px 0;
+  letter-spacing: -0.02em;
+}
+.notion-title-input::placeholder {
+  color: rgba(255, 255, 255, 0.22);
+}
+
+/* Page Metadata Bar */
+.notion-page-meta-bar {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  padding: 10px 0 16px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  margin-bottom: 10px;
+}
+.meta-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12.5px;
+}
+.meta-label {
+  color: var(--text-3);
+}
+.meta-select {
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.1);
+  color: var(--text-1);
+  font-size: 12.5px;
+  padding: 4px 8px;
+  border-radius: 8px;
+  outline: none;
+}
+.meta-input {
+  background: transparent;
+  border: none;
+  color: var(--text-1);
+  font-size: 12.5px;
+  outline: none;
+  width: 180px;
+}
+.meta-input::placeholder { color: var(--text-3); }
+
+/* Notion Contenteditable Canvas Editor */
+.notion-editor-canvas {
+  min-height: 420px;
+  outline: none;
+  font-size: 15px;
+  line-height: 1.75;
+  color: var(--text-1);
+  font-family: var(--font-body);
+}
+.notion-editor-canvas[contenteditable=true]:empty::before {
+  content: attr(data-placeholder);
+  color: rgba(255, 255, 255, 0.28);
+  font-weight: 400;
+  cursor: text;
+}
+
+/* Block styles inside canvas */
+.notion-editor-canvas h1 {
+  font-family: var(--font-display);
+  font-size: 24px;
+  font-weight: 700;
+  margin: 20px 0 10px 0;
+  color: var(--text-1);
+}
+.notion-editor-canvas h2 {
+  font-family: var(--font-display);
+  font-size: 19px;
+  font-weight: 700;
+  margin: 16px 0 8px 0;
+  color: var(--text-1);
+}
+.notion-editor-canvas blockquote {
+  margin: 14px 0;
+  padding: 10px 16px;
+  border-left: 3px solid var(--violet);
+  background: rgba(139, 108, 247, 0.06);
+  border-radius: 0 10px 10px 0;
+  color: var(--text-2);
+  font-style: italic;
+}
+.notion-editor-canvas pre {
+  margin: 14px 0;
+  padding: 14px;
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  font-family: var(--font-mono);
+  font-size: 13.5px;
+  color: var(--green);
+  overflow-x: auto;
+}
+.notion-editor-canvas .notion-callout {
+  margin: 14px 0;
+  padding: 14px 16px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+/* Slash Command Dropdown Menu */
+.notion-slash-menu {
+  position: absolute;
+  background: rgba(20, 24, 38, 0.96);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 14px;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  z-index: 1000;
+  box-shadow: 0 16px 40px rgba(0,0,0,0.6);
+  backdrop-filter: blur(24px);
+  width: 220px;
+}
+.slash-menu-head {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  color: var(--text-3);
+  padding: 4px 8px 6px;
+}
+.slash-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: none;
+  border: none;
+  color: var(--text-1);
+  font-size: 13px;
+  font-family: var(--font-body);
+  padding: 8px 10px;
+  border-radius: 8px;
+  text-align: left;
+  cursor: pointer;
+  transition: background .15s;
+}
+.slash-item:hover {
+  background: rgba(255, 255, 255, 0.09);
+}
+.slash-icon {
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.06);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--violet);
+}
+
+/* Emoji Picker Row */
+.emoji-picker-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.emoji-btn {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  font-size: 20px;
+  padding: 6px 10px;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: transform .15s, background .15s;
+}
+.emoji-btn:hover { transform: scale(1.15); background: rgba(255,255,255,0.1); }
+.emoji-btn.active { border-color: var(--violet); background: rgba(139,108,247,0.15); }
+
+
