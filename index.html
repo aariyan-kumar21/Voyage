@@ -136,11 +136,11 @@
         <div class="avatar" id="avatarInitial">V</div>
         <div class="account-text">
           <div class="account-name" id="sidebarUserName">Welcome back</div>
-          <div class="account-sub">Let's make today count</div>
+          <button class="logout-btn-sub" id="logoutBtn" title="Log out">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+            <span>Logout</span>
+          </button>
         </div>
-        <button class="logout-btn" id="logoutBtn" title="Log out">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
-        </button>
       </div>
     </div>
   </aside>
@@ -302,7 +302,6 @@
       </section>
 
     </div>
-    </div>
     <!-- /view-dashboard -->
 
     <!-- NOTES PAGE -->
@@ -353,6 +352,62 @@
             <button class="notes-head-action-btn" id="openNoteInFolderBtn">+ New Note</button>
           </div>
           <div class="notes-grid" id="folderNoteList"></div>
+        </div>
+
+        <!-- SECTION 4: NOTION-STYLE DOCUMENT CANVAS EDITOR VIEW -->
+        <div class="notes-section" id="notionEditorView" style="display:none;">
+          <div class="notion-editor-topbar">
+            <button class="notes-back-btn" id="notionEditorBackBtn" title="Back">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>
+              Back
+            </button>
+            <div class="notion-editor-crumbs" id="notionEditorCrumbs">
+              <span class="crumb">Notes</span>
+            </div>
+            <div class="notion-editor-actions">
+              <span class="notion-save-badge" id="notionSaveBadge">Saved</span>
+              <button class="card-opts-btn" id="notionEditorOptsBtn" title="Page Options">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>
+              </button>
+            </div>
+          </div>
+
+          <div class="notion-editor-wrapper">
+            <div class="notion-page-icon-wrap">
+              <button class="notion-icon-btn" id="notionPageIconBtn" title="Change icon">📝</button>
+            </div>
+
+            <!-- Page Title Input matching Notion reference photo -->
+            <input type="text" class="notion-title-input" id="notionPageTitleInput" placeholder="New page" autocomplete="off">
+            
+            <!-- Page Metadata Bar -->
+            <div class="notion-page-meta-bar">
+              <div class="meta-item">
+                <span class="meta-label">Project:</span>
+                <select class="meta-select" id="notionPageProjectSelect"></select>
+              </div>
+              <div class="meta-item">
+                <span class="meta-label">Tags:</span>
+                <input type="text" class="meta-input" id="notionPageTagsInput" placeholder="e.g. Ideas, Specs">
+              </div>
+            </div>
+
+            <!-- Body Editor Canvas matching Notion reference photo -->
+            <div class="notion-editor-canvas" id="notionEditorCanvas" contenteditable="true" data-placeholder="Press 'space' for AI or '/' for commands..."></div>
+
+            <!-- Slash Command Menu Dropdown -->
+            <div class="notion-slash-menu" id="notionSlashMenu" style="display:none;">
+              <div class="slash-menu-head">BASIC BLOCKS</div>
+              <button type="button" class="slash-item" data-cmd="h1"><span class="slash-icon">H1</span> Heading 1</button>
+              <button type="button" class="slash-item" data-cmd="h2"><span class="slash-icon">H2</span> Heading 2</button>
+              <button type="button" class="slash-item" data-cmd="bullet"><span class="slash-icon">•</span> Bulleted List</button>
+              <button type="button" class="slash-item" data-cmd="todo"><span class="slash-icon">☑</span> To-Do Checklist</button>
+              <button type="button" class="slash-item" data-cmd="quote"><span class="slash-icon">"</span> Quote</button>
+              <button type="button" class="slash-item" data-cmd="code"><span class="slash-icon">&lt;/&gt;</span> Code Block</button>
+              <button type="button" class="slash-item" data-cmd="callout"><span class="slash-icon">💡</span> Callout Box</button>
+            </div>
+
+          </div>
         </div>
 
       </div>
