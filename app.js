@@ -266,15 +266,6 @@ async function pushCloudData() {
     showSyncState('error');
   }
 }
-    if (res.ok) {
-      showSyncState('saved');
-    } else {
-      showSyncState('error');
-    }
-  } catch(e) {
-    showSyncState('error');
-  }
-}
 
 function showSyncState(state) {
   const el = document.getElementById('syncIndicator');
@@ -1228,13 +1219,13 @@ function renderMiniCalendar(){
 
 /* ---------------- NOTION WORKSPACE & CANVAS EDITOR ---------------- */
 
-const DEFAULT_PROJECTS = [
+const NOTION_DEFAULT_PROJECTS = [
   { id: 'proj-1', title: 'Product Roadmap', icon: '🚀', color: '#8b6cf7', date: 'Today' },
   { id: 'proj-2', title: 'Design System Guidelines', icon: '🎨', color: '#34d399', date: 'Today' },
   { id: 'proj-3', title: 'Brainstorming & Ideas', icon: '💡', color: '#ff9d3d', date: 'Today' }
 ];
 
-const DEFAULT_NOTES = [
+const NOTION_DEFAULT_NOTES = [
   {
     id: 'note-1',
     projectId: 'proj-1',
@@ -1306,8 +1297,8 @@ function renderNotionProjects() {
   const allPagesContainer = document.getElementById('notionAllPagesList');
   if (!container) return;
 
-  const projects = load('projects', DEFAULT_PROJECTS);
-  const notes = load('notes', DEFAULT_NOTES);
+  const projects = load('projects', NOTION_DEFAULT_PROJECTS);
+  const notes = load('notes', NOTION_DEFAULT_NOTES);
 
   container.innerHTML = '';
   projects.forEach(p => {
@@ -1407,8 +1398,8 @@ function deleteNotionPage(id) {
 
 /* Render Project Detail View */
 function renderProjectDetail(projectId) {
-  const projects = load('projects', DEFAULT_PROJECTS);
-  const notes = load('notes', DEFAULT_NOTES);
+  const projects = load('projects', NOTION_DEFAULT_PROJECTS);
+  const notes = load('notes', NOTION_DEFAULT_NOTES);
   const project = projects.find(p => p.id === projectId);
   if (!project) { showNotionView('projects'); return; }
 
@@ -1471,8 +1462,8 @@ function renderProjectDetail(projectId) {
 
 /* Create New Page & Open Editor */
 function createNewPage(projectId = null) {
-  const projects = load('projects', DEFAULT_PROJECTS);
-  const notes = load('notes', DEFAULT_NOTES);
+  const projects = load('projects', NOTION_DEFAULT_PROJECTS);
+  const notes = load('notes', NOTION_DEFAULT_NOTES);
   const targetProjId = projectId || (projects[0] ? projects[0].id : null);
   const now = new Date();
   const dateStr = `${now.getDate()}th ${now.toLocaleString(undefined,{month:'short'})}, ${now.getFullYear()}`;
@@ -1494,8 +1485,8 @@ function createNewPage(projectId = null) {
 
 /* Render Notion Canvas Editor */
 function renderNotionEditor(noteId) {
-  const projects = load('projects', DEFAULT_PROJECTS);
-  const notes = load('notes', DEFAULT_NOTES);
+  const projects = load('projects', NOTION_DEFAULT_PROJECTS);
+  const notes = load('notes', NOTION_DEFAULT_NOTES);
   const note = notes.find(n => n.id === noteId);
   if (!note) { showNotionView('projects'); return; }
 
@@ -1543,7 +1534,7 @@ function renderNotionEditor(noteId) {
 /* Auto-Save Notion Editor Canvas */
 function saveCurrentNotionEditor() {
   if (currentNotionView !== 'editor' || !currentNoteId) return;
-  const notes = load('notes', DEFAULT_NOTES);
+  const notes = load('notes', NOTION_DEFAULT_NOTES);
   const note = notes.find(n => n.id === currentNoteId);
   if (!note) return;
 
@@ -1691,7 +1682,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const input = document.getElementById('projectTitleInput');
       const title = input ? input.value.trim() : '';
       if (!title) return;
-      const projects = load('projects', DEFAULT_PROJECTS);
+      const projects = load('projects', NOTION_DEFAULT_PROJECTS);
       const newProj = {
         id: uid(),
         title,
