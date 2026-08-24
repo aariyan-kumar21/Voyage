@@ -426,12 +426,17 @@ if (load('habitGrid', null) === null) {
 })();
 
 /* ---------------- Greeting + date ---------------- */
-const hour = new Date().getHours();
-const greetText = currentUser
-  ? (hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening') + ', ' + currentUser.name
-  : (hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening') + ', Voyager';
-const greetingText = greetText;
-document.getElementById('greeting').textContent = greetingText;
+function getGreeting() {
+  const hour = new Date().getHours();
+  const timeOfDay = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
+  const name = currentUser ? currentUser.name : 'Voyager';
+  return `${timeOfDay}, ${name}`;
+}
+function updateGreetingDisplay() {
+  const greetEl = document.getElementById('greeting');
+  if (greetEl) greetEl.textContent = getGreeting();
+}
+updateGreetingDisplay();
 document.getElementById('todayDate').textContent = new Date().toLocaleDateString(undefined, { day:'numeric', month:'long', year:'numeric' });
 
 /* ---------------- Streak ---------------- */
@@ -457,6 +462,13 @@ function addTodo(text){
   renderTodos();
 }
 
+function deleteTodo(id){
+  const arr = load('todos', []).filter(x => x.id !== id);
+  save('todos', arr);
+  renderTodos();
+  renderBars();
+}
+
 function renderTodoRows(containerId, items, todayKey){
   const list = document.getElementById(containerId);
   if (!list) return;
@@ -468,18 +480,28 @@ function renderTodoRows(containerId, items, todayKey){
   items.forEach(t => {
     const row = document.createElement('div');
     row.className = 'todo-row' + (t.done ? ' done' : '');
-    row.innerHTML = `<input type="checkbox" class="chk" style="--c:var(--blue);" ${t.done?'checked':''}><label>${escapeHtml(t.text)}</label>`;
+    row.innerHTML = `
+      <input type="checkbox" class="chk" style="--c:var(--blue);" ${t.done?'checked':''}>
+      <label style="flex:1;">${escapeHtml(t.text)}</label>
+      <button class="todo-rm" title="Delete task" style="background:none;border:none;color:var(--text-3);font-size:16px;cursor:pointer;padding:0 4px;margin-left:auto;">&times;</button>
+    `;
     row.querySelector('input').addEventListener('change', e => {
       const arr = load('todos', []);
       const item = arr.find(x => x.id === t.id);
-      item.done = e.target.checked;
-      save('todos', arr);
-      const hist = load('todoHistory', {});
-      const key = t.date || todayKey;
-      hist[key] = Math.max(0, (hist[key]||0) + (e.target.checked ? 1 : -1));
-      save('todoHistory', hist);
-      renderTodos();
-      renderBars();
+      if (item) {
+        item.done = e.target.checked;
+        save('todos', arr);
+        const hist = load('todoHistory', {});
+        const key = t.date || todayKey;
+        hist[key] = Math.max(0, (hist[key]||0) + (e.target.checked ? 1 : -1));
+        save('todoHistory', hist);
+        renderTodos();
+        renderBars();
+      }
+    });
+    row.querySelector('.todo-rm').addEventListener('click', (e) => {
+      e.stopPropagation();
+      deleteTodo(t.id);
     });
     list.appendChild(row);
   });
@@ -1322,6 +1344,28 @@ function deleteProject(id) {
   renderProjects();
 }
 
+function normalizeTags(rawTags) {
+  if (!rawTags) return [{ label: 'General', color: '#8b6cf7' }];
+  let arr = [];
+  if (Array.isArray(rawTags)) {
+    arr = rawTags;
+  } else if (typeof rawTags === 'string') {
+    arr = rawTags.split(',').map(s => s.trim()).filter(Boolean);
+  } else if (typeof rawTags === 'object') {
+    arr = [rawTags];
+  }
+  const tagColors = ['#8b6cf7', '#34d399', '#ff9d3d', '#ffcf7d', '#ff6b8a', '#38bdf8'];
+  return arr.map((t, idx) => {
+    if (typeof t === 'string') {
+      return { label: t, color: tagColors[idx % tagColors.length] };
+    }
+    if (t && typeof t === 'object') {
+      return { label: t.label || t.name || 'Tag', color: t.color || tagColors[idx % tagColors.length] };
+    }
+    return { label: 'General', color: '#8b6cf7' };
+  });
+}
+
 function renderNotes() {
   const notes = load('notes', DEFAULT_NOTES);
 
@@ -1334,7 +1378,8 @@ function renderNotes() {
       card.className = 'rich-note-card';
       card.style.cursor = 'pointer';
 
-      const tagHtml = (n.tags || []).map(t => {
+      const tags = normalizeTags(n.tags);
+      const tagHtml = tags.map(t => {
         const c = t.color || '#8b6cf7';
         return `<span class="rich-tag-pill" style="--tag-bg:${c}1f; --tag-color:${c}; --tag-border:${c}40;">${escapeHtml(t.label)}</span>`;
       }).join('');
@@ -1382,7 +1427,8 @@ function renderNotes() {
       return;
     }
     notes.slice(0, 4).forEach((n) => {
-      const tag = (n.tags && n.tags[0]) ? n.tags[0] : { label: 'Note', color: 'var(--violet)' };
+      const tags = normalizeTags(n.tags);
+      const tag = tags[0] || { label: 'Note', color: 'var(--violet)' };
       const el = document.createElement('div');
       el.className = 'note-card';
       el.style.cursor = 'pointer';
@@ -1417,7 +1463,8 @@ function renderFolderNotes(projectId) {
     card.className = 'rich-note-card';
     card.style.cursor = 'pointer';
 
-    const tagHtml = (n.tags || []).map(t => {
+    const tags = normalizeTags(n.tags);
+    const tagHtml = tags.map(t => {
       const c = t.color || '#8b6cf7';
       return `<span class="rich-tag-pill" style="--tag-bg:${c}1f; --tag-color:${c}; --tag-border:${c}40;">${escapeHtml(t.label)}</span>`;
     }).join('');
@@ -1523,7 +1570,7 @@ function openNotionEditor(noteToEdit = null, forProjectId = null, returnView = '
   const canvas = document.getElementById('notionEditorCanvas');
 
   if (titleInput) titleInput.value = targetNote.title || '';
-  if (tagsInput) tagsInput.value = (targetNote.tags || []).map(t => typeof t === 'object' ? t.label : t).join(', ');
+  if (tagsInput) tagsInput.value = normalizeTags(targetNote.tags).map(t => t.label).join(', ');
   if (canvas) canvas.innerHTML = targetNote.body || '';
 
   if (projSelect) {
@@ -1916,33 +1963,85 @@ function showView(view){
   const h1 = document.getElementById('greeting');
   const sub = h1 ? h1.nextElementSibling : null;
   if (view === 'dashboard'){
-    if (h1) h1.textContent = greetingText;
+    if (h1) h1.textContent = getGreeting();
     if (sub) sub.textContent = 'Take control of your day.';
   } else if (pageMeta[view]){
     if (h1) h1.textContent = pageMeta[view].title;
     if (sub) sub.textContent = pageMeta[view].sub;
   }
 
+  if (view === 'dashboard') { renderTodos(); renderHabitQuickList(); renderEvents(); renderNotes(); renderBars(); }
   if (view === 'notes') { showNotesMainView(); renderProjects(); renderNotes(); }
-  if (view === 'habits') renderHabitGrid();
-  if (view === 'calendar') renderMiniCalendar();
+  if (view === 'habits') { renderHabitGrid(); }
+  if (view === 'timer') { updateTimerDisplay(); }
+  if (view === 'todo') { renderTodos(); }
+  if (view === 'goals') { renderRoadmaps(); }
+  if (view === 'calendar') { renderMiniCalendar(); renderEvents(); }
 }
-document.querySelectorAll('.nav-item[data-view]').forEach(item => {
-  item.addEventListener('click', () => showView(item.dataset.view));
-});
-const ctaBtn = document.getElementById('ctaBtn');
-if (ctaBtn) ctaBtn.addEventListener('click', () => {
-  showView('goals');
-});
 
-/* ---------------- Init ---------------- */
-renderTodos();
-renderHabitGrid();
-renderRoadmaps();
-renderEvents();
-renderProjects();
-renderNotes();
-renderBars();
-renderMiniCalendar();
-updateTimerDisplay();
+/* ---------------- Real-time Search Filter ---------------- */
+function filterBySearch(q) {
+  if (!q) {
+    renderNotes();
+    renderTodos();
+    renderEvents();
+    return;
+  }
+  document.querySelectorAll('.rich-note-card, .note-card').forEach(card => {
+    const text = card.textContent.toLowerCase();
+    card.style.display = text.includes(q) ? '' : 'none';
+  });
+  document.querySelectorAll('.todo-row').forEach(row => {
+    const text = row.textContent.toLowerCase();
+    row.style.display = text.includes(q) ? '' : 'none';
+  });
+  document.querySelectorAll('.event-row').forEach(row => {
+    const text = row.textContent.toLowerCase();
+    row.style.display = text.includes(q) ? '' : 'none';
+  });
+}
+
+/* ---------------- Global Modal Controls ---------------- */
+window.openNoteModal = function() {
+  const modal = document.getElementById('noteModal');
+  if (modal) modal.style.display = 'flex';
+};
+window.closeNoteModal = function() {
+  const modal = document.getElementById('noteModal');
+  if (modal) modal.style.display = 'none';
+};
+
+/* ---------------- Init & Event Binding ---------------- */
+function initApp() {
+  document.querySelectorAll('.nav-item[data-view]').forEach(item => {
+    item.addEventListener('click', () => showView(item.dataset.view));
+  });
+  const ctaBtn = document.getElementById('ctaBtn');
+  if (ctaBtn) ctaBtn.addEventListener('click', () => showView('goals'));
+
+  const searchInput = document.querySelector('.search-wrap input');
+  if (searchInput) {
+    searchInput.addEventListener('input', (e) => {
+      filterBySearch(e.target.value.toLowerCase().trim());
+    });
+  }
+
+  bindTrackerToolbar();
+
+  renderTodos();
+  renderHabitGrid();
+  renderRoadmaps();
+  renderEvents();
+  renderProjects();
+  renderNotes();
+  renderBars();
+  renderMiniCalendar();
+  updateTimerDisplay();
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initApp);
+} else {
+  initApp();
+}
 
