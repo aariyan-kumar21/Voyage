@@ -1,676 +1,814 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Voyage — Personal Productivity</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="styles.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Voyage — Personal Productivity</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400;1,600&family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400;1,500&family=JetBrains+Mono:wght@400;500;600&display=swap"
+    rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
 </head>
+
 <body>
 
-<!-- AUTH OVERLAY -->
-<div id="auth-overlay">
-  <div class="auth-bg-orbs">
-    <div class="auth-orb auth-orb-1"></div>
-    <div class="auth-orb auth-orb-2"></div>
-    <div class="auth-orb auth-orb-3"></div>
-  </div>
-  <div class="auth-card">
-    <div class="auth-brand">
-      <div class="auth-brand-mark">
-        <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M12 2l6 4M12 2L6 6"/><circle cx="12" cy="15" r="5"/></svg>
-      </div>
-      <div class="auth-brand-name">Voyage</div>
+  <!-- AUTH OVERLAY -->
+  <div id="auth-overlay">
+    <div class="auth-bg-orbs">
+      <div class="auth-orb auth-orb-1"></div>
+      <div class="auth-orb auth-orb-2"></div>
+      <div class="auth-orb auth-orb-3"></div>
     </div>
-    <p class="auth-tagline">Your personal productivity companion.</p>
-
-    <!-- Tab switcher -->
-    <div class="auth-tabs">
-      <button type="button" class="auth-tab active" id="tab-login" onclick="switchAuthTab('login')">Log In</button>
-      <button type="button" class="auth-tab" id="tab-signup" onclick="switchAuthTab('signup')">Sign Up</button>
-    </div>
-
-    <!-- Login form -->
-    <form class="auth-form active" id="form-login" onsubmit="return false;">
-      <div class="auth-field">
-        <label>Email</label>
-        <input type="email" id="login-email" placeholder="you@example.com" autocomplete="email" required>
-      </div>
-      <div class="auth-field">
-        <label>Password</label>
-        <div class="auth-password-wrap">
-          <input type="password" id="login-password" placeholder="••••••••" autocomplete="current-password" required>
-          <button type="button" class="auth-eye-btn" onclick="togglePassword('login-password', this)" tabindex="-1" aria-label="Show password">
-            <svg class="eye-show" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-            <svg class="eye-hide" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:none"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
-          </button>
+    <div class="auth-card">
+      <div class="auth-brand">
+        <div class="auth-brand-mark">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"
+            stroke-linejoin="round">
+            <path d="M12 2v20M12 2l6 4M12 2L6 6" />
+            <circle cx="12" cy="15" r="5" />
+          </svg>
         </div>
+        <div class="auth-brand-name">Voyage</div>
       </div>
-      <div class="auth-error" id="login-error"></div>
-      <button class="auth-submit" id="login-btn" onclick="handleLogin()">
-        <span class="auth-btn-text">Log In</span>
-        <span class="auth-spinner" style="display:none;"></span>
-      </button>
-    </form>
+      <p class="auth-tagline">Your personal productivity companion.</p>
 
-    <!-- Signup form -->
-    <form class="auth-form" id="form-signup" onsubmit="return false;">
-      <div class="auth-field">
-        <label>Your Name</label>
-        <input type="text" id="signup-name" placeholder="Aariyan" autocomplete="name" required>
+      <!-- Tab switcher -->
+      <div class="auth-tabs">
+        <button type="button" class="auth-tab active" id="tab-login" onclick="switchAuthTab('login')">Log In</button>
+        <button type="button" class="auth-tab" id="tab-signup" onclick="switchAuthTab('signup')">Sign Up</button>
       </div>
-      <div class="auth-field">
-        <label>Email</label>
-        <input type="email" id="signup-email" placeholder="you@example.com" autocomplete="email" required>
-      </div>
-      <div class="auth-field">
-        <label>Password <span style="color:var(--text-3);font-size:11px;">(min 6 characters)</span></label>
-        <div class="auth-password-wrap">
-          <input type="password" id="signup-password" placeholder="••••••••" autocomplete="new-password" required>
-          <button type="button" class="auth-eye-btn" onclick="togglePassword('signup-password', this)" tabindex="-1" aria-label="Show password">
-            <svg class="eye-show" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-            <svg class="eye-hide" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:none"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
-          </button>
+
+      <form class="auth-form active" id="form-login" onsubmit="return false;">
+        <div class="auth-field">
+          <label>Email</label>
+          <input type="email" id="login-email" placeholder="you@example.com" autocomplete="email" required>
         </div>
-      </div>
-      <div class="auth-error" id="signup-error"></div>
-      <button class="auth-submit" id="signup-btn" onclick="handleSignup()">
-        <span class="auth-btn-text">Create Account</span>
-        <span class="auth-spinner" style="display:none;"></span>
-      </button>
-    </form>
-
-    <p class="auth-footer-note" id="auth-switch-note">
-      Don't have an account? <a href="#" onclick="switchAuthTab('signup');return false;">Sign Up</a>
-    </p>
-  </div>
-</div>
-
-<div class="app">
-
-  <!-- SIDEBAR -->
-  <aside class="sidebar">
-    <div class="brand">
-      <div class="brand-mark">
-        <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M12 2l6 4M12 2L6 6"/><circle cx="12" cy="15" r="5"/></svg>
-      </div>
-      <div class="brand-name grad-text">Voyage</div>
-    </div>
-
-    <nav class="nav">
-      <a class="nav-item active" data-view="dashboard">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>
-        <span>Dashboard</span>
-      </a>
-      <a class="nav-item" data-view="notes">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h13l3 3v13H4z"/><path d="M8 9h9M8 13h9M8 17h5"/></svg>
-        <span>Notes</span>
-      </a>
-      <a class="nav-item" data-view="habits">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 17 9 11 13 15 21 6"/><polyline points="15 6 21 6 21 12"/></svg>
-        <span>Habit Tracker</span>
-      </a>
-      <a class="nav-item" data-view="timer">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l3 2M9 2h6"/></svg>
-        <span>Timer</span>
-      </a>
-      <a class="nav-item" data-view="todo">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
-        <span>To&#8209;Do</span>
-        <span class="badge" id="todoBadge">0</span>
-      </a>
-      <a class="nav-item" data-view="goals">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/></svg>
-        <span>Goals</span>
-      </a>
-      <a class="nav-item" data-view="calendar">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
-        <span>Calendar</span>
-      </a>
-    </nav>
-
-    <div class="sidebar-footer">
-      <div class="account-item">
-        <div class="avatar" id="avatarInitial">V</div>
-        <div class="account-text">
-          <div class="account-name" id="sidebarUserName">Welcome back</div>
-          <button class="logout-btn-sub" id="logoutBtn" title="Log out">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
-            <span>Logout</span>
-          </button>
-        </div>
-      </div>
-    </div>
-  </aside>
-
-  <!-- MAIN -->
-  <main class="main">
-
-    <div class="topbar">
-      <div class="search-wrap">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
-        <input type="text" placeholder="Search notes, tasks, goals...">
-      </div>
-
-      <div class="topbar-right">
-        <div class="streak-pill">
-          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2c1 3-2 4-2 7a3 3 0 006 0c1 2 1 4 0 6a7 7 0 11-9-9c1-1 2-2 5-4z"/></svg>
-          <span class="num" id="streakCount">0</span>
-          <span class="lbl">day streak</span>
-        </div>
-      </div>
-    </div>
-
-    <div class="page-head">
-      <div>
-        <h1 id="greeting">Good evening, Voyager</h1>
-        <p>Take control of your day.</p>
-      </div>
-      <div class="date-badge">
-        <span class="date-text" id="todayDate">-</span>
-        <div class="today-chip">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
-          Today
-        </div>
-      </div>
-    </div>
-
-    <div class="view active" id="view-dashboard">
-    <div class="grid">
-
-      <!-- TODO -->
-      <section class="card col-6">
-        <div class="card-head">
-          <div class="card-icon" style="background:var(--green-soft);color:var(--green);">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+        <div class="auth-field">
+          <label>Password</label>
+          <div class="auth-password-wrap">
+            <input type="password" id="login-password" placeholder="••••••••" autocomplete="current-password" required>
+            <button type="button" class="auth-eye-btn" onclick="togglePassword('login-password', this)" tabindex="-1"
+              aria-label="Show password">
+              <svg class="eye-show" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                <circle cx="12" cy="12" r="3" />
+              </svg>
+              <svg class="eye-hide" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                style="display:none">
+                <path
+                  d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
+                <line x1="1" y1="1" x2="23" y2="23" />
+              </svg>
+            </button>
           </div>
-          <span class="card-title">Today's To-Do</span>
-          <button class="clear-btn" id="todoClearBtn">Clear all</button>
         </div>
-        <div class="todo-body">
-          <div class="todo-list js-todo-list" id="todoList"></div>
-          <div class="ring-wrap">
-            <svg width="120" height="120" viewBox="0 0 120 120">
-              <circle cx="60" cy="60" r="50" fill="none" stroke="var(--surface-2)" stroke-width="10"/>
-              <circle id="todoRing" cx="60" cy="60" r="50" fill="none" stroke="url(#ringGrad)" stroke-width="10" stroke-linecap="round" stroke-dasharray="314" stroke-dashoffset="314"/>
-              <defs>
-                <linearGradient id="ringGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                  <stop offset="0%" stop-color="var(--violet)"/>
-                  <stop offset="100%" stop-color="var(--blue)"/>
-                </linearGradient>
-              </defs>
+        <div class="auth-error" id="login-error"></div>
+        <button class="auth-submit" id="login-btn" onclick="handleLogin()">
+          <span class="auth-btn-text">Log In</span>
+          <span class="auth-spinner" style="display:none;"></span>
+        </button>
+      </form>
+
+      <!-- Signup form -->
+      <form class="auth-form" id="form-signup" onsubmit="return false;">
+        <div class="auth-field">
+          <label>Your Name</label>
+          <input type="text" id="signup-name" placeholder="Aariyan" autocomplete="name" required>
+        </div>
+        <div class="auth-field">
+          <label>Email</label>
+          <input type="email" id="signup-email" placeholder="you@example.com" autocomplete="email" required>
+        </div>
+        <div class="auth-field">
+          <label>Password <span style="color:var(--text-3);font-size:11px;">(min 6 characters)</span></label>
+          <div class="auth-password-wrap">
+            <input type="password" id="signup-password" placeholder="••••••••" autocomplete="new-password" required>
+            <button type="button" class="auth-eye-btn" onclick="togglePassword('signup-password', this)" tabindex="-1"
+              aria-label="Show password">
+              <svg class="eye-show" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                <circle cx="12" cy="12" r="3" />
+              </svg>
+              <svg class="eye-hide" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                style="display:none">
+                <path
+                  d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
+                <line x1="1" y1="1" x2="23" y2="23" />
+              </svg>
+            </button>
+          </div>
+        </div>
+        <div class="auth-error" id="signup-error"></div>
+        <button class="auth-submit" id="signup-btn" onclick="handleSignup()">
+          <span class="auth-btn-text">Create Account</span>
+          <span class="auth-spinner" style="display:none;"></span>
+        </button>
+      </form>
+
+      <p class="auth-footer-note" id="auth-switch-note">
+        Don't have an account? <a href="#" onclick="switchAuthTab('signup');return false;">Sign Up</a>
+      </p>
+    </div>
+  </div>
+
+  <div class="app">
+
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-mark">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"
+            stroke-linejoin="round">
+            <path d="M12 2v20M12 2l6 4M12 2L6 6" />
+            <circle cx="12" cy="15" r="5" />
+          </svg>
+        </div>
+        <div class="brand-name grad-text">Voyage</div>
+      </div>
+
+      <nav class="nav">
+        <a class="nav-item active" data-view="dashboard">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+            stroke-linejoin="round">
+            <rect x="3" y="3" width="7" height="9" rx="1.5" />
+            <rect x="14" y="3" width="7" height="5" rx="1.5" />
+            <rect x="14" y="12" width="7" height="9" rx="1.5" />
+            <rect x="3" y="16" width="7" height="5" rx="1.5" />
+          </svg>
+          <span>Dashboard</span>
+        </a>
+        <a class="nav-item" data-view="notes">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+            stroke-linejoin="round">
+            <path d="M4 4h13l3 3v13H4z" />
+            <path d="M8 9h9M8 13h9M8 17h5" />
+          </svg>
+          <span>Notes</span>
+        </a>
+        <a class="nav-item" data-view="habits">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+            stroke-linejoin="round">
+            <polyline points="3 17 9 11 13 15 21 6" />
+            <polyline points="15 6 21 6 21 12" />
+          </svg>
+          <span>Habit Tracker</span>
+        </a>
+        <a class="nav-item" data-view="timer">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+            stroke-linejoin="round">
+            <circle cx="12" cy="13" r="8" />
+            <path d="M12 9v4l3 2M9 2h6" />
+          </svg>
+          <span>Timer</span>
+        </a>
+        <a class="nav-item" data-view="todo">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+            stroke-linejoin="round">
+            <path d="M9 11l3 3L22 4" />
+            <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
+          </svg>
+          <span>To&#8209;Do</span>
+          <span class="badge" id="todoBadge">0</span>
+        </a>
+        <a class="nav-item" data-view="goals">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+            stroke-linejoin="round">
+            <circle cx="12" cy="12" r="9" />
+            <circle cx="12" cy="12" r="5" />
+            <circle cx="12" cy="12" r="1" />
+          </svg>
+          <span>Roadmap</span>
+        </a>
+        <a class="nav-item" data-view="calendar">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+            stroke-linejoin="round">
+            <rect x="3" y="4" width="18" height="17" rx="2" />
+            <path d="M16 2v4M8 2v4M3 10h18" />
+          </svg>
+          <span>Calendar</span>
+        </a>
+      </nav>
+
+      <div class="sidebar-footer">
+        <div class="account-item">
+          <div class="avatar" id="avatarInitial">V</div>
+          <div class="account-text">
+            <div class="account-name" id="sidebarUserName">Welcome back</div>
+            <button class="logout-btn-sub" id="logoutBtn" title="Log out">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                stroke-linejoin="round">
+                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                <polyline points="16 17 21 12 16 7" />
+                <line x1="21" y1="12" x2="9" y2="12" />
+              </svg>
+              <span>Logout</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- MAIN -->
+    <main class="main">
+
+      <div class="topbar">
+        <div class="search-wrap" id="globalSearchWrap">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="11" cy="11" r="7" />
+            <path d="M21 21l-4.3-4.3" />
+          </svg>
+          <input type="text" id="globalSearchInput" placeholder="Search notes, tasks, roadmap..." autocomplete="off">
+          <div class="search-dropdown" id="searchDropdown" style="display:none;"></div>
+        </div>
+
+        <div class="topbar-right">
+          <div class="streak-pill">
+            <svg viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 2c1 3-2 4-2 7a3 3 0 006 0c1 2 1 4 0 6a7 7 0 11-9-9c1-1 2-2 5-4z" />
             </svg>
-            <div class="ring-center">
-              <div class="n grad-text" id="todoDone">0</div>
-              <small id="todoTotalLbl">of 0 tasks</small>
-            </div>
+            <span class="num" id="streakCount">0</span>
+            <span class="lbl">day streak</span>
           </div>
         </div>
-        <div class="todo-add">
-          <input type="text" id="todoInput" placeholder="Add a task...">
-          <button id="todoAddBtn">Add</button>
-        </div>
-      </section>
+      </div>
 
-      <!-- HABIT TRACKER (linked to the Habit Tracker page) -->
-      <section class="card col-6">
-        <div class="card-head">
-          <div class="card-icon" style="background:var(--amber-soft);color:var(--amber);">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 17 9 11 13 15 21 6"/><polyline points="15 6 21 6 21 12"/></svg>
-          </div>
-          <span class="card-title">Habit Tracker</span>
-          <span class="card-more" id="goToHabits" style="cursor:pointer;">&rarr;</span>
+      <div class="page-head">
+        <div>
+          <h1 id="greeting">Good evening, Voyager</h1>
+          <p>Take control of your day.</p>
         </div>
-        <div class="stat-list scroll-list" id="habitQuickList"></div>
-      </section>
+        <div class="date-badge">
+          <span class="date-text" id="todayDate">-</span>
+          <div class="today-chip">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="3" y="4" width="18" height="17" rx="2" />
+              <path d="M16 2v4M8 2v4M3 10h18" />
+            </svg>
+            Today
+          </div>
+        </div>
+      </div>
 
-      <!-- UPCOMING EVENTS (compact) -->
-      <section class="card col-4">
-        <div class="card-head">
-          <div class="card-icon" style="background:var(--blue-soft);color:var(--blue);">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
-          </div>
-          <span class="card-title">Upcoming Events</span>
-          <span class="card-more" id="goToCalendar" style="cursor:pointer;">&rarr;</span>
-        </div>
-        <div id="eventList" class="js-event-list scroll-list" data-compact="true"></div>
-      </section>
+      <div class="view active" id="view-dashboard">
+        <div class="grid">
 
-      <!-- NOTES -->
-      <section class="card col-8">
-        <div class="card-head">
-          <div class="card-icon" style="background:var(--green-soft);color:var(--green);">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h13l3 3v13H4z"/><path d="M8 9h9M8 13h9M8 17h5"/></svg>
-          </div>
-          <span class="card-title">Quick Notes</span>
-          <span class="card-more">&#8942;</span>
-        </div>
-        <div class="notes-glow-wrap">
-          <div id="noteList" class="js-note-list note-deck"></div>
-        </div>
-      </section>
-
-      <!-- WEEKLY PROGRESS (feature card) -->
-      <section class="card feature-card col-8">
-        <div class="browser-chrome">
-          <span class="dot" style="background:#ff5f57;"></span>
-          <span class="dot" style="background:#febc2e;"></span>
-          <span class="dot" style="background:#28c840;"></span>
-          <span class="url">voyage.app/dashboard</span>
-        </div>
-        <div class="card-head">
-          <div class="card-icon" style="background:rgba(255,255,255,0.06);color:var(--text-1);">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="M7 15l4-5 3 3 5-7"/></svg>
-          </div>
-          <span class="card-title">Weekly Progress</span>
-        </div>
-        <div class="metric-pair">
-          <div class="metric">
-            <div class="bar" style="background:var(--amber);"></div>
-            <div>
-              <div class="val grad-text" id="metricTasks">0<span class="u">tasks</span></div>
-              <div class="cap">Completed this week</div>
-            </div>
-          </div>
-          <div class="metric">
-            <div class="bar" style="background:var(--blue);"></div>
-            <div>
-              <div class="val grad-text" id="metricHabits">0<span class="u">habits</span></div>
-              <div class="cap">Checked off this week</div>
-            </div>
-          </div>
-        </div>
-        <div class="bars" id="barsChart"></div>
-      </section>
-
-      <!-- GOALS -->
-      <section class="card col-4">
-        <div class="card-head">
-          <div class="card-icon" style="background:var(--violet-soft);color:var(--violet);">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/></svg>
-          </div>
-          <span class="card-title">Goals</span>
-          <span class="card-more">&#8942;</span>
-        </div>
-        <div id="goalList" class="js-goal-list"></div>
-        <div class="add-inline">
-          <input type="text" id="goalInput" placeholder="New goal...">
-          <button id="goalAddBtn">Add</button>
-        </div>
-      </section>
-
-    </div>
-    </div>
-    <!-- /view-dashboard -->
-
-    <!-- NOTES PAGE -->
-    <div class="view" id="view-notes">
-      <div class="notes-page-container">
-        
-        <!-- SECTION 1: MY PROJECTS (Folder Cards) -->
-        <div class="notes-section" id="notesMainView">
-          <div class="notes-section-head">
-            <div class="section-title-wrap">
-              <div class="card-icon" style="background:var(--violet-soft);color:var(--violet);">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
-              </div>
-              <h2>My projects</h2>
-            </div>
-            <button class="notes-head-action-btn" id="openProjectModalBtn">+ New Project</button>
-          </div>
-          <div class="projects-grid" id="projectGrid"></div>
-        </div>
-
-        <!-- SECTION 2: MY NOTES (Rich Note Cards) -->
-        <div class="notes-section" id="notesAllSection" style="margin-top:36px;">
-          <div class="notes-section-head">
-            <div class="section-title-wrap">
+          <!-- TODO -->
+          <section class="card col-6">
+            <div class="card-head">
               <div class="card-icon" style="background:var(--green-soft);color:var(--green);">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M9 11l3 3L22 4" />
+                  <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
+                </svg>
               </div>
-              <h2>Notes</h2>
+              <span class="card-title">Today's To-Do</span>
+              <button class="clear-btn" id="todoClearBtn">Clear all</button>
             </div>
-            <button class="notes-head-action-btn" id="openNoteModalBtn">+ New Note</button>
-          </div>
-          <div class="notes-grid" id="pageNoteList"></div>
-        </div>
+            <div class="todo-body">
+              <div class="todo-list js-todo-list" id="todoList"></div>
+              <div class="ring-wrap">
+                <svg width="120" height="120" viewBox="0 0 120 120">
+                  <circle cx="60" cy="60" r="50" fill="none" stroke="var(--surface-raised)" stroke-width="10" />
+                  <circle id="todoRing" cx="60" cy="60" r="50" fill="none" stroke="var(--brass)" stroke-width="10"
+                    stroke-linecap="round" stroke-dasharray="314" stroke-dashoffset="314" />
+                </svg>
+                <div class="ring-center">
+                  <div class="n grad-text" id="todoDone">0</div>
+                  <small id="todoTotalLbl">of 0 tasks</small>
+                </div>
+              </div>
+            </div>
+            <div class="todo-add">
+              <input type="text" id="todoInput" placeholder="Add a task...">
+              <button id="todoAddBtn">Add</button>
+            </div>
+          </section>
 
-        <!-- SECTION 3: PROJECT FOLDER VIEW (when user opens a folder) -->
-        <div class="notes-section" id="notesFolderView" style="display:none;">
-          <div class="notes-section-head">
-            <div class="section-title-wrap">
-              <button class="notes-back-btn" id="notesFolderBackBtn" title="Back to all notes">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>
+          <!-- HABIT TRACKER (linked to the Habit Tracker page) -->
+          <section class="card col-6">
+            <div class="card-head">
+              <div class="card-icon" style="background:var(--amber-soft);color:var(--amber);">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                  stroke-linejoin="round">
+                  <polyline points="3 17 9 11 13 15 21 6" />
+                  <polyline points="15 6 21 6 21 12" />
+                </svg>
+              </div>
+              <span class="card-title">Habit Tracker</span>
+              <span class="card-more" id="goToHabits" style="cursor:pointer;">&rarr;</span>
+            </div>
+            <div class="stat-list scroll-list" id="habitQuickList"></div>
+          </section>
+
+          <!-- UPCOMING EVENTS (compact) -->
+          <section class="card col-4">
+            <div class="card-head">
+              <div class="card-icon" style="background:var(--blue-soft);color:var(--blue);">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect x="3" y="4" width="18" height="17" rx="2" />
+                  <path d="M16 2v4M8 2v4M3 10h18" />
+                </svg>
+              </div>
+              <span class="card-title">Upcoming Events</span>
+              <span class="card-more" id="goToCalendar" style="cursor:pointer;">&rarr;</span>
+            </div>
+            <div id="eventList" class="js-event-list scroll-list" data-compact="true"></div>
+          </section>
+
+          <!-- NOTES -->
+          <section class="card col-8">
+            <div class="card-head">
+              <div class="card-icon" style="background:var(--green-soft);color:var(--green);">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M4 4h13l3 3v13H4z" />
+                  <path d="M8 9h9M8 13h9M8 17h5" />
+                </svg>
+              </div>
+              <span class="card-title">Quick Notes</span>
+              <span class="card-more">&#8942;</span>
+            </div>
+            <div class="notes-glow-wrap">
+              <div id="noteList" class="js-note-list note-deck"></div>
+            </div>
+          </section>
+
+          <!-- WEEKLY PROGRESS (feature card) -->
+          <section class="card feature-card col-8">
+            <div class="browser-chrome">
+              <span class="dot" style="background:#ff5f57;"></span>
+              <span class="dot" style="background:#febc2e;"></span>
+              <span class="dot" style="background:#28c840;"></span>
+              <span class="url">voyage.app/dashboard</span>
+            </div>
+            <div class="card-head">
+              <div class="card-icon" style="background:rgba(255,255,255,0.06);color:var(--text-1);">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M3 3v18h18" />
+                  <path d="M7 15l4-5 3 3 5-7" />
+                </svg>
+              </div>
+              <span class="card-title">Weekly Progress</span>
+            </div>
+            <div class="metric-pair">
+              <div class="metric">
+                <div class="bar" style="background:var(--amber);"></div>
+                <div>
+                  <div class="val grad-text" id="metricTasks">0<span class="u">tasks</span></div>
+                  <div class="cap">Completed this week</div>
+                </div>
+              </div>
+              <div class="metric">
+                <div class="bar" style="background:var(--blue);"></div>
+                <div>
+                  <div class="val grad-text" id="metricHabits">0<span class="u">habits</span></div>
+                  <div class="cap">Checked off this week</div>
+                </div>
+              </div>
+            </div>
+            <div class="bars" id="barsChart"></div>
+          </section>
+
+          <!-- GOALS -->
+          <section class="card col-4">
+            <div class="card-head">
+              <div class="card-icon" style="background:var(--violet-soft);color:var(--violet);">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="12" cy="12" r="9" />
+                  <circle cx="12" cy="12" r="5" />
+                  <circle cx="12" cy="12" r="1" />
+                </svg>
+              </div>
+              <span class="card-title">Goals</span>
+              <span class="card-more">&#8942;</span>
+            </div>
+            <div id="goalList" class="js-goal-list"></div>
+            <div class="add-inline">
+              <input type="text" id="goalInput" placeholder="New goal...">
+              <button id="goalAddBtn">Add</button>
+            </div>
+          </section>
+
+        </div>
+      </div>
+      <!-- /view-dashboard -->
+
+      <!-- NOTES PAGE -->
+      <div class="view" id="view-notes">
+        <div class="notes-page-container">
+
+          <!-- SECTION 1: MY PROJECTS (Folder Cards) -->
+          <div class="notes-section" id="notesMainView">
+            <div class="notes-section-head">
+              <div class="section-title-wrap">
+                <div class="card-icon" style="background:var(--violet-soft);color:var(--violet);">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
+                  </svg>
+                </div>
+                <h2>My projects</h2>
+              </div>
+              <button class="notes-head-action-btn" id="openProjectModalBtn">+ New Project</button>
+            </div>
+            <div class="projects-grid" id="projectGrid"></div>
+          </div>
+
+          <!-- SECTION 2: MY NOTES (Rich Note Cards) -->
+          <div class="notes-section" id="notesAllSection" style="margin-top:36px;">
+            <div class="notes-section-head">
+              <div class="section-title-wrap">
+                <div class="card-icon" style="background:var(--green-soft);color:var(--green);">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                    <polyline points="14 2 14 8 20 8" />
+                  </svg>
+                </div>
+                <h2>Notes</h2>
+              </div>
+            </div>
+            <div class="notes-grid" id="pageNoteList"></div>
+          </div>
+
+          <!-- SECTION 3: PROJECT FOLDER VIEW (when user opens a folder) -->
+          <div class="notes-section" id="notesFolderView" style="display:none;">
+            <div class="notes-section-head">
+              <div class="section-title-wrap">
+                <button class="notes-back-btn" id="notesFolderBackBtn" title="Back to all notes">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                    <path d="M19 12H5" />
+                    <path d="M12 19l-7-7 7-7" />
+                  </svg>
+                  Back
+                </button>
+                <div class="card-icon" style="background:var(--violet-soft);color:var(--violet);">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
+                  </svg>
+                </div>
+                <h2 id="folderViewTitle">Project Notes</h2>
+              </div>
+            </div>
+            <div class="notes-grid" id="folderNoteList"></div>
+          </div>
+
+          <!-- SECTION 4: NOTION-STYLE DOCUMENT CANVAS EDITOR VIEW -->
+          <div class="notes-section" id="notionEditorView" style="display:none;">
+            <div class="notion-editor-topbar">
+              <button class="notes-back-btn" id="notionEditorBackBtn" title="Back">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                  <path d="M19 12H5" />
+                  <path d="M12 19l-7-7 7-7" />
+                </svg>
                 Back
               </button>
-              <div class="card-icon" style="background:var(--violet-soft);color:var(--violet);">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+              <div class="notion-editor-actions" style="margin-left:auto;">
+                <span class="notion-save-badge" id="notionSaveBadge">Saved</span>
+                <button class="card-opts-btn" id="notionEditorOptsBtn" title="Page Options">
+                  <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+                    <circle cx="12" cy="5" r="2" />
+                    <circle cx="12" cy="12" r="2" />
+                    <circle cx="12" cy="19" r="2" />
+                  </svg>
+                </button>
               </div>
-              <h2 id="folderViewTitle">Project Notes</h2>
             </div>
-            <button class="notes-head-action-btn" id="openNoteInFolderBtn">+ New Note</button>
-          </div>
-          <div class="notes-grid" id="folderNoteList"></div>
-        </div>
 
-        <!-- SECTION 4: NOTION-STYLE DOCUMENT CANVAS EDITOR VIEW -->
-        <div class="notes-section" id="notionEditorView" style="display:none;">
-          <div class="notion-editor-topbar">
-            <button class="notes-back-btn" id="notionEditorBackBtn" title="Back">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>
-              Back
-            </button>
-            <div class="notion-editor-crumbs" id="notionEditorCrumbs">
-              <span class="crumb">Notes</span>
+            <div class="notion-editor-wrapper">
+              <div class="notion-page-icon-wrap">
+                <button class="notion-icon-btn" id="notionPageIconBtn" title="Change icon">📝</button>
+              </div>
+
+              <!-- Page Title Input matching Notion reference photo -->
+              <input type="text" class="notion-title-input" id="notionPageTitleInput" placeholder="New page"
+                autocomplete="off">
+
+              <!-- Body Editor Canvas matching Notion reference photo -->
+              <div class="notion-editor-canvas" id="notionEditorCanvas" contenteditable="true"
+                data-placeholder="Press 'space' for AI or '/' for commands..."></div>
+
+              <!-- Slash Command Menu Dropdown -->
+              <div class="notion-slash-menu" id="notionSlashMenu" style="display:none;">
+                <div class="slash-menu-head">BASIC BLOCKS</div>
+                <button type="button" class="slash-item" data-cmd="h1"><span class="slash-icon">H1</span> Heading
+                  1</button>
+                <button type="button" class="slash-item" data-cmd="h2"><span class="slash-icon">H2</span> Heading
+                  2</button>
+                <button type="button" class="slash-item" data-cmd="bullet"><span class="slash-icon">•</span> Bulleted
+                  List</button>
+                <button type="button" class="slash-item" data-cmd="todo"><span class="slash-icon">☑</span> To-Do
+                  Checklist</button>
+                <button type="button" class="slash-item" data-cmd="quote"><span class="slash-icon">"</span>
+                  Quote</button>
+                <button type="button" class="slash-item" data-cmd="code"><span class="slash-icon">&lt;/&gt;</span> Code
+                  Block</button>
+                <button type="button" class="slash-item" data-cmd="callout"><span class="slash-icon">💡</span> Callout
+                  Box</button>
+              </div>
+
             </div>
-            <div class="notion-editor-actions">
-              <span class="notion-save-badge" id="notionSaveBadge">Saved</span>
-              <button class="card-opts-btn" id="notionEditorOptsBtn" title="Page Options">
-                <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- HABIT TRACKER PAGE -->
+      <div class="view" id="view-habits">
+        <div class="grid">
+          <section class="card col-12">
+            <div class="tracker-toolbar">
+              <div>
+                <input type="text" id="trackerTitle" class="tracker-title-input" value="">
+                <div style="font-size:11.5px;color:var(--text-3);margin-top:2px;">Monthly habit grid - tap a cell
+                  to check it off, click habit names to rename</div>
+              </div>
+              <input type="text" id="trackerTagline" class="tracker-tagline-input" value="">
+            </div>
+            <div class="tracker-scroll">
+              <table class="tracker-table js-tracker-table" id="trackerTable"></table>
+            </div>
+            <div class="tracker-add-row">
+              <input type="text" id="trackerHabitInput" placeholder="Add a habit row...">
+              <button id="trackerHabitAddBtn">Add habit</button>
+            </div>
+          </section>
+
+          <section class="card col-12">
+            <div class="card-head">
+              <div class="card-icon" style="background:var(--amber-soft);color:var(--amber);">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M3 3v18h18" />
+                  <path d="M7 15l4-5 3 3 5-7" />
+                </svg>
+              </div>
+              <span class="card-title">Monthly Progress</span>
+            </div>
+            <div class="progress-scroll">
+              <div id="progressGraph"></div>
+            </div>
+          </section>
+        </div>
+      </div>
+
+      <!-- TIMER PAGE -->
+      <div class="view" id="view-timer">
+        <div class="grid">
+          <section class="card col-12"
+            style="display:flex; flex-direction:column; align-items:center; padding:36px 20px;">
+            <div class="card-head" style="align-self:flex-start; margin-bottom:22px;">
+              <div class="card-icon" style="background:var(--blue-soft);color:var(--blue);">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="12" cy="13" r="8" />
+                  <path d="M12 9v4l3 2M9 2h6" />
+                </svg>
+              </div>
+              <span class="card-title">Focus Timer</span>
+              <div class="toggle-pill" style="margin-left:auto;">
+                <button class="active" id="modeTimerBtn">Timer</button>
+                <button id="modePomodoroBtn">Pomodoro</button>
+              </div>
+            </div>
+
+            <div class="flip-clock" id="flipClock">
+              <div class="flip-label" id="flipPhaseLabel">TIMER</div>
+              <div class="flip-row">
+                <div class="flip-group">
+                  <div class="flip-tile" id="tileM1"><span>0</span></div>
+                  <div class="flip-tile" id="tileM2"><span>0</span></div>
+                </div>
+                <div class="flip-colon">:</div>
+                <div class="flip-group">
+                  <div class="flip-tile" id="tileS1"><span>0</span></div>
+                  <div class="flip-tile" id="tileS2"><span>0</span></div>
+                </div>
+              </div>
+            </div>
+
+            <div style="font-size:12.5px;color:var(--text-3);margin:20px 0 4px 0;" id="timerState">Ready to start</div>
+            <div class="timer-controls">
+              <button class="primary" id="timerStart">Start</button>
+              <button id="timerReset">Reset</button>
+            </div>
+          </section>
+        </div>
+      </div>
+
+      <!-- TODO PAGE -->
+      <div class="view" id="view-todo">
+        <div class="grid">
+          <section class="card col-12">
+            <div class="card-head">
+              <div class="card-icon" style="background:var(--green-soft);color:var(--green);">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M9 11l3 3L22 4" />
+                  <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
+                </svg>
+              </div>
+              <span class="card-title">Tasks</span>
+              <button class="clear-btn" id="pageTodoClearBtn">Clear all</button>
+            </div>
+
+            <div class="day-nav">
+              <button id="todoPrevDay" title="Previous day">&larr;</button>
+              <span id="todoDayLabel">Today</span>
+              <button id="todoNextDay" title="Next day">&rarr;</button>
+              <button id="todoTodayBtn">Jump to Today</button>
+            </div>
+
+            <div class="todo-list js-todo-list" id="pageTodoList" style="max-width:560px;"></div>
+            <div class="todo-add" id="pageTodoAddRow" style="max-width:560px;">
+              <input type="text" id="pageTodoInput" placeholder="Add a task...">
+              <button id="pageTodoAddBtn">Add</button>
+            </div>
+            <div class="event-empty" id="pageTodoHistoryNote" style="display:none;max-width:560px;">Viewing a past day -
+              switch back to Today to add new tasks.</div>
+          </section>
+        </div>
+      </div>
+
+      <!-- GOALS PAGE -->
+      <div class="view" id="view-goals">
+        <div class="goals-layout">
+
+          <!-- ROADMAPS AREA -->
+          <section class="card goals-roadmaps-section">
+            <div class="card-head">
+              <div class="card-icon" style="background:var(--violet-soft);color:var(--violet);">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="12" cy="12" r="9" />
+                  <circle cx="12" cy="12" r="5" />
+                  <circle cx="12" cy="12" r="1" />
+                </svg>
+              </div>
+              <span class="card-title">My Roadmaps</span>
+            </div>
+            <div id="roadmapsContainer" class="roadmaps-container">
+              <div class="roadmap-empty-state">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                  <path
+                    d="M9 20H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h3.9a2 2 0 0 1 1.69.9l.81 1.2a2 2 0 0 0 1.67.9H20a2 2 0 0 1 2 2v5" />
+                  <circle cx="13" cy="17" r="3" />
+                  <path d="m16 20 2 2 4-4" />
+                </svg>
+                <p>No roadmaps yet - plan one below.</p>
+              </div>
+            </div>
+          </section>
+
+          <!-- CHAT PANEL -->
+          <section class="card goals-chat-section">
+            <div class="card-head">
+              <div class="card-icon" style="background:var(--blue-soft);color:var(--blue);">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+                </svg>
+              </div>
+              <span class="card-title">Goal Planner <span class="chat-ai-badge">AI</span></span>
+              <button id="goalChatResetBtn" class="chat-reset-btn" title="Start a new conversation">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+                  <path d="M3 3v5h5" />
+                </svg>
+                New conversation
               </button>
             </div>
-          </div>
 
-          <div class="notion-editor-wrapper">
-            <div class="notion-page-icon-wrap">
-              <button class="notion-icon-btn" id="notionPageIconBtn" title="Change icon">📝</button>
-            </div>
-
-            <!-- Page Title Input matching Notion reference photo -->
-            <input type="text" class="notion-title-input" id="notionPageTitleInput" placeholder="New page" autocomplete="off">
-            
-            <!-- Page Metadata Bar -->
-            <div class="notion-page-meta-bar">
-              <div class="meta-item">
-                <span class="meta-label">Project:</span>
-                <select class="meta-select" id="notionPageProjectSelect"></select>
-              </div>
-              <div class="meta-item">
-                <span class="meta-label">Tags:</span>
-                <input type="text" class="meta-input" id="notionPageTagsInput" placeholder="e.g. Ideas, Specs">
+            <div id="goalChatMessages" class="chat-messages">
+              <div class="chat-msg chat-msg-assistant">
+                <div class="chat-bubble">
+                  Hey! I'm your goal planning coach. Tell me about a goal you'd like to work toward &mdash; could be
+                  anything from learning a skill to a fitness goal or a career ambition. What's on your mind?
+                </div>
               </div>
             </div>
 
-            <!-- Body Editor Canvas matching Notion reference photo -->
-            <div class="notion-editor-canvas" id="notionEditorCanvas" contenteditable="true" data-placeholder="Press 'space' for AI or '/' for commands..."></div>
-
-            <!-- Slash Command Menu Dropdown -->
-            <div class="notion-slash-menu" id="notionSlashMenu" style="display:none;">
-              <div class="slash-menu-head">BASIC BLOCKS</div>
-              <button type="button" class="slash-item" data-cmd="h1"><span class="slash-icon">H1</span> Heading 1</button>
-              <button type="button" class="slash-item" data-cmd="h2"><span class="slash-icon">H2</span> Heading 2</button>
-              <button type="button" class="slash-item" data-cmd="bullet"><span class="slash-icon">•</span> Bulleted List</button>
-              <button type="button" class="slash-item" data-cmd="todo"><span class="slash-icon">☑</span> To-Do Checklist</button>
-              <button type="button" class="slash-item" data-cmd="quote"><span class="slash-icon">"</span> Quote</button>
-              <button type="button" class="slash-item" data-cmd="code"><span class="slash-icon">&lt;/&gt;</span> Code Block</button>
-              <button type="button" class="slash-item" data-cmd="callout"><span class="slash-icon">💡</span> Callout Box</button>
+            <div class="chat-thinking" id="goalChatThinking" style="display:none;">
+              <span></span><span></span><span></span>
             </div>
 
-          </div>
-        </div>
-
-      </div>
-    </div>
-
-    <!-- HABIT TRACKER PAGE -->
-    <div class="view" id="view-habits">
-      <div class="grid">
-        <section class="card col-12">
-          <div class="tracker-toolbar">
-            <div>
-              <input type="text" id="trackerTitle" class="tracker-title-input" value="">
-              <div style="font-size:11.5px;color:var(--text-3);margin-top:2px;">Monthly habit grid &middot; tap a cell to check it off, click habit names to rename</div>
+            <div class="chat-input-row">
+              <input type="text" id="goalChatInput" placeholder="Describe your goal or answer a question..."
+                autocomplete="off">
+              <button id="goalChatSendBtn" class="chat-send-btn">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <line x1="22" y1="2" x2="11" y2="13" />
+                  <polygon points="22 2 15 22 11 13 2 9 22 2" />
+                </svg>
+              </button>
             </div>
-            <input type="text" id="trackerTagline" class="tracker-tagline-input" value="">
-          </div>
-          <div class="tracker-scroll">
-            <table class="tracker-table js-tracker-table" id="trackerTable"></table>
-          </div>
-          <div class="tracker-add-row">
-            <input type="text" id="trackerHabitInput" placeholder="Add a habit row...">
-            <button id="trackerHabitAddBtn">Add habit</button>
-          </div>
-        </section>
+          </section>
 
-        <section class="card col-12">
-          <div class="card-head">
-            <div class="card-icon" style="background:var(--amber-soft);color:var(--amber);">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="M7 15l4-5 3 3 5-7"/></svg>
-            </div>
-            <span class="card-title">Monthly Progress</span>
-          </div>
-          <div class="progress-scroll">
-            <div id="progressGraph"></div>
-          </div>
-        </section>
-      </div>
-    </div>
-
-    <!-- TIMER PAGE -->
-    <div class="view" id="view-timer">
-      <div class="grid">
-        <section class="card col-12" style="display:flex; flex-direction:column; align-items:center; padding:36px 20px;">
-          <div class="card-head" style="align-self:flex-start; margin-bottom:22px;">
-            <div class="card-icon" style="background:var(--blue-soft);color:var(--blue);">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l3 2M9 2h6"/></svg>
-            </div>
-            <span class="card-title">Focus Timer</span>
-            <div class="toggle-pill" style="margin-left:auto;">
-              <button class="active" id="modeTimerBtn">Timer</button>
-              <button id="modePomodoroBtn">Pomodoro</button>
-            </div>
-          </div>
-
-          <div class="flip-clock" id="flipClock">
-            <div class="flip-label" id="flipPhaseLabel">TIMER</div>
-            <div class="flip-row">
-              <div class="flip-group">
-                <div class="flip-tile" id="tileM1"><span>0</span></div>
-                <div class="flip-tile" id="tileM2"><span>0</span></div>
-              </div>
-              <div class="flip-colon">:</div>
-              <div class="flip-group">
-                <div class="flip-tile" id="tileS1"><span>0</span></div>
-                <div class="flip-tile" id="tileS2"><span>0</span></div>
-              </div>
-            </div>
-          </div>
-
-          <div style="font-size:12.5px;color:var(--text-3);margin:20px 0 4px 0;" id="timerState">Ready to start</div>
-          <div class="timer-controls">
-            <button class="primary" id="timerStart">Start</button>
-            <button id="timerReset">Reset</button>
-          </div>
-        </section>
-      </div>
-    </div>
-
-    <!-- TODO PAGE -->
-    <div class="view" id="view-todo">
-      <div class="grid">
-        <section class="card col-12">
-          <div class="card-head">
-            <div class="card-icon" style="background:var(--green-soft);color:var(--green);">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
-            </div>
-            <span class="card-title">Tasks</span>
-            <button class="clear-btn" id="pageTodoClearBtn">Clear all</button>
-          </div>
-
-          <div class="day-nav">
-            <button id="todoPrevDay" title="Previous day">&larr;</button>
-            <span id="todoDayLabel">Today</span>
-            <button id="todoNextDay" title="Next day">&rarr;</button>
-            <button id="todoTodayBtn">Jump to Today</button>
-          </div>
-
-          <div class="todo-list js-todo-list" id="pageTodoList" style="max-width:560px;"></div>
-          <div class="todo-add" id="pageTodoAddRow" style="max-width:560px;">
-            <input type="text" id="pageTodoInput" placeholder="Add a task...">
-            <button id="pageTodoAddBtn">Add</button>
-          </div>
-          <div class="event-empty" id="pageTodoHistoryNote" style="display:none;max-width:560px;">Viewing a past day — switch back to Today to add new tasks.</div>
-        </section>
-      </div>
-    </div>
-
-    <!-- GOALS PAGE -->
-    <div class="view" id="view-goals">
-      <div class="goals-layout">
-
-        <!-- ROADMAPS AREA -->
-        <section class="card goals-roadmaps-section">
-          <div class="card-head">
-            <div class="card-icon" style="background:var(--violet-soft);color:var(--violet);">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/></svg>
-            </div>
-            <span class="card-title">My Roadmaps</span>
-          </div>
-          <div id="roadmapsContainer" class="roadmaps-container">
-            <div class="roadmap-empty-state">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 20H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h3.9a2 2 0 0 1 1.69.9l.81 1.2a2 2 0 0 0 1.67.9H20a2 2 0 0 1 2 2v5"/><circle cx="13" cy="17" r="3"/><path d="m16 20 2 2 4-4"/></svg>
-              <p>No roadmaps yet &mdash; plan one below.</p>
-            </div>
-          </div>
-        </section>
-
-        <!-- CHAT PANEL -->
-        <section class="card goals-chat-section">
-          <div class="card-head">
-            <div class="card-icon" style="background:var(--blue-soft);color:var(--blue);">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-            </div>
-            <span class="card-title">Goal Planner <span class="chat-ai-badge">AI</span></span>
-            <button id="goalChatResetBtn" class="chat-reset-btn" title="Start a new conversation">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
-              New conversation
-            </button>
-          </div>
-
-          <div id="goalChatMessages" class="chat-messages">
-            <div class="chat-msg chat-msg-assistant">
-              <div class="chat-bubble">
-                Hey! I'm your goal planning coach. Tell me about a goal you'd like to work toward &mdash; could be anything from learning a skill to a fitness goal or a career ambition. What's on your mind?
-              </div>
-            </div>
-          </div>
-
-          <div class="chat-thinking" id="goalChatThinking" style="display:none;">
-            <span></span><span></span><span></span>
-          </div>
-
-          <div class="chat-input-row">
-            <input type="text" id="goalChatInput" placeholder="Describe your goal or answer a question..." autocomplete="off">
-            <button id="goalChatSendBtn" class="chat-send-btn">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
-            </button>
-          </div>
-        </section>
-
-      </div>
-    </div>
-
-    <!-- CALENDAR PAGE -->
-    <div class="view" id="view-calendar">
-      <div class="grid">
-        <section class="card col-7">
-          <div class="card-head">
-            <div class="card-icon" style="background:var(--blue-soft);color:var(--blue);">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
-            </div>
-            <span class="card-title" id="calMonthLabel">Calendar</span>
-          </div>
-          <div id="miniCalendar"></div>
-        </section>
-        <section class="card col-5">
-          <div class="card-head">
-            <div class="card-icon" style="background:var(--amber-soft);color:var(--amber);">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 8v4l3 3"/><circle cx="12" cy="12" r="9"/></svg>
-            </div>
-            <span class="card-title">Upcoming Events</span>
-          </div>
-          <div id="pageEventList" class="js-event-list" style="display:grid;grid-template-columns:1fr;gap:4px;"></div>
-          <div class="add-inline" style="flex-wrap:wrap;">
-            <input type="text" id="pageEventInput" placeholder="Event name" style="flex:1 1 100%;">
-            <input type="date" id="pageEventDate">
-            <button id="pageEventAddBtn">Add</button>
-          </div>
-        </section>
-      </div>
-    </div>
-
-  </main>
-</div>
-
-<!-- PROJECT CREATION MODAL -->
-<div class="app-modal" id="projectModal" style="display:none;">
-  <div class="app-modal-backdrop" onclick="closeProjectModal()"></div>
-  <div class="app-modal-card">
-    <div class="app-modal-head">
-      <h3>Create New Project</h3>
-      <button class="app-modal-close" onclick="closeProjectModal()">&times;</button>
-    </div>
-    <div class="app-modal-body">
-      <div class="modal-field">
-        <label>Project Title</label>
-        <input type="text" id="projectTitleInput" placeholder="e.g. Design exploration" autocomplete="off">
-      </div>
-      <div class="modal-field">
-        <label>Theme Color</label>
-        <div class="color-picker-row" id="projectColorPicker">
-          <button type="button" class="color-dot active" data-color="#8b6cf7" style="background:#8b6cf7;"></button>
-          <button type="button" class="color-dot" data-color="#34d399" style="background:#34d399;"></button>
-          <button type="button" class="color-dot" data-color="#ff9d3d" style="background:#ff9d3d;"></button>
-          <button type="button" class="color-dot" data-color="#ffcf7d" style="background:#ffcf7d;"></button>
-          <button type="button" class="color-dot" data-color="#ff6b8a" style="background:#ff6b8a;"></button>
-          <button type="button" class="color-dot" data-color="#38bdf8" style="background:#38bdf8;"></button>
         </div>
       </div>
-    </div>
-    <div class="app-modal-foot">
-      <button class="modal-btn-cancel" onclick="closeProjectModal()">Cancel</button>
-      <button class="modal-btn-save" id="saveProjectBtn">Create Project</button>
+
+      <!-- CALENDAR PAGE -->
+      <div class="view" id="view-calendar">
+        <div class="grid">
+          <section class="card col-7">
+            <div class="card-head">
+              <div class="card-icon" style="background:var(--blue-soft);color:var(--blue);">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect x="3" y="4" width="18" height="17" rx="2" />
+                  <path d="M16 2v4M8 2v4M3 10h18" />
+                </svg>
+              </div>
+              <span class="card-title" id="calMonthLabel">Calendar</span>
+            </div>
+            <div id="miniCalendar"></div>
+          </section>
+          <section class="card col-5">
+            <div class="card-head">
+              <div class="card-icon" style="background:var(--amber-soft);color:var(--amber);">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M12 8v4l3 3" />
+                  <circle cx="12" cy="12" r="9" />
+                </svg>
+              </div>
+              <span class="card-title">Upcoming Events</span>
+            </div>
+            <div id="pageEventList" class="js-event-list" style="display:grid;grid-template-columns:1fr;gap:4px;"></div>
+            <div class="add-inline" style="flex-wrap:wrap;">
+              <input type="text" id="pageEventInput" placeholder="Event name" style="flex:1 1 100%;">
+              <input type="date" id="pageEventDate">
+              <button id="pageEventAddBtn">Add</button>
+            </div>
+          </section>
+        </div>
+      </div>
+
+    </main>
+  </div>
+
+  <!-- PROJECT CREATION MODAL -->
+  <div class="app-modal" id="projectModal" style="display:none;">
+    <div class="app-modal-backdrop" onclick="closeProjectModal()"></div>
+    <div class="app-modal-card">
+      <div class="app-modal-head">
+        <h3>Create New Project</h3>
+        <button class="app-modal-close" onclick="closeProjectModal()">&times;</button>
+      </div>
+      <div class="app-modal-body">
+        <div class="modal-field">
+          <label>Project Title</label>
+          <input type="text" id="projectTitleInput" placeholder="e.g. Design exploration" autocomplete="off">
+        </div>
+        <div class="modal-field">
+          <label>Theme Color</label>
+          <div class="color-picker-row" id="projectColorPicker">
+            <button type="button" class="color-dot active" data-color="#462f6e" style="background:#462f6e;"></button>
+            <button type="button" class="color-dot" data-color="#c4c5cf" style="background:#c4c5cf;"></button>
+            <button type="button" class="color-dot" data-color="#1d102f" style="background:#1d102f;"></button>
+            <button type="button" class="color-dot" data-color="#5b3e8f" style="background:#5b3e8f;"></button>
+            <button type="button" class="color-dot" data-color="#4ade80" style="background:#4ade80;"></button>
+            <button type="button" class="color-dot" data-color="#fbbf24" style="background:#fbbf24;"></button>
+          </div>
+        </div>
+      </div>
+      <div class="app-modal-foot">
+        <button class="modal-btn-cancel" onclick="closeProjectModal()">Cancel</button>
+        <button class="modal-btn-save" id="saveProjectBtn">Create Project</button>
+      </div>
     </div>
   </div>
-</div>
 
-<!-- NOTE CREATION MODAL -->
-<div class="app-modal" id="noteModal" style="display:none;">
-  <div class="app-modal-backdrop" onclick="closeNoteModal()"></div>
-  <div class="app-modal-card">
-    <div class="app-modal-head">
-      <h3 id="noteModalHeaderTitle">Create New Note</h3>
-      <button class="app-modal-close" onclick="closeNoteModal()">&times;</button>
-    </div>
-    <div class="app-modal-body">
-      <div class="modal-field">
-        <label>Title</label>
-        <input type="text" id="noteTitleInput" placeholder="e.g. Plans for future and other directions..." autocomplete="off">
+  <!-- NOTE CREATION MODAL -->
+  <div class="app-modal" id="noteModal" style="display:none;">
+    <div class="app-modal-backdrop" onclick="closeNoteModal()"></div>
+    <div class="app-modal-card">
+      <div class="app-modal-head">
+        <h3 id="noteModalHeaderTitle">Create New Note</h3>
+        <button class="app-modal-close" onclick="closeNoteModal()">&times;</button>
       </div>
-      <div class="modal-field">
-        <label>Content / Description</label>
-        <textarea id="noteBodyInput" rows="4" placeholder="Write your note thoughts here..."></textarea>
+      <div class="app-modal-body">
+        <div class="modal-field">
+          <label>Title</label>
+          <input type="text" id="noteTitleInput" placeholder="e.g. Plans for future and other directions..."
+            autocomplete="off">
+        </div>
+        <div class="modal-field">
+          <label>Content / Description</label>
+          <textarea id="noteBodyInput" rows="4" placeholder="Write your note thoughts here..."></textarea>
+        </div>
+        <div class="modal-field">
+          <label>Tags (comma separated)</label>
+          <input type="text" id="noteTagsInput" placeholder="Workshops, Design challenges, Work in progress">
+        </div>
       </div>
-      <div class="modal-field">
-        <label>Tags (comma separated)</label>
-        <input type="text" id="noteTagsInput" placeholder="Workshops, Design challenges, Work in progress">
+      <div class="app-modal-foot">
+        <button class="modal-btn-cancel" onclick="closeNoteModal()">Cancel</button>
+        <button class="modal-btn-save" id="saveNoteBtn">Save Note</button>
       </div>
-    </div>
-    <div class="app-modal-foot">
-      <button class="modal-btn-cancel" onclick="closeNoteModal()">Cancel</button>
-      <button class="modal-btn-save" id="saveNoteBtn">Save Note</button>
     </div>
   </div>
-</div>
 
-<!-- Cloud sync indicator -->
-<div class="sync-indicator" id="syncIndicator">
-  <span class="sync-dot"></span>
-  <span id="syncLabel">Saved</span>
-</div>
+  <!-- Cloud sync indicator -->
+  <div class="sync-indicator" id="syncIndicator">
+    <span class="sync-dot"></span>
+    <span id="syncLabel">Saved</span>
+  </div>
 
-<script src="app.js?v=2"></script>
+  <script src="app.js?v=2"></script>
 </body>
+
 </html>

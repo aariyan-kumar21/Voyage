@@ -1,5 +1,5 @@
 /* ================================================
-   Voyage â€” Personal Productivity
+   Voyage - Personal Productivity
    app.js
    ================================================ */
 
@@ -287,7 +287,7 @@ function showSyncState(state) {
   el.classList.remove('syncing', 'error');
   if (state === 'syncing') {
     el.classList.add('visible', 'syncing');
-    lbl.textContent = 'Syncingâ€¦';
+    lbl.textContent = 'Syncing...';
   } else if (state === 'saved') {
     el.classList.add('visible');
     lbl.textContent = 'Saved';
@@ -321,7 +321,7 @@ function handleLogout() {
 }
 
 /* ============================================================
-   BOOT: check session â†’ load cloud data or show auth
+   BOOT: check session -> load cloud data or show auth
    ============================================================ */
 (async function boot() {
   const session = getSession();
@@ -343,42 +343,42 @@ document.addEventListener('DOMContentLoaded', () => {
 
 /* ---------------- Storage defaults (reference design sample data if clean) ---------------- */
 const DEFAULT_PROJECTS = [
-  { id: 'p1', title: 'Workshop planning and ideas', color: '#8b6cf7', date: '27th April, 2026' },
-  { id: 'p2', title: 'Design exploration', color: '#34d399', date: '27th April, 2026' },
-  { id: 'p3', title: "Users' feedback", color: '#ff9d3d', date: '27th April, 2026' },
-  { id: 'p4', title: 'Plans for future & ideas', color: '#ffcf7d', date: '27th April, 2026' },
-  { id: 'p5', title: 'Testing results', color: '#ff6b8a', date: '27th April, 2026' },
-  { id: 'p6', title: 'Design system strategy', color: '#38bdf8', date: '27th April, 2026' }
+  { id: 'p1', title: 'Workshop planning & ideas', color: '#462F6E', date: '27th April, 2026' },
+  { id: 'p2', title: 'Design exploration & aesthetics', color: '#C4C5CF', date: '27th April, 2026' },
+  { id: 'p3', title: "User feedback & insights", color: '#4ade80', date: '27th April, 2026' },
+  { id: 'p4', title: 'Plans for future roadmap', color: '#462F6E', date: '27th April, 2026' },
+  { id: 'p5', title: 'Testing & benchmark results', color: '#fbbf24', date: '27th April, 2026' },
+  { id: 'p6', title: 'Design system architecture', color: '#C4C5CF', date: '27th April, 2026' }
 ];
 
 const DEFAULT_NOTES = [
   {
     id: 'n1',
-    title: 'Plans for future and other directions, what needs to be done',
-    body: 'A Design Direction unifies everyone and adds meaning to web design. It is a combination of art and strategy that shapes how products feel.',
+    title: 'Plans for future and creative directions',
+    body: 'A thoughtful design direction brings harmony and elegance to digital workspaces. It seamlessly marries art and strategy.',
     date: '27th April, 2026',
-    tags: [{ label: 'Workshops', color: '#8b6cf7' }, { label: 'Strategy', color: '#ffcf7d' }]
+    tags: [{ label: 'Workshops', color: '#462F6E' }, { label: 'Strategy', color: '#C4C5CF' }]
   },
   {
     id: 'n2',
-    title: 'Design challenges',
-    body: 'What Is A Design Challenge? Design challenges are exercises or competitions that designers can do to boost creativity, create positive habits, and learn new methods for solving complex UX problems.',
+    title: 'Design challenges & deep work rituals',
+    body: 'Creative habits thrive on intentional friction reduction. Daily sprints and habit checkpoints elevate craft consistently.',
     date: '27th April, 2026',
-    tags: [{ label: 'Workshops', color: '#8b6cf7' }, { label: 'Design challenges', color: '#ff9d3d' }, { label: 'Work in progress', color: '#34d399' }]
+    tags: [{ label: 'Workshops', color: '#462F6E' }, { label: 'Exploration', color: '#C4C5CF' }, { label: 'In Progress', color: '#4ade80' }]
   },
   {
     id: 'n3',
-    title: 'How to conduct a user interview that could improve your product?',
-    body: 'You cannot understand good design if you do not understand people; design is made for people. User interviews are a tool that can help you get this understanding through active listening.',
+    title: 'How to conduct a user interview with active listening',
+    body: 'Exceptional products emerge when we observe human workflows intimately. Empathy informs structure and aesthetic clarity.',
     date: '27th April, 2026',
-    tags: [{ label: 'Research', color: '#ffcf7d' }, { label: 'User Feedback', color: '#38bdf8' }]
+    tags: [{ label: 'Research', color: '#C4C5CF' }, { label: 'Feedback', color: '#462F6E' }]
   },
   {
     id: 'n4',
-    title: 'Note B - Dribbble strategy & visual exploration',
-    body: 'Exploring new visual shots, micro-animations, and interactive components for the upcoming product showcase.',
+    title: 'Visual aesthetics & micro-interaction design',
+    body: 'Curating tactile feedback, deep Russian violet contrast, and disciplined geometric spacing elevates product feel.',
     date: '27th April, 2026',
-    tags: [{ label: 'Portfolio', color: '#ff6b8a' }, { label: 'Strategy', color: '#8b6cf7' }]
+    tags: [{ label: 'Portfolio', color: '#462F6E' }, { label: 'Strategy', color: '#C4C5CF' }]
   }
 ];
 
@@ -608,7 +608,7 @@ setInterval(() => {
   }
 }, 60000);
 
-/* ---------------- HABIT TRACKER GRID (monthly table â€” linked across Dashboard + Habit Tracker page) ---------------- */
+/* ---------------- HABIT TRACKER GRID (monthly table - linked across Dashboard + Habit Tracker page) ---------------- */
 function daysInCurrentMonth(){
   const now = new Date();
   return new Date(now.getFullYear(), now.getMonth()+1, 0).getDate();
@@ -739,7 +739,7 @@ function renderHabitQuickList(){
   const colors = ['var(--blue)','var(--green)','var(--amber)','var(--violet)'];
 
   if (!grid.habits.length){
-    list.innerHTML = `<div class="event-empty">No habits yet â€” add one on the Habit Tracker page.</div>`;
+    list.innerHTML = `<div class="event-empty">No habits yet - add one on the Habit Tracker page.</div>`;
     return;
   }
 
@@ -797,29 +797,15 @@ function renderProgressGraph(){
     const y = padTop + chartH - bh;
     const isToday = d === today;
     const isFuture = d > today;
-    const fillId = isToday ? 'gradToday' : (isFuture ? 'gradFuture' : 'gradPast');
-    const opacity = isFuture ? 0.35 : (v > 0 ? 1 : 0.25);
-    bars += `<rect x="${x}" y="${y}" width="${barW}" height="${bh}" rx="7" fill="url(#${fillId})" opacity="${opacity}"/>`;
-    bars += `<text x="${x+barW/2}" y="${padTop+chartH+18}" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="10" fill="${isToday ? '#ffcf7d' : 'rgba(255,255,255,0.35)'}">${d}</text>`;
+    const fill = isToday ? '#462F6E' : (isFuture ? '#281840' : '#1D102F');
+    const opacity = isFuture ? 0.4 : (v > 0 ? 1 : 0.25);
+    bars += `<rect x="${x}" y="${y}" width="${barW}" height="${bh}" rx="4" fill="${fill}" opacity="${opacity}"/>`;
+    bars += `<text x="${x+barW/2}" y="${padTop+chartH+18}" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="10" fill="${isToday ? '#FFFFFF' : 'rgba(196,197,207,0.4)'}">${d}</text>`;
   }
 
   wrap.innerHTML = `
   <svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" style="display:block;">
-    <defs>
-      <linearGradient id="gradPast" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0%" stop-color="var(--violet)"/>
-        <stop offset="100%" stop-color="var(--blue)"/>
-      </linearGradient>
-      <linearGradient id="gradToday" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0%" stop-color="#ffcf7d"/>
-        <stop offset="100%" stop-color="var(--amber)"/>
-      </linearGradient>
-      <linearGradient id="gradFuture" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0%" stop-color="#3a4256"/>
-        <stop offset="100%" stop-color="#232a3a"/>
-      </linearGradient>
-    </defs>
-    ${[0,0.25,0.5,0.75,1].map(f => `<line x1="${padX-8}" y1="${padTop+chartH*(1-f)}" x2="${w-padX+8}" y2="${padTop+chartH*(1-f)}" stroke="rgba(255,255,255,0.045)" stroke-width="1"/>`).join('')}
+    ${[0,0.25,0.5,0.75,1].map(f => `<line x1="${padX-8}" y1="${padTop+chartH*(1-f)}" x2="${w-padX+8}" y2="${padTop+chartH*(1-f)}" stroke="rgba(196,197,207,0.12)" stroke-width="1"/>`).join('')}
     ${bars}
   </svg>`;
 }
@@ -895,7 +881,7 @@ bindTrackerToolbar();
           <span class="g-name" style="font-size:12.5px;font-weight:500;color:var(--text-1);">${escapeHtml(rm.goalTitle)}</span>
           <span class="g-pct">${pct}%</span>
         </div>
-        <div class="track"><div class="fill" style="width:${pct}%;background:var(--gradient-accent);"></div></div>
+        <div class="track"><div class="fill" style="width:${pct}%;background:var(--brass);"></div></div>
       `;
       goalList.appendChild(row);
     });
@@ -907,7 +893,7 @@ bindTrackerToolbar();
 
 /* ---------------- GOALS: AI Roadmap + Chat ---------------- */
 
-const GOALS_SYSTEM_INSTRUCTION = "You are a goal-planning coach inside a personal productivity app called Voyage. Your job is to help the person turn a vague goal into a concrete, realistic roadmap. Ask focused questions one or two at a time (not a huge list at once) to learn: what the goal actually is, their target timeframe, their current starting point/experience level, and any real constraints (time available per week, obstacles). Keep your tone encouraging and concise â€” this is a chat UI, not an essay. Once you have enough to propose a genuinely useful roadmap (usually after 3-5 exchanges), set roadmapReady to true and fill in the roadmap field with 4-8 concrete, sequential milestones with realistic timeframes. Keep asking questions (roadmapReady: false, roadmap: null) until you actually have enough information â€” don't rush to generate a generic roadmap from a one-line goal.";
+const GOALS_SYSTEM_INSTRUCTION = "You are a goal-planning coach inside a personal productivity app called Voyage. Your job is to help the person turn a vague goal into a concrete, realistic roadmap. Ask focused questions one or two at a time (not a huge list at once) to learn: what the goal actually is, their target timeframe, their current starting point/experience level, and any real constraints (time available per week, obstacles). Keep your tone encouraging and concise - this is a chat UI, not an essay. Once you have enough to propose a genuinely useful roadmap (usually after 3-5 exchanges), set roadmapReady to true and fill in the roadmap field with 4-8 concrete, sequential milestones with realistic timeframes. Keep asking questions (roadmapReady: false, roadmap: null) until you actually have enough information - don't rush to generate a generic roadmap from a one-line goal.";
 
 const GOALS_RESPONSE_SCHEMA = {
   type: "object",
@@ -1134,11 +1120,11 @@ function renderEvents(){
     list.innerHTML = '';
 
     if (!events.length){
-      list.innerHTML = `<div class="event-empty">No upcoming events${compact ? '' : ' yet â€” add one below'}.</div>`;
+      list.innerHTML = `<div class="event-empty">No upcoming events${compact ? '' : ' yet - add one below'}.</div>`;
       if (compact){
         const link = document.createElement('span');
         link.className = 'event-view-all';
-        link.textContent = 'Add one on the Calendar page â†’';
+        link.textContent = 'Add one on the Calendar page ->';
         link.addEventListener('click', () => showView('calendar'));
         list.appendChild(link);
       }
@@ -1169,7 +1155,7 @@ function renderEvents(){
     const past = events.filter(ev => new Date(ev.date+'T00:00:00') < todayStart).sort((a,b)=> new Date(b.date) - new Date(a.date));
 
     if (!upcoming.length){
-      list.innerHTML += `<div class="event-empty">No upcoming events${compact ? '' : ' â€” add one below'}.</div>`;
+      list.innerHTML += `<div class="event-empty">No upcoming events${compact ? '' : ' - add one below'}.</div>`;
     } else {
       upcoming.forEach((ev, i) => list.appendChild(buildRow(ev, i === 0)));
     }
@@ -1184,7 +1170,7 @@ function renderEvents(){
     if (compact){
       const link = document.createElement('span');
       link.className = 'event-view-all';
-      link.textContent = 'Manage on Calendar â†’';
+      link.textContent = 'Manage on Calendar ->';
       link.addEventListener('click', () => showView('calendar'));
       list.appendChild(link);
     }
@@ -1367,7 +1353,8 @@ function normalizeTags(rawTags) {
 }
 
 function renderNotes() {
-  const notes = load('notes', DEFAULT_NOTES);
+  const allNotes = load('notes', DEFAULT_NOTES);
+  const notes = allNotes.filter(n => !n.projectId); // Only top-level notes, exclude notes in folders
 
   // Render on Notes Page (#pageNoteList)
   const pageContainer = document.getElementById('pageNoteList');
@@ -1378,12 +1365,6 @@ function renderNotes() {
       card.className = 'rich-note-card';
       card.style.cursor = 'pointer';
 
-      const tags = normalizeTags(n.tags);
-      const tagHtml = tags.map(t => {
-        const c = t.color || '#8b6cf7';
-        return `<span class="rich-tag-pill" style="--tag-bg:${c}1f; --tag-color:${c}; --tag-border:${c}40;">${escapeHtml(t.label)}</span>`;
-      }).join('');
-
       card.innerHTML = `
         <div class="rich-note-top">
           <span>${escapeHtml(n.date || 'Today')}</span>
@@ -1391,7 +1372,6 @@ function renderNotes() {
         </div>
         <h4 class="rich-note-title">${escapeHtml(n.title || 'Untitled')}</h4>
         <p class="rich-note-body">${escapeHtml((n.body || '').replace(/<[^>]*>/g, '').slice(0, 140))}</p>
-        ${tagHtml ? `<div class="rich-note-tags">${tagHtml}</div>` : ''}
       `;
 
       card.addEventListener('click', (e) => {
@@ -1410,10 +1390,10 @@ function renderNotes() {
       pageContainer.appendChild(card);
     });
 
-    // Add Note Tile
+    // Add Note Card Tile
     const addTile = document.createElement('div');
     addTile.className = 'rich-note-add-tile';
-    addTile.innerHTML = `<span style="font-size:22px;font-weight:300;">+</span><span>Add note</span>`;
+    addTile.innerHTML = `<span class="plus-icon">+</span><span>Add note</span>`;
     addTile.addEventListener('click', () => openNotionEditor(null, null, 'main'));
     pageContainer.appendChild(addTile);
   }
@@ -1427,13 +1407,10 @@ function renderNotes() {
       return;
     }
     notes.slice(0, 4).forEach((n) => {
-      const tags = normalizeTags(n.tags);
-      const tag = tags[0] || { label: 'Note', color: 'var(--violet)' };
       const el = document.createElement('div');
       el.className = 'note-card';
       el.style.cursor = 'pointer';
       el.innerHTML = `
-        <span class="note-pill"><span class="dot" style="background:${tag.color};"></span>${escapeHtml(tag.label)}</span>
         <h5>${escapeHtml(n.title || 'Untitled')}</h5>
         <p>${escapeHtml((n.body || '').replace(/<[^>]*>/g, '').slice(0, 80))}</p>
         <button class="rm" data-rm="${n.id}" title="Remove">&times;</button>
@@ -1463,12 +1440,6 @@ function renderFolderNotes(projectId) {
     card.className = 'rich-note-card';
     card.style.cursor = 'pointer';
 
-    const tags = normalizeTags(n.tags);
-    const tagHtml = tags.map(t => {
-      const c = t.color || '#8b6cf7';
-      return `<span class="rich-tag-pill" style="--tag-bg:${c}1f; --tag-color:${c}; --tag-border:${c}40;">${escapeHtml(t.label)}</span>`;
-    }).join('');
-
     card.innerHTML = `
       <div class="rich-note-top">
         <span>${escapeHtml(n.date || 'Today')}</span>
@@ -1476,7 +1447,6 @@ function renderFolderNotes(projectId) {
       </div>
       <h4 class="rich-note-title">${escapeHtml(n.title || 'Untitled')}</h4>
       <p class="rich-note-body">${escapeHtml((n.body || '').replace(/<[^>]*>/g, '').slice(0, 140))}</p>
-      ${tagHtml ? `<div class="rich-note-tags">${tagHtml}</div>` : ''}
     `;
 
     card.addEventListener('click', (e) => {
@@ -1495,10 +1465,10 @@ function renderFolderNotes(projectId) {
     container.appendChild(card);
   });
 
-  // ALWAYS append "Add note" Tile Card inside folder view
+  // Append "Add note" Card Tile inside folder view
   const addTile = document.createElement('div');
   addTile.className = 'rich-note-add-tile';
-  addTile.innerHTML = `<span style="font-size:22px;font-weight:300;">+</span><span>Add note</span>`;
+  addTile.innerHTML = `<span class="plus-icon">+</span><span>Add note</span>`;
   addTile.addEventListener('click', () => openNotionEditor(null, projectId, 'folder'));
   container.appendChild(addTile);
 }
@@ -1537,7 +1507,7 @@ function openNotionEditor(noteToEdit = null, forProjectId = null, returnView = '
     // Create new note
     const now = new Date();
     const dateStr = `${now.getDate()}th ${now.toLocaleString(undefined,{month:'short'})}, ${now.getFullYear()}`;
-    const targetProj = forProjectId || (projects[0] ? projects[0].id : null);
+    const targetProj = forProjectId || null;
     targetNote = {
       id: uid(),
       title: '',
@@ -1551,33 +1521,12 @@ function openNotionEditor(noteToEdit = null, forProjectId = null, returnView = '
     currentEditingNoteId = targetNote.id;
   }
 
-  // Update Breadcrumbs
-  const crumbsEl = document.getElementById('notionEditorCrumbs');
-  if (crumbsEl) {
-    const parentProj = projects.find(p => p.id === targetNote.projectId);
-    let html = `<span class="crumb">Notes</span>`;
-    if (parentProj) {
-      html += ` <span class="sep">/</span> <span class="crumb">${escapeHtml(parentProj.title)}</span>`;
-    }
-    html += ` <span class="sep">/</span> <span class="crumb active">${escapeHtml(targetNote.title || 'Untitled')}</span>`;
-    crumbsEl.innerHTML = html;
-  }
-
-  // Populate Title, Meta & Body
+  // Populate Title & Body
   const titleInput = document.getElementById('notionPageTitleInput');
-  const projSelect = document.getElementById('notionPageProjectSelect');
-  const tagsInput = document.getElementById('notionPageTagsInput');
   const canvas = document.getElementById('notionEditorCanvas');
 
   if (titleInput) titleInput.value = targetNote.title || '';
-  if (tagsInput) tagsInput.value = normalizeTags(targetNote.tags).map(t => t.label).join(', ');
   if (canvas) canvas.innerHTML = targetNote.body || '';
-
-  if (projSelect) {
-    projSelect.innerHTML = `<option value="">No Project</option>` + projects.map(p =>
-      `<option value="${p.id}" ${p.id === targetNote.projectId ? 'selected' : ''}>${escapeHtml(p.title)}</option>`
-    ).join('');
-  }
 
   if (titleInput && !targetNote.title) {
     titleInput.focus();
@@ -1613,19 +1562,9 @@ function saveCurrentNotionEditor() {
   if (!note) return;
 
   const titleInput = document.getElementById('notionPageTitleInput');
-  const projSelect = document.getElementById('notionPageProjectSelect');
-  const tagsInput = document.getElementById('notionPageTagsInput');
   const canvas = document.getElementById('notionEditorCanvas');
 
   if (titleInput) note.title = titleInput.value.trim();
-  if (projSelect) note.projectId = projSelect.value || null;
-  if (tagsInput) {
-    const rawTags = tagsInput.value.split(',').map(s => s.trim()).filter(Boolean);
-    const tagColors = ['#8b6cf7', '#34d399', '#ff9d3d', '#ffcf7d', '#ff6b8a', '#38bdf8'];
-    note.tags = rawTags.length > 0
-      ? rawTags.map((label, idx) => ({ label, color: tagColors[idx % tagColors.length] }))
-      : [{ label: 'General', color: '#8b6cf7' }];
-  }
   if (canvas) note.body = canvas.innerHTML;
 
   save('notes', notes);
@@ -1745,14 +1684,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Notion Editor input auto-saving
   const titleInput = document.getElementById('notionPageTitleInput');
-  const projectSelect = document.getElementById('notionPageProjectSelect');
-  const tagsInput = document.getElementById('notionPageTagsInput');
   const canvas = document.getElementById('notionEditorCanvas');
   const slashMenu = document.getElementById('notionSlashMenu');
 
   if (titleInput) titleInput.addEventListener('input', scheduleEditorAutoSave);
-  if (projectSelect) projectSelect.addEventListener('change', scheduleEditorAutoSave);
-  if (tagsInput) tagsInput.addEventListener('input', scheduleEditorAutoSave);
 
   if (canvas) {
     canvas.addEventListener('input', () => {
@@ -1784,7 +1719,7 @@ document.addEventListener('DOMContentLoaded', () => {
       dot.addEventListener('click', () => {
         picker.querySelectorAll('.color-dot').forEach(d => d.classList.remove('active'));
         dot.classList.add('active');
-        selectedProjectColor = dot.dataset.color || '#8b6cf7';
+        selectedProjectColor = dot.dataset.color || '#462F6E';
       });
     });
   }
@@ -1832,8 +1767,8 @@ function renderBars(){
     const isFuture = dates[i] > now && dates[i].toDateString() !== now.toDateString();
     const h1 = taskVals[i] > 0 ? Math.max(4, (taskVals[i]/maxTask)*90) : 2;
     const h2 = habitVals[i] > 0 ? Math.max(4, (habitVals[i]/maxHabit)*90) : 2;
-    const color1 = i === todayIdx ? 'var(--amber)' : (isFuture ? 'rgba(255,157,61,0.18)' : 'var(--amber)');
-    const color2 = i === todayIdx ? 'linear-gradient(180deg, #ffcf7d, var(--violet))' : (isFuture ? 'rgba(255,255,255,0.06)' : 'linear-gradient(180deg, var(--violet), var(--blue))');
+    const color1 = i === todayIdx ? 'var(--brass)' : (isFuture ? 'rgba(70,47,110,0.25)' : 'var(--brass-dim)');
+    const color2 = i === todayIdx ? 'var(--brass-light)' : (isFuture ? 'rgba(196,197,207,0.15)' : 'var(--coffee)');
     col.title = `${label}: ${taskVals[i]} task${taskVals[i]===1?'':'s'}, ${habitVals[i]} habit${habitVals[i]===1?'':'s'}`;
     const op1 = isFuture ? 0.4 : (taskVals[i] > 0 ? 1 : 0.2);
     const op2 = isFuture ? 0.4 : (habitVals[i] > 0 ? 1 : 0.2);
@@ -1948,7 +1883,7 @@ const pageMeta = {
   habits:   { title: 'Habit Tracker', sub: 'Stay consistent, one day at a time.' },
   timer:    { title: 'Focus Timer',   sub: 'Deep work, tracked automatically.' },
   todo:     { title: 'To-Do',         sub: 'Everything on your plate today.' },
-  goals:    { title: 'Goals',         sub: 'Chart your long-term course.' },
+  goals:    { title: 'Roadmap',       sub: 'Chart your long-term course.' },
   calendar: { title: 'Calendar',      sub: 'Plan ahead and never miss a date.' },
 };
 function showView(view){
@@ -1979,26 +1914,163 @@ function showView(view){
   if (view === 'calendar') { renderMiniCalendar(); renderEvents(); }
 }
 
-/* ---------------- Real-time Search Filter ---------------- */
-function filterBySearch(q) {
+/* ---------------- Global Search with Dropdown & Open ---------------- */
+function performGlobalSearch(q) {
+  const dropdown = document.getElementById('searchDropdown');
+  if (!dropdown) return;
+
   if (!q) {
-    renderNotes();
-    renderTodos();
-    renderEvents();
+    dropdown.style.display = 'none';
+    dropdown.innerHTML = '';
     return;
   }
-  document.querySelectorAll('.rich-note-card, .note-card').forEach(card => {
-    const text = card.textContent.toLowerCase();
-    card.style.display = text.includes(q) ? '' : 'none';
+
+  const allNotes = load('notes', DEFAULT_NOTES);
+  const allTodos = load('todos', []);
+  const allGoals = load('goals', []);
+  const allEvents = load('events', []);
+  const projects = load('projects', DEFAULT_PROJECTS);
+
+  // Match notes
+  const matchedNotes = allNotes.filter(n => {
+    const title = (n.title || '').toLowerCase();
+    const body = (n.body || '').replace(/<[^>]*>/g, '').toLowerCase();
+    const tags = normalizeTags(n.tags).map(t => t.label.toLowerCase()).join(' ');
+    return title.includes(q) || body.includes(q) || tags.includes(q);
   });
-  document.querySelectorAll('.todo-row').forEach(row => {
-    const text = row.textContent.toLowerCase();
-    row.style.display = text.includes(q) ? '' : 'none';
+
+  // Match todos
+  const matchedTodos = allTodos.filter(t => (t.text || '').toLowerCase().includes(q));
+
+  // Match roadmaps / goals
+  const matchedGoals = allGoals.filter(g => {
+    const title = (g.title || '').toLowerCase();
+    const summary = (g.summary || '').toLowerCase();
+    return title.includes(q) || summary.includes(q);
   });
-  document.querySelectorAll('.event-row').forEach(row => {
-    const text = row.textContent.toLowerCase();
-    row.style.display = text.includes(q) ? '' : 'none';
+
+  // Match events
+  const matchedEvents = allEvents.filter(e => {
+    const title = (e.title || '').toLowerCase();
+    const tag = (e.tag || '').toLowerCase();
+    return title.includes(q) || tag.includes(q);
   });
+
+  const totalMatches = matchedNotes.length + matchedTodos.length + matchedGoals.length + matchedEvents.length;
+
+  if (totalMatches === 0) {
+    dropdown.innerHTML = `<div class="search-empty-message">No results found for "<b>${escapeHtml(q)}</b>"</div>`;
+    dropdown.style.display = 'flex';
+    return;
+  }
+
+  let html = '';
+
+  // 1. Notes
+  if (matchedNotes.length > 0) {
+    html += `<div class="search-group-head">Notes (${matchedNotes.length})</div>`;
+    matchedNotes.forEach(n => {
+      const parentProj = projects.find(p => p.id === n.projectId);
+      const projLabel = parentProj ? parentProj.title : 'Notes';
+      const cleanSnippet = (n.body || '').replace(/<[^>]*>/g, '').slice(0, 70);
+      html += `
+        <div class="search-result-item" data-search-type="note" data-note-id="${n.id}">
+          <div class="search-result-icon note">📝</div>
+          <div class="search-result-content">
+            <div class="search-result-title">${escapeHtml(n.title || 'Untitled Note')}</div>
+            <div class="search-result-subtitle">${escapeHtml(cleanSnippet || 'No additional text')}</div>
+          </div>
+          <span class="search-result-tag">${escapeHtml(projLabel)}</span>
+        </div>
+      `;
+    });
+  }
+
+  // 2. Tasks
+  if (matchedTodos.length > 0) {
+    html += `<div class="search-group-head">Tasks (${matchedTodos.length})</div>`;
+    matchedTodos.forEach(t => {
+      html += `
+        <div class="search-result-item" data-search-type="todo" data-todo-id="${t.id}">
+          <div class="search-result-icon todo">☑️</div>
+          <div class="search-result-content">
+            <div class="search-result-title">${escapeHtml(t.text)}</div>
+            <div class="search-result-subtitle">${t.done ? 'Completed' : 'Pending'} &middot; ${escapeHtml(t.date || 'Today')}</div>
+          </div>
+          <span class="search-result-tag">Task</span>
+        </div>
+      `;
+    });
+  }
+
+  // 3. Roadmaps
+  if (matchedGoals.length > 0) {
+    html += `<div class="search-group-head">Roadmap (${matchedGoals.length})</div>`;
+    matchedGoals.forEach(g => {
+      html += `
+        <div class="search-result-item" data-search-type="goal" data-goal-id="${g.id}">
+          <div class="search-result-icon goal">🎯</div>
+          <div class="search-result-content">
+            <div class="search-result-title">${escapeHtml(g.title)}</div>
+            <div class="search-result-subtitle">${escapeHtml(g.summary || 'Roadmap plan')}</div>
+          </div>
+          <span class="search-result-tag">${g.progress || 0}%</span>
+        </div>
+      `;
+    });
+  }
+
+  // 4. Events
+  if (matchedEvents.length > 0) {
+    html += `<div class="search-group-head">Events (${matchedEvents.length})</div>`;
+    matchedEvents.forEach(e => {
+      html += `
+        <div class="search-result-item" data-search-type="event" data-event-id="${e.id}">
+          <div class="search-result-icon event">📅</div>
+          <div class="search-result-content">
+            <div class="search-result-title">${escapeHtml(e.title)}</div>
+            <div class="search-result-subtitle">${escapeHtml(e.time || '')} &middot; ${escapeHtml(e.date || '')}</div>
+          </div>
+          <span class="search-result-tag">${escapeHtml(e.tag || 'Calendar')}</span>
+        </div>
+      `;
+    });
+  }
+
+  dropdown.innerHTML = html;
+  dropdown.style.display = 'flex';
+
+  // Attach click handlers
+  dropdown.querySelectorAll('.search-result-item').forEach(item => {
+    item.addEventListener('click', () => {
+      const type = item.dataset.searchType;
+      if (type === 'note') {
+        const noteId = item.dataset.noteId;
+        const note = allNotes.find(n => n.id === noteId);
+        if (note) {
+          showView('notes');
+          openNotionEditor(note, note.projectId, note.projectId ? 'folder' : 'main');
+        }
+      } else if (type === 'todo') {
+        showView('todo');
+      } else if (type === 'goal') {
+        showView('goals');
+      } else if (type === 'event') {
+        showView('calendar');
+      }
+      closeSearchDropdown();
+    });
+  });
+}
+
+function closeSearchDropdown() {
+  const dropdown = document.getElementById('searchDropdown');
+  if (dropdown) {
+    dropdown.style.display = 'none';
+    dropdown.innerHTML = '';
+  }
+  const input = document.getElementById('globalSearchInput');
+  if (input) input.value = '';
 }
 
 /* ---------------- Global Modal Controls ---------------- */
@@ -2019,12 +2091,27 @@ function initApp() {
   const ctaBtn = document.getElementById('ctaBtn');
   if (ctaBtn) ctaBtn.addEventListener('click', () => showView('goals'));
 
-  const searchInput = document.querySelector('.search-wrap input');
+  const searchInput = document.getElementById('globalSearchInput') || document.querySelector('.search-wrap input');
   if (searchInput) {
     searchInput.addEventListener('input', (e) => {
-      filterBySearch(e.target.value.toLowerCase().trim());
+      performGlobalSearch(e.target.value.toLowerCase().trim());
+    });
+    searchInput.addEventListener('focus', (e) => {
+      if (e.target.value.trim()) {
+        performGlobalSearch(e.target.value.toLowerCase().trim());
+      }
+    });
+    searchInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') closeSearchDropdown();
     });
   }
+
+  document.addEventListener('click', (e) => {
+    if (!e.target.closest('.search-wrap')) {
+      const dropdown = document.getElementById('searchDropdown');
+      if (dropdown) dropdown.style.display = 'none';
+    }
+  });
 
   bindTrackerToolbar();
 
