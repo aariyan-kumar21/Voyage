@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link
-    href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400;1,600&family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400;1,500&family=JetBrains+Mono:wght@400;500;600&display=swap"
+    href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap"
     rel="stylesheet">
   <link rel="stylesheet" href="styles.css">
 </head>
@@ -271,9 +271,15 @@
               <div class="todo-list js-todo-list" id="todoList"></div>
               <div class="ring-wrap">
                 <svg width="120" height="120" viewBox="0 0 120 120">
-                  <circle cx="60" cy="60" r="50" fill="none" stroke="var(--surface-raised)" stroke-width="10" />
-                  <circle id="todoRing" cx="60" cy="60" r="50" fill="none" stroke="var(--brass)" stroke-width="10"
+                  <circle cx="60" cy="60" r="50" fill="none" stroke="var(--surface-2)" stroke-width="10" />
+                  <circle id="todoRing" cx="60" cy="60" r="50" fill="none" stroke="url(#ringGrad)" stroke-width="10"
                     stroke-linecap="round" stroke-dasharray="314" stroke-dashoffset="314" />
+                  <defs>
+                    <linearGradient id="ringGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                      <stop offset="0%" stop-color="var(--violet)" />
+                      <stop offset="100%" stop-color="var(--blue)" />
+                    </linearGradient>
+                  </defs>
                 </svg>
                 <div class="ring-center">
                   <div class="n grad-text" id="todoDone">0</div>
@@ -587,8 +593,8 @@
 
             <div style="font-size:12.5px;color:var(--text-3);margin:20px 0 4px 0;" id="timerState">Ready to start</div>
             <div class="timer-controls">
-              <button class="primary" id="timerStart">Start</button>
-              <button id="timerReset">Reset</button>
+              <button class="timer-btn timer-btn-primary" id="timerStart">Start</button>
+              <button class="timer-btn timer-btn-secondary" id="timerReset">Reset</button>
             </div>
           </section>
         </div>
@@ -609,20 +615,11 @@
               <button class="clear-btn" id="pageTodoClearBtn">Clear all</button>
             </div>
 
-            <div class="day-nav">
-              <button id="todoPrevDay" title="Previous day">&larr;</button>
-              <span id="todoDayLabel">Today</span>
-              <button id="todoNextDay" title="Next day">&rarr;</button>
-              <button id="todoTodayBtn">Jump to Today</button>
-            </div>
-
             <div class="todo-list js-todo-list" id="pageTodoList" style="max-width:560px;"></div>
             <div class="todo-add" id="pageTodoAddRow" style="max-width:560px;">
               <input type="text" id="pageTodoInput" placeholder="Add a task...">
               <button id="pageTodoAddBtn">Add</button>
             </div>
-            <div class="event-empty" id="pageTodoHistoryNote" style="display:none;max-width:560px;">Viewing a past day -
-              switch back to Today to add new tasks.</div>
           </section>
         </div>
       </div>
@@ -651,7 +648,7 @@
                   <circle cx="13" cy="17" r="3" />
                   <path d="m16 20 2 2 4-4" />
                 </svg>
-                <p>No roadmaps yet - plan one below.</p>
+                <p>No roadmaps yet &mdash; chat with Planner to create one.</p>
               </div>
             </div>
           </section>
@@ -664,7 +661,7 @@
                   <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
                 </svg>
               </div>
-              <span class="card-title">Goal Planner <span class="chat-ai-badge">AI</span></span>
+              <span class="card-title">Planner <span class="chat-ai-badge">AI</span></span>
               <button id="goalChatResetBtn" class="chat-reset-btn" title="Start a new conversation">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
@@ -756,12 +753,12 @@
         <div class="modal-field">
           <label>Theme Color</label>
           <div class="color-picker-row" id="projectColorPicker">
-            <button type="button" class="color-dot active" data-color="#462f6e" style="background:#462f6e;"></button>
-            <button type="button" class="color-dot" data-color="#c4c5cf" style="background:#c4c5cf;"></button>
-            <button type="button" class="color-dot" data-color="#1d102f" style="background:#1d102f;"></button>
-            <button type="button" class="color-dot" data-color="#5b3e8f" style="background:#5b3e8f;"></button>
-            <button type="button" class="color-dot" data-color="#4ade80" style="background:#4ade80;"></button>
-            <button type="button" class="color-dot" data-color="#fbbf24" style="background:#fbbf24;"></button>
+            <button type="button" class="color-dot active" data-color="#8b6cf7" style="background:#8b6cf7;"></button>
+            <button type="button" class="color-dot" data-color="#34d399" style="background:#34d399;"></button>
+            <button type="button" class="color-dot" data-color="#ff9d3d" style="background:#ff9d3d;"></button>
+            <button type="button" class="color-dot" data-color="#ffcf7d" style="background:#ffcf7d;"></button>
+            <button type="button" class="color-dot" data-color="#ff6b8a" style="background:#ff6b8a;"></button>
+            <button type="button" class="color-dot" data-color="#38bdf8" style="background:#38bdf8;"></button>
           </div>
         </div>
       </div>

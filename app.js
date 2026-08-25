@@ -343,12 +343,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
 /* ---------------- Storage defaults (reference design sample data if clean) ---------------- */
 const DEFAULT_PROJECTS = [
-  { id: 'p1', title: 'Workshop planning & ideas', color: '#462F6E', date: '27th April, 2026' },
-  { id: 'p2', title: 'Design exploration & aesthetics', color: '#C4C5CF', date: '27th April, 2026' },
-  { id: 'p3', title: "User feedback & insights", color: '#4ade80', date: '27th April, 2026' },
-  { id: 'p4', title: 'Plans for future roadmap', color: '#462F6E', date: '27th April, 2026' },
-  { id: 'p5', title: 'Testing & benchmark results', color: '#fbbf24', date: '27th April, 2026' },
-  { id: 'p6', title: 'Design system architecture', color: '#C4C5CF', date: '27th April, 2026' }
+  { id: 'p1', title: 'Workshop planning & ideas', color: '#8b6cf7', date: '27th April, 2026' },
+  { id: 'p2', title: 'Design exploration & aesthetics', color: '#34d399', date: '27th April, 2026' },
+  { id: 'p3', title: "User feedback & insights", color: '#ff9d3d', date: '27th April, 2026' },
+  { id: 'p4', title: 'Plans for future roadmap', color: '#ffcf7d', date: '27th April, 2026' },
+  { id: 'p5', title: 'Testing & benchmark results', color: '#ff6b8a', date: '27th April, 2026' },
+  { id: 'p6', title: 'Design system architecture', color: '#38bdf8', date: '27th April, 2026' }
 ];
 
 const DEFAULT_NOTES = [
@@ -357,28 +357,28 @@ const DEFAULT_NOTES = [
     title: 'Plans for future and creative directions',
     body: 'A thoughtful design direction brings harmony and elegance to digital workspaces. It seamlessly marries art and strategy.',
     date: '27th April, 2026',
-    tags: [{ label: 'Workshops', color: '#462F6E' }, { label: 'Strategy', color: '#C4C5CF' }]
+    tags: [{ label: 'Workshops', color: '#8b6cf7' }, { label: 'Strategy', color: '#ffcf7d' }]
   },
   {
     id: 'n2',
     title: 'Design challenges & deep work rituals',
     body: 'Creative habits thrive on intentional friction reduction. Daily sprints and habit checkpoints elevate craft consistently.',
     date: '27th April, 2026',
-    tags: [{ label: 'Workshops', color: '#462F6E' }, { label: 'Exploration', color: '#C4C5CF' }, { label: 'In Progress', color: '#4ade80' }]
+    tags: [{ label: 'Workshops', color: '#8b6cf7' }, { label: 'Exploration', color: '#ff9d3d' }, { label: 'In Progress', color: '#34d399' }]
   },
   {
     id: 'n3',
     title: 'How to conduct a user interview with active listening',
     body: 'Exceptional products emerge when we observe human workflows intimately. Empathy informs structure and aesthetic clarity.',
     date: '27th April, 2026',
-    tags: [{ label: 'Research', color: '#C4C5CF' }, { label: 'Feedback', color: '#462F6E' }]
+    tags: [{ label: 'Research', color: '#ffcf7d' }, { label: 'Feedback', color: '#38bdf8' }]
   },
   {
     id: 'n4',
     title: 'Visual aesthetics & micro-interaction design',
-    body: 'Curating tactile feedback, deep Russian violet contrast, and disciplined geometric spacing elevates product feel.',
+    body: 'Curating tactile feedback, glowing accents, and disciplined geometric spacing elevates product feel.',
     date: '27th April, 2026',
-    tags: [{ label: 'Portfolio', color: '#462F6E' }, { label: 'Strategy', color: '#C4C5CF' }]
+    tags: [{ label: 'Portfolio', color: '#ff6b8a' }, { label: 'Strategy', color: '#8b6cf7' }]
   }
 ];
 
@@ -452,8 +452,7 @@ function wireAdd(btnId, inputId, handler){
   input.addEventListener('keydown', e => { if (e.key==='Enter') go(); });
 }
 
-/* ---------------- TODOS (dashboard = always Today, page = browsable by day) ---------------- */
-let pageTodoDate = todayISO();
+/* ---------------- TODOS (tasks for today) ---------------- */
 
 function addTodo(text){
   const items = load('todos', []);
@@ -513,11 +512,9 @@ function renderTodos(){
 
   const todosToday = todos.filter(t => (t.date || todayKey) === todayKey);
   renderTodoRows('todoList', todosToday, todayKey);
+  renderTodoRows('pageTodoList', todosToday, todayKey);
 
-  const todosSelected = todos.filter(t => (t.date || todayKey) === pageTodoDate);
-  renderTodoRows('pageTodoList', todosSelected, todayKey);
-
-  // dashboard stats always reflect Today, regardless of which day the page is browsing
+  // stats reflect Today's tasks
   const total = todosToday.length;
   const done = todosToday.filter(t=>t.done).length;
   const doneEl = document.getElementById('todoDone'); if (doneEl) doneEl.textContent = done;
@@ -532,39 +529,10 @@ function renderTodos(){
   const metricTasks = document.getElementById('metricTasks');
   if (metricTasks) metricTasks.innerHTML = `${done}<span class="u">tasks</span>`;
 
-  updateTodoDayLabel();
   updateStreakDisplay();
 }
 wireAdd('todoAddBtn','todoInput', addTodo);
 wireAdd('pageTodoAddBtn','pageTodoInput', addTodo);
-
-function updateTodoDayLabel(){
-  const label = document.getElementById('todoDayLabel');
-  if (!label) return;
-  const isToday = pageTodoDate === todayISO();
-  const d = new Date(pageTodoDate + 'T00:00:00');
-  label.textContent = isToday ? 'Today' : d.toLocaleDateString(undefined, { weekday:'short', day:'numeric', month:'short', year: d.getFullYear()!==new Date().getFullYear() ? 'numeric' : undefined });
-  const nextBtn = document.getElementById('todoNextDay');
-  if (nextBtn) nextBtn.disabled = isToday;
-  const addRow = document.getElementById('pageTodoAddRow');
-  const note = document.getElementById('pageTodoHistoryNote');
-  if (addRow) addRow.style.display = isToday ? 'flex' : 'none';
-  if (note) note.style.display = isToday ? 'none' : 'block';
-}
-function shiftTodoDay(delta){
-  const d = new Date(pageTodoDate + 'T00:00:00');
-  d.setDate(d.getDate() + delta);
-  const next = d.toISOString().slice(0,10);
-  if (next > todayISO()) return; // no browsing into the future
-  pageTodoDate = next;
-  renderTodos();
-}
-const todoPrevBtn = document.getElementById('todoPrevDay');
-const todoNextBtn = document.getElementById('todoNextDay');
-const todoTodayBtn = document.getElementById('todoTodayBtn');
-if (todoPrevBtn) todoPrevBtn.addEventListener('click', () => shiftTodoDay(-1));
-if (todoNextBtn) todoNextBtn.addEventListener('click', () => shiftTodoDay(1));
-if (todoTodayBtn) todoTodayBtn.addEventListener('click', () => { pageTodoDate = todayISO(); renderTodos(); });
 
 function wireClearDay(btnId, getDateKey){
   const btn = document.getElementById(btnId);
@@ -594,14 +562,13 @@ function wireClearDay(btnId, getDateKey){
   });
 }
 wireClearDay('todoClearBtn', () => todayISO());
-wireClearDay('pageTodoClearBtn', () => pageTodoDate);
+wireClearDay('pageTodoClearBtn', () => todayISO());
 
 // keep everything correct if the tab is left open across midnight
 let watchedDay = todayISO();
 setInterval(() => {
   const now = todayISO();
   if (now !== watchedDay){
-    if (pageTodoDate === watchedDay) pageTodoDate = now;
     watchedDay = now;
     renderTodos();
     renderBars();
@@ -797,15 +764,29 @@ function renderProgressGraph(){
     const y = padTop + chartH - bh;
     const isToday = d === today;
     const isFuture = d > today;
-    const fill = isToday ? '#462F6E' : (isFuture ? '#281840' : '#1D102F');
-    const opacity = isFuture ? 0.4 : (v > 0 ? 1 : 0.25);
-    bars += `<rect x="${x}" y="${y}" width="${barW}" height="${bh}" rx="4" fill="${fill}" opacity="${opacity}"/>`;
-    bars += `<text x="${x+barW/2}" y="${padTop+chartH+18}" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="10" fill="${isToday ? '#FFFFFF' : 'rgba(196,197,207,0.4)'}">${d}</text>`;
+    const fillId = isToday ? 'gradToday' : (isFuture ? 'gradFuture' : 'gradPast');
+    const opacity = isFuture ? 0.35 : (v > 0 ? 1 : 0.25);
+    bars += `<rect x="${x}" y="${y}" width="${barW}" height="${bh}" rx="7" fill="url(#${fillId})" opacity="${opacity}"/>`;
+    bars += `<text x="${x+barW/2}" y="${padTop+chartH+18}" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="10" fill="${isToday ? '#ffcf7d' : 'rgba(255,255,255,0.35)'}">${d}</text>`;
   }
 
   wrap.innerHTML = `
   <svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" style="display:block;">
-    ${[0,0.25,0.5,0.75,1].map(f => `<line x1="${padX-8}" y1="${padTop+chartH*(1-f)}" x2="${w-padX+8}" y2="${padTop+chartH*(1-f)}" stroke="rgba(196,197,207,0.12)" stroke-width="1"/>`).join('')}
+    <defs>
+      <linearGradient id="gradPast" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="var(--violet)"/>
+        <stop offset="100%" stop-color="var(--blue)"/>
+      </linearGradient>
+      <linearGradient id="gradToday" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="#ffcf7d"/>
+        <stop offset="100%" stop-color="var(--amber)"/>
+      </linearGradient>
+      <linearGradient id="gradFuture" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="#3a4256"/>
+        <stop offset="100%" stop-color="#232a3a"/>
+      </linearGradient>
+    </defs>
+    ${[0,0.25,0.5,0.75,1].map(f => `<line x1="${padX-8}" y1="${padTop+chartH*(1-f)}" x2="${w-padX+8}" y2="${padTop+chartH*(1-f)}" stroke="rgba(255,255,255,0.045)" stroke-width="1"/>`).join('')}
     ${bars}
   </svg>`;
 }
@@ -881,7 +862,7 @@ bindTrackerToolbar();
           <span class="g-name" style="font-size:12.5px;font-weight:500;color:var(--text-1);">${escapeHtml(rm.goalTitle)}</span>
           <span class="g-pct">${pct}%</span>
         </div>
-        <div class="track"><div class="fill" style="width:${pct}%;background:var(--brass);"></div></div>
+        <div class="track"><div class="fill" style="width:${pct}%;background:var(--gradient-accent);"></div></div>
       `;
       goalList.appendChild(row);
     });
@@ -1018,6 +999,72 @@ function setGoalChatLoading(loading) {
   if (!loading && input) input.focus();
 }
 
+function generateFallbackGoalResponse(messages, latestText) {
+  const userMessages = messages.filter(m => m.role === 'user').map(m => m.text.trim());
+  const initialGoal = userMessages[0] || latestText;
+  
+  let goalTitle = initialGoal
+    .replace(/^(i want to|i wanna|i would like to|my goal is to|how to|i plan to|help me)\s+/i, '')
+    .trim();
+  goalTitle = goalTitle.charAt(0).toUpperCase() + goalTitle.slice(1);
+  if (!goalTitle) goalTitle = 'Personal Goal Roadmap';
+
+  const isFirstMessage = userMessages.length <= 1;
+  const hasDetails = /\b(\d+\s*(weeks?|months?|days?|hours?)|beginner|advanced|intermediate|full\s*stack|front\s*end|back\s*end|yes|sure|okay)\b/i.test(latestText);
+
+  if (isFirstMessage && !hasDetails) {
+    return {
+      reply: `That's an exciting goal! To tailor the best step-by-step roadmap for "${goalTitle}", could you share a bit more:\n1. What is your current experience level or starting point?\n2. What is your target timeframe (e.g. 3 months, 6 months)?\n3. How many hours per week can you dedicate?`,
+      roadmap: null
+    };
+  }
+
+  const lower = (initialGoal + ' ' + latestText).toLowerCase();
+  let milestones = [];
+
+  if (lower.includes('web') || lower.includes('code') || lower.includes('program') || lower.includes('develop') || lower.includes('software') || lower.includes('app')) {
+    milestones = [
+      { title: 'Core Fundamentals & HTML/CSS layout essentials', timeframe: 'Weeks 1–3' },
+      { title: 'Modern JavaScript (ES6+) & DOM interactivity', timeframe: 'Weeks 4–7' },
+      { title: 'Front-end Framework (React/Next.js) & Component state', timeframe: 'Weeks 8–11' },
+      { title: 'API Integration, Backend server basics & Database storage', timeframe: 'Weeks 12–15' },
+      { title: 'Build & Deploy 2 full-stack showcase projects', timeframe: 'Weeks 16–18' }
+    ];
+  } else if (lower.includes('fit') || lower.includes('weight') || lower.includes('run') || lower.includes('gym') || lower.includes('muscle') || lower.includes('health')) {
+    milestones = [
+      { title: 'Baseline assessment & establish 3x weekly workout habit', timeframe: 'Week 1' },
+      { title: 'Consistent progressive training & nutrition tracking', timeframe: 'Weeks 2–4' },
+      { title: 'Increase intensity & progressive overload checkpoints', timeframe: 'Weeks 5–8' },
+      { title: 'Midpoint evaluation & milestone performance test', timeframe: 'Weeks 9–10' },
+      { title: 'Achieve primary benchmark & long-term maintenance', timeframe: 'Weeks 11–12' }
+    ];
+  } else if (lower.includes('read') || lower.includes('book') || lower.includes('study') || lower.includes('learn') || lower.includes('exam')) {
+    milestones = [
+      { title: 'Curate core curriculum & daily 30-min focused study block', timeframe: 'Week 1' },
+      { title: 'Complete foundational modules & active note synthesis', timeframe: 'Weeks 2–4' },
+      { title: 'Deep dive into advanced topics & practical exercises', timeframe: 'Weeks 5–8' },
+      { title: 'Practical project application & final review', timeframe: 'Weeks 9–10' }
+    ];
+  } else {
+    milestones = [
+      { title: 'Initial research, resource setup & baseline planning', timeframe: 'Phase 1 (Weeks 1–2)' },
+      { title: 'Core skill acquisition & focused daily execution sprint', timeframe: 'Phase 2 (Weeks 3–6)' },
+      { title: 'Midpoint checkpoint & refining approach based on feedback', timeframe: 'Phase 3 (Weeks 7–8)' },
+      { title: 'Practical application & building milestone deliverables', timeframe: 'Phase 4 (Weeks 9–11)' },
+      { title: 'Final milestone review & long-term mastery routine', timeframe: 'Phase 5 (Week 12)' }
+    ];
+  }
+
+  return {
+    reply: `I've created a tailored roadmap for "${goalTitle}" with actionable milestones! You can track and check off your progress in the roadmap panel above.`,
+    roadmap: {
+      goalTitle,
+      summary: `Actionable milestone plan to achieve ${goalTitle.toLowerCase()}.`,
+      milestones
+    }
+  };
+}
+
 async function sendGoalMessage() {
   const input = document.getElementById('goalChatInput');
   if (!input) return;
@@ -1030,8 +1077,10 @@ async function sendGoalMessage() {
 
   setGoalChatLoading(true);
 
+  let success = false;
+
   try {
-    const res = await fetch('/api/chat', {
+    const res = await apiFetch('/api/chat', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -1041,34 +1090,56 @@ async function sendGoalMessage() {
       })
     });
 
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    if (res && res.ok) {
+      const data = await res.json();
+      let parsed;
+      try { parsed = typeof data.text === 'string' ? JSON.parse(data.text) : data; } catch(e) {
+        parsed = null;
+      }
 
-    const data = await res.json();
-    let parsed;
-    try { parsed = JSON.parse(data.text); } catch(e) {
-      throw new Error('Could not parse AI response.');
+      if (parsed && (parsed.reply || parsed.roadmap)) {
+        const { reply, roadmap } = parsed;
+        if (reply) {
+          appendChatMsg('assistant', reply);
+          goalConversation.push({ role: 'model', text: reply });
+        }
+        if (roadmap && roadmap.goalTitle && roadmap.milestones && roadmap.milestones.length) {
+          const roadmaps = load('roadmaps', []);
+          roadmaps.push(roadmap);
+          save('roadmaps', roadmaps);
+          renderRoadmaps();
+          if (window._renderDashboardGoals) window._renderDashboardGoals();
+          appendChatMsg('assistant', 'Roadmap added to My Roadmaps \u2191');
+        }
+        success = true;
+      }
     }
-
-    const { reply, roadmap } = parsed;
-
-    appendChatMsg('assistant', reply);
-    goalConversation.push({ role: 'model', text: reply });
-
-    if (roadmap && roadmap.goalTitle && roadmap.milestones && roadmap.milestones.length) {
-      const roadmaps = load('roadmaps', []);
-      roadmaps.push(roadmap);
-      save('roadmaps', roadmaps);
-      renderRoadmaps();
-      if (window._renderDashboardGoals) window._renderDashboardGoals();
-      appendChatMsg('assistant', 'Roadmap added above \u2191');
-    }
-
   } catch(err) {
-    appendChatMsg('assistant', "Gemini's a bit busy \u2014 try again in a moment.");
-    console.error('[GoalChat]', err);
-  } finally {
-    setGoalChatLoading(false);
+    console.warn('[GoalChat] API unavailable or rate-limited, engaging smart fallback planner:', err);
   }
+
+  // Smart Offline/Rate-limit Fallback Engine
+  if (!success) {
+    try {
+      const { reply, roadmap } = generateFallbackGoalResponse(goalConversation, text);
+      appendChatMsg('assistant', reply);
+      goalConversation.push({ role: 'model', text: reply });
+
+      if (roadmap && roadmap.goalTitle && roadmap.milestones && roadmap.milestones.length) {
+        const roadmaps = load('roadmaps', []);
+        roadmaps.push(roadmap);
+        save('roadmaps', roadmaps);
+        renderRoadmaps();
+        if (window._renderDashboardGoals) window._renderDashboardGoals();
+        appendChatMsg('assistant', 'Roadmap added to My Roadmaps \u2191');
+      }
+    } catch(fallbackErr) {
+      appendChatMsg('assistant', "I'm ready to help you plan! Tell me a bit about your goal and your target timeframe.");
+      console.error('[GoalChat Fallback Error]', fallbackErr);
+    }
+  }
+
+  setGoalChatLoading(false);
 }
 
 function resetGoalChat() {
@@ -1719,7 +1790,7 @@ document.addEventListener('DOMContentLoaded', () => {
       dot.addEventListener('click', () => {
         picker.querySelectorAll('.color-dot').forEach(d => d.classList.remove('active'));
         dot.classList.add('active');
-        selectedProjectColor = dot.dataset.color || '#462F6E';
+        selectedProjectColor = dot.dataset.color || '#8b6cf7';
       });
     });
   }
@@ -1767,8 +1838,8 @@ function renderBars(){
     const isFuture = dates[i] > now && dates[i].toDateString() !== now.toDateString();
     const h1 = taskVals[i] > 0 ? Math.max(4, (taskVals[i]/maxTask)*90) : 2;
     const h2 = habitVals[i] > 0 ? Math.max(4, (habitVals[i]/maxHabit)*90) : 2;
-    const color1 = i === todayIdx ? 'var(--brass)' : (isFuture ? 'rgba(70,47,110,0.25)' : 'var(--brass-dim)');
-    const color2 = i === todayIdx ? 'var(--brass-light)' : (isFuture ? 'rgba(196,197,207,0.15)' : 'var(--coffee)');
+    const color1 = i === todayIdx ? 'var(--amber)' : (isFuture ? 'rgba(255,157,61,0.18)' : 'var(--amber)');
+    const color2 = i === todayIdx ? 'linear-gradient(180deg, #ffcf7d, var(--violet))' : (isFuture ? 'rgba(255,255,255,0.06)' : 'linear-gradient(180deg, var(--violet), var(--blue))');
     col.title = `${label}: ${taskVals[i]} task${taskVals[i]===1?'':'s'}, ${habitVals[i]} habit${habitVals[i]===1?'':'s'}`;
     const op1 = isFuture ? 0.4 : (taskVals[i] > 0 ? 1 : 0.2);
     const op2 = isFuture ? 0.4 : (habitVals[i] > 0 ? 1 : 0.2);
