@@ -218,6 +218,12 @@
             <path d="M21 21l-4.3-4.3" />
           </svg>
           <input type="text" id="globalSearchInput" placeholder="Search notes, tasks, roadmap..." autocomplete="off">
+          <button type="button" class="search-clear-btn" id="searchClearBtn" style="display:none;" title="Clear search" aria-label="Clear search">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="18" y1="6" x2="6" y2="18"/>
+              <line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+          </button>
           <div class="search-dropdown" id="searchDropdown" style="display:none;"></div>
         </div>
 
@@ -359,14 +365,14 @@
               <div class="metric">
                 <div class="bar" style="background:var(--amber);"></div>
                 <div>
-                  <div class="val grad-text" id="metricTasks">0<span class="u">tasks</span></div>
+                  <div class="val" style="color:var(--amber);" id="metricTasks">0<span class="u">tasks</span></div>
                   <div class="cap">Completed this week</div>
                 </div>
               </div>
               <div class="metric">
                 <div class="bar" style="background:var(--blue);"></div>
                 <div>
-                  <div class="val grad-text" id="metricHabits">0<span class="u">habits</span></div>
+                  <div class="val" style="color:var(--blue);" id="metricHabits">0<span class="u">habits</span></div>
                   <div class="cap">Checked off this week</div>
                 </div>
               </div>
@@ -479,10 +485,6 @@
             </div>
 
             <div class="notion-editor-wrapper">
-              <div class="notion-page-icon-wrap">
-                <button class="notion-icon-btn" id="notionPageIconBtn" title="Change icon">📝</button>
-              </div>
-
               <!-- Page Title Input matching Notion reference photo -->
               <input type="text" class="notion-title-input" id="notionPageTitleInput" placeholder="New page"
                 autocomplete="off">

@@ -1838,11 +1838,11 @@ function renderBars(){
     const isFuture = dates[i] > now && dates[i].toDateString() !== now.toDateString();
     const h1 = taskVals[i] > 0 ? Math.max(4, (taskVals[i]/maxTask)*90) : 2;
     const h2 = habitVals[i] > 0 ? Math.max(4, (habitVals[i]/maxHabit)*90) : 2;
-    const color1 = i === todayIdx ? 'var(--amber)' : (isFuture ? 'rgba(255,157,61,0.18)' : 'var(--amber)');
-    const color2 = i === todayIdx ? 'linear-gradient(180deg, #ffcf7d, var(--violet))' : (isFuture ? 'rgba(255,255,255,0.06)' : 'linear-gradient(180deg, var(--violet), var(--blue))');
+    const color1 = 'var(--amber)';
+    const color2 = 'var(--blue)';
     col.title = `${label}: ${taskVals[i]} task${taskVals[i]===1?'':'s'}, ${habitVals[i]} habit${habitVals[i]===1?'':'s'}`;
-    const op1 = isFuture ? 0.4 : (taskVals[i] > 0 ? 1 : 0.2);
-    const op2 = isFuture ? 0.4 : (habitVals[i] > 0 ? 1 : 0.2);
+    const op1 = isFuture ? 0.2 : (taskVals[i] > 0 ? 1 : 0.15);
+    const op2 = isFuture ? 0.2 : (habitVals[i] > 0 ? 1 : 0.15);
     col.innerHTML = `
       <div class="bar-shell">
         <div class="bar-mini" style="height:${h1}px;background:${color1};opacity:${op1};"></div>
@@ -1896,7 +1896,10 @@ function stopTimerInterval(){
   clearInterval(timerInterval);
   timerInterval = null;
   const btn = document.getElementById('timerStart');
-  if (btn) btn.textContent = 'Start';
+  if (btn) {
+    btn.textContent = 'Start';
+    btn.classList.remove('running');
+  }
 }
 function resetTimer(){
   stopTimerInterval();
@@ -1922,6 +1925,7 @@ if (timerStartBtn){
       return;
     }
     timerStartBtn.textContent = 'Pause';
+    timerStartBtn.classList.add('running');
     document.getElementById('timerState').textContent = timerMode === 'pomodoro'
       ? (pomodoroPhase === 'work' ? 'Focusing...' : 'On a break...')
       : 'Counting up...';
@@ -1959,12 +1963,13 @@ const pageMeta = {
 };
 function showView(view){
   document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
-  const target = document.getElementById('view-' + view);
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+
+  const target = document.getElementById(`view-${view}`);
   if (target) target.classList.add('active');
 
-  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-  const navItem = document.querySelector(`.nav-item[data-view="${view}"]`);
-  if (navItem) navItem.classList.add('active');
+  const nav = document.querySelector(`.nav-item[data-view="${view}"]`);
+  if (nav) nav.classList.add('active');
 
   const h1 = document.getElementById('greeting');
   const sub = h1 ? h1.nextElementSibling : null;
@@ -1986,9 +1991,13 @@ function showView(view){
 }
 
 /* ---------------- Global Search with Dropdown & Open ---------------- */
-function performGlobalSearch(q) {
+function performGlobalSearch(rawQ) {
   const dropdown = document.getElementById('searchDropdown');
+  const clearBtn = document.getElementById('searchClearBtn');
   if (!dropdown) return;
+
+  const q = (rawQ || '').trim();
+  if (clearBtn) clearBtn.style.display = q.length > 0 ? 'flex' : 'none';
 
   if (!q) {
     dropdown.style.display = 'none';
@@ -1996,40 +2005,86 @@ function performGlobalSearch(q) {
     return;
   }
 
+  const qLower = q.toLowerCase();
+  const searchWords = qLower.split(/\s+/).filter(Boolean);
+
   const allNotes = load('notes', DEFAULT_NOTES);
   const allTodos = load('todos', []);
   const allGoals = load('goals', []);
   const allEvents = load('events', []);
   const projects = load('projects', DEFAULT_PROJECTS);
 
-  // Match notes
-  const matchedNotes = allNotes.filter(n => {
-    const title = (n.title || '').toLowerCase();
-    const body = (n.body || '').replace(/<[^>]*>/g, '').toLowerCase();
-    const tags = normalizeTags(n.tags).map(t => t.label.toLowerCase()).join(' ');
-    return title.includes(q) || body.includes(q) || tags.includes(q);
-  });
+  const isNotesKeyword = /^(note|notes|doc|document|documents)$/i.test(qLower);
+  const isTodoKeyword = /^(todo|todos|task|tasks|to-do)$/i.test(qLower);
+  const isHabitsKeyword = /^(habit|habits|tracker|streak)$/i.test(qLower);
+  const isTimerKeyword = /^(timer|pomodoro|focus|clock|stopwatch)$/i.test(qLower);
+  const isGoalsKeyword = /^(goal|goals|roadmap|roadmaps|ai roadmap)$/i.test(qLower);
+  const isCalendarKeyword = /^(calendar|event|events|schedule)$/i.test(qLower);
 
-  // Match todos
-  const matchedTodos = allTodos.filter(t => (t.text || '').toLowerCase().includes(q));
+  // Helper to score similarity
+  function scoreMatch(title = '', body = '', tag = '') {
+    const t = title.toLowerCase();
+    const b = body.toLowerCase();
+    const g = tag.toLowerCase();
 
-  // Match roadmaps / goals
-  const matchedGoals = allGoals.filter(g => {
-    const title = (g.title || '').toLowerCase();
-    const summary = (g.summary || '').toLowerCase();
-    return title.includes(q) || summary.includes(q);
-  });
+    if (t === qLower) return 100; // Exact title match
+    if (t.includes(qLower)) return 80; // Full query in title
+    if (b.includes(qLower)) return 60; // Full query in body
+    if (g.includes(qLower)) return 55; // Full query in tags
 
-  // Match events
-  const matchedEvents = allEvents.filter(e => {
-    const title = (e.title || '').toLowerCase();
-    const tag = (e.tag || '').toLowerCase();
-    return title.includes(q) || tag.includes(q);
-  });
+    // Word-by-word tokenized scoring
+    let wordScore = 0;
+    let wordsMatched = 0;
+    for (const w of searchWords) {
+      if (t.includes(w)) {
+        wordsMatched++;
+        wordScore += 20;
+      } else if (b.includes(w) || g.includes(w)) {
+        wordsMatched++;
+        wordScore += 8;
+      }
+    }
+    if (wordsMatched > 0) {
+      return wordScore + (wordsMatched / searchWords.length) * 15;
+    }
+    return 0;
+  }
 
-  const totalMatches = matchedNotes.length + matchedTodos.length + matchedGoals.length + matchedEvents.length;
+  // 1. Matched Notes
+  let scoredNotes = allNotes.map(n => {
+    const cleanBody = (n.body || '').replace(/<[^>]*>/g, '');
+    const tagStr = normalizeTags(n.tags).map(t => t.label).join(' ');
+    const score = isNotesKeyword ? 100 : scoreMatch(n.title || '', cleanBody, tagStr);
+    return { note: n, cleanBody, score };
+  }).filter(item => item.score > 0);
 
-  if (totalMatches === 0) {
+  scoredNotes.sort((a, b) => b.score - a.score);
+
+  // 2. Matched Todos
+  let scoredTodos = allTodos.map(t => {
+    const score = isTodoKeyword ? 100 : scoreMatch(t.text || '', '', '');
+    return { todo: t, score };
+  }).filter(item => item.score > 0);
+  scoredTodos.sort((a, b) => b.score - a.score);
+
+  // 3. Matched Goals
+  let scoredGoals = allGoals.map(g => {
+    const score = isGoalsKeyword ? 100 : scoreMatch(g.title || '', g.summary || '', '');
+    return { goal: g, score };
+  }).filter(item => item.score > 0);
+  scoredGoals.sort((a, b) => b.score - a.score);
+
+  // 4. Matched Events
+  let scoredEvents = allEvents.map(e => {
+    const score = isCalendarKeyword ? 100 : scoreMatch(e.title || '', '', e.tag || '');
+    return { event: e, score };
+  }).filter(item => item.score > 0);
+  scoredEvents.sort((a, b) => b.score - a.score);
+
+  const hasQuickLinks = isNotesKeyword || isTodoKeyword || isHabitsKeyword || isTimerKeyword || isGoalsKeyword || isCalendarKeyword;
+  const totalMatches = scoredNotes.length + scoredTodos.length + scoredGoals.length + scoredEvents.length;
+
+  if (totalMatches === 0 && !hasQuickLinks) {
     dropdown.innerHTML = `<div class="search-empty-message">No results found for "<b>${escapeHtml(q)}</b>"</div>`;
     dropdown.style.display = 'flex';
     return;
@@ -2037,19 +2092,110 @@ function performGlobalSearch(q) {
 
   let html = '';
 
-  // 1. Notes
-  if (matchedNotes.length > 0) {
-    html += `<div class="search-group-head">Notes (${matchedNotes.length})</div>`;
-    matchedNotes.forEach(n => {
+  // Quick Navigation Section
+  if (hasQuickLinks) {
+    html += `<div class="search-group-head">Quick Navigation</div>`;
+    if (isNotesKeyword) {
+      html += `
+        <div class="search-result-item" data-search-type="nav" data-nav-target="notes">
+          <div class="search-result-icon note">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h13l3 3v13H4z"/><path d="M8 9h9M8 13h9M8 17h5"/></svg>
+          </div>
+          <div class="search-result-content">
+            <div class="search-result-title">Go to Notes & Documents</div>
+            <div class="search-result-subtitle">Open full Notion-style notebook</div>
+          </div>
+          <span class="search-result-tag">Section</span>
+        </div>
+      `;
+    }
+    if (isTodoKeyword) {
+      html += `
+        <div class="search-result-item" data-search-type="nav" data-nav-target="todo">
+          <div class="search-result-icon todo">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+          </div>
+          <div class="search-result-content">
+            <div class="search-result-title">Go to To-Do Tasks</div>
+            <div class="search-result-subtitle">Manage daily tasks & checklists</div>
+          </div>
+          <span class="search-result-tag">Section</span>
+        </div>
+      `;
+    }
+    if (isHabitsKeyword) {
+      html += `
+        <div class="search-result-item" data-search-type="nav" data-nav-target="habits">
+          <div class="search-result-icon habit" style="background:var(--amber-soft);color:var(--amber);">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 17 9 11 13 15 21 6"/><polyline points="15 6 21 6 21 12"/></svg>
+          </div>
+          <div class="search-result-content">
+            <div class="search-result-title">Go to Habit Tracker</div>
+            <div class="search-result-subtitle">View monthly streaks & habit grid</div>
+          </div>
+          <span class="search-result-tag">Section</span>
+        </div>
+      `;
+    }
+    if (isTimerKeyword) {
+      html += `
+        <div class="search-result-item" data-search-type="nav" data-nav-target="timer">
+          <div class="search-result-icon timer" style="background:var(--blue-soft);color:var(--blue);">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l3 2M9 2h6"/></svg>
+          </div>
+          <div class="search-result-content">
+            <div class="search-result-title">Go to Focus Timer</div>
+            <div class="search-result-subtitle">Start Pomodoro or Focus session</div>
+          </div>
+          <span class="search-result-tag">Section</span>
+        </div>
+      `;
+    }
+    if (isGoalsKeyword) {
+      html += `
+        <div class="search-result-item" data-search-type="nav" data-nav-target="goals">
+          <div class="search-result-icon goal">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/></svg>
+          </div>
+          <div class="search-result-content">
+            <div class="search-result-title">Go to AI Roadmap</div>
+            <div class="search-result-subtitle">Explore roadmaps & milestones</div>
+          </div>
+          <span class="search-result-tag">Section</span>
+        </div>
+      `;
+    }
+    if (isCalendarKeyword) {
+      html += `
+        <div class="search-result-item" data-search-type="nav" data-nav-target="calendar">
+          <div class="search-result-icon event">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+          </div>
+          <div class="search-result-content">
+            <div class="search-result-title">Go to Calendar</div>
+            <div class="search-result-subtitle">View schedule & events</div>
+          </div>
+          <span class="search-result-tag">Section</span>
+        </div>
+      `;
+    }
+  }
+
+  // 1. Notes Suggestions
+  if (scoredNotes.length > 0) {
+    html += `<div class="search-group-head">Notes Suggestions (${scoredNotes.length})</div>`;
+    scoredNotes.slice(0, 6).forEach(({ note: n, cleanBody }) => {
       const parentProj = projects.find(p => p.id === n.projectId);
       const projLabel = parentProj ? parentProj.title : 'Notes';
-      const cleanSnippet = (n.body || '').replace(/<[^>]*>/g, '').slice(0, 70);
+      const snippet = cleanBody.slice(0, 75);
       html += `
         <div class="search-result-item" data-search-type="note" data-note-id="${n.id}">
-          <div class="search-result-icon note">📝</div>
+          <div class="search-result-icon note">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h13l3 3v13H4z"/><path d="M8 9h9M8 13h9M8 17h5"/></svg>
+          </div>
           <div class="search-result-content">
             <div class="search-result-title">${escapeHtml(n.title || 'Untitled Note')}</div>
-            <div class="search-result-subtitle">${escapeHtml(cleanSnippet || 'No additional text')}</div>
+            <div class="search-result-subtitle">${escapeHtml(snippet || 'Click to open note in editor')}</div>
           </div>
           <span class="search-result-tag">${escapeHtml(projLabel)}</span>
         </div>
@@ -2058,12 +2204,14 @@ function performGlobalSearch(q) {
   }
 
   // 2. Tasks
-  if (matchedTodos.length > 0) {
-    html += `<div class="search-group-head">Tasks (${matchedTodos.length})</div>`;
-    matchedTodos.forEach(t => {
+  if (scoredTodos.length > 0) {
+    html += `<div class="search-group-head">Tasks (${scoredTodos.length})</div>`;
+    scoredTodos.slice(0, 5).forEach(({ todo: t }) => {
       html += `
         <div class="search-result-item" data-search-type="todo" data-todo-id="${t.id}">
-          <div class="search-result-icon todo">☑️</div>
+          <div class="search-result-icon todo">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+          </div>
           <div class="search-result-content">
             <div class="search-result-title">${escapeHtml(t.text)}</div>
             <div class="search-result-subtitle">${t.done ? 'Completed' : 'Pending'} &middot; ${escapeHtml(t.date || 'Today')}</div>
@@ -2075,12 +2223,14 @@ function performGlobalSearch(q) {
   }
 
   // 3. Roadmaps
-  if (matchedGoals.length > 0) {
-    html += `<div class="search-group-head">Roadmap (${matchedGoals.length})</div>`;
-    matchedGoals.forEach(g => {
+  if (scoredGoals.length > 0) {
+    html += `<div class="search-group-head">Roadmap (${scoredGoals.length})</div>`;
+    scoredGoals.slice(0, 5).forEach(({ goal: g }) => {
       html += `
         <div class="search-result-item" data-search-type="goal" data-goal-id="${g.id}">
-          <div class="search-result-icon goal">🎯</div>
+          <div class="search-result-icon goal">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/></svg>
+          </div>
           <div class="search-result-content">
             <div class="search-result-title">${escapeHtml(g.title)}</div>
             <div class="search-result-subtitle">${escapeHtml(g.summary || 'Roadmap plan')}</div>
@@ -2092,12 +2242,14 @@ function performGlobalSearch(q) {
   }
 
   // 4. Events
-  if (matchedEvents.length > 0) {
-    html += `<div class="search-group-head">Events (${matchedEvents.length})</div>`;
-    matchedEvents.forEach(e => {
+  if (scoredEvents.length > 0) {
+    html += `<div class="search-group-head">Events (${scoredEvents.length})</div>`;
+    scoredEvents.slice(0, 5).forEach(({ event: e }) => {
       html += `
         <div class="search-result-item" data-search-type="event" data-event-id="${e.id}">
-          <div class="search-result-icon event">📅</div>
+          <div class="search-result-icon event">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+          </div>
           <div class="search-result-content">
             <div class="search-result-title">${escapeHtml(e.title)}</div>
             <div class="search-result-subtitle">${escapeHtml(e.time || '')} &middot; ${escapeHtml(e.date || '')}</div>
@@ -2113,9 +2265,13 @@ function performGlobalSearch(q) {
 
   // Attach click handlers
   dropdown.querySelectorAll('.search-result-item').forEach(item => {
-    item.addEventListener('click', () => {
+    item.addEventListener('click', (e) => {
+      e.stopPropagation();
       const type = item.dataset.searchType;
-      if (type === 'note') {
+      if (type === 'nav') {
+        const targetView = item.dataset.navTarget;
+        if (targetView) showView(targetView);
+      } else if (type === 'note') {
         const noteId = item.dataset.noteId;
         const note = allNotes.find(n => n.id === noteId);
         if (note) {
@@ -2142,6 +2298,8 @@ function closeSearchDropdown() {
   }
   const input = document.getElementById('globalSearchInput');
   if (input) input.value = '';
+  const clearBtn = document.getElementById('searchClearBtn');
+  if (clearBtn) clearBtn.style.display = 'none';
 }
 
 /* ---------------- Global Modal Controls ---------------- */
@@ -2163,17 +2321,27 @@ function initApp() {
   if (ctaBtn) ctaBtn.addEventListener('click', () => showView('goals'));
 
   const searchInput = document.getElementById('globalSearchInput') || document.querySelector('.search-wrap input');
+  const searchClearBtn = document.getElementById('searchClearBtn');
+
   if (searchInput) {
     searchInput.addEventListener('input', (e) => {
-      performGlobalSearch(e.target.value.toLowerCase().trim());
+      performGlobalSearch(e.target.value);
     });
     searchInput.addEventListener('focus', (e) => {
       if (e.target.value.trim()) {
-        performGlobalSearch(e.target.value.toLowerCase().trim());
+        performGlobalSearch(e.target.value);
       }
     });
     searchInput.addEventListener('keydown', (e) => {
       if (e.key === 'Escape') closeSearchDropdown();
+    });
+  }
+
+  if (searchClearBtn) {
+    searchClearBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      closeSearchDropdown();
+      if (searchInput) searchInput.focus();
     });
   }
 

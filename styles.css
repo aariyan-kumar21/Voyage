@@ -76,7 +76,7 @@ button{font-family:inherit;cursor:pointer;}
   display:flex;
   flex-direction:column;
   padding:20px 0;
-  z-index:100;
+  z-index:500;
   transition:width .22s cubic-bezier(.4,0,.2,1);
   overflow:hidden;
 }
@@ -191,8 +191,9 @@ button{font-family:inherit;cursor:pointer;}
 }
 
 .search-wrap{
+  position:relative;
   flex:1;
-  max-width:420px;
+  max-width:460px;
   display:flex;
   align-items:center;
   gap:10px;
@@ -201,6 +202,12 @@ button{font-family:inherit;cursor:pointer;}
   border-radius:11px;
   padding:10px 14px;
   color:var(--text-3);
+  z-index:30;
+  transition:border-color .15s ease, box-shadow .15s ease;
+}
+.search-wrap:focus-within{
+  border-color:rgba(139,108,247,0.5);
+  box-shadow:0 0 0 3px rgba(139,108,247,0.12);
 }
 .search-wrap svg{width:16px;height:16px;flex:0 0 auto;}
 .search-wrap input{
@@ -208,6 +215,24 @@ button{font-family:inherit;cursor:pointer;}
   font-size:13.5px; width:100%; font-family:var(--font-body);
 }
 .search-wrap input::placeholder{color:var(--text-3);}
+.search-clear-btn{
+  background:none;
+  border:none;
+  color:var(--text-3);
+  cursor:pointer;
+  padding:2px 4px;
+  border-radius:4px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  flex-shrink:0;
+  transition:color .15s ease, background .15s ease;
+}
+.search-clear-btn:hover{
+  color:var(--text-1);
+  background:rgba(255,255,255,0.08);
+}
+.search-clear-btn svg{width:14px;height:14px;}
 
 .topbar-right{
   margin-left:auto;
@@ -375,7 +400,12 @@ button{font-family:inherit;cursor:pointer;}
   display:inline-flex;
   align-items:center;
   justify-content:center;
-  transition:transform .15s ease, box-shadow .15s ease, background .15s ease, color .15s ease, border-color .15s ease;
+  background:var(--surface-raised);
+  border:1px solid var(--border);
+  color:var(--text-2);
+  min-width:120px;
+  box-shadow:none;
+  transition:transform .15s ease, box-shadow .2s ease, background .2s ease, color .2s ease, border-color .2s ease;
 }
 .timer-btn:active,
 .timer-controls button:active{
@@ -383,32 +413,27 @@ button{font-family:inherit;cursor:pointer;}
 }
 .timer-btn-primary,
 .timer-controls button.primary,
-.timer-controls button#timerStart{
-  background:linear-gradient(135deg, var(--blue), var(--violet));
-  color:#fff;
-  border:none;
-  box-shadow:0 8px 22px -6px rgba(91,139,255,0.6);
-  min-width:130px;
-}
-.timer-btn-primary:hover,
-.timer-controls button.primary:hover,
-.timer-controls button#timerStart:hover{
-  transform:translateY(-2px);
-  box-shadow:0 12px 28px -6px rgba(91,139,255,0.75);
-}
+.timer-controls button#timerStart,
 .timer-btn-secondary,
 .timer-controls button#timerReset{
   background:var(--surface-raised);
   border:1px solid var(--border);
   color:var(--text-2);
-  min-width:120px;
+  box-shadow:none;
 }
+.timer-btn:hover,
+.timer-controls button:hover,
+.timer-btn-primary:hover,
+.timer-controls button.primary:hover,
+.timer-controls button#timerStart:hover,
+.timer-controls button#timerStart.running:hover,
 .timer-btn-secondary:hover,
 .timer-controls button#timerReset:hover{
-  background:rgba(255,255,255,0.08);
-  border-color:rgba(255,255,255,0.22);
-  color:var(--text-1);
+  background:linear-gradient(135deg, var(--blue), var(--violet));
+  color:#fff;
+  border-color:transparent;
   transform:translateY(-2px);
+  box-shadow:0 8px 22px -6px rgba(91,139,255,0.6);
 }
 
 /* ---------- Habit tracker grid (Habit Tracker page) ---------- */
@@ -599,7 +624,7 @@ button{font-family:inherit;cursor:pointer;}
 .bars{display:flex; align-items:flex-end; gap:14px; height:120px; padding:0 4px;}
 .bar-col{flex:1; display:flex; flex-direction:column; align-items:center; gap:8px;}
 .bar-shell{width:100%; display:flex; justify-content:center; align-items:flex-end; height:90px; gap:5px;}
-.bar-mini{width:9px; border-radius:5px 5px 2px 2px;}
+.bar-mini{width:9px; border-radius:4px; transition:height .3s cubic-bezier(.4,0,.2,1), opacity .2s ease;}
 .bar-col .day{font-size:10.5px; color:var(--text-3); font-family:var(--font-mono);}
 
 /* ---------- Notes: layered gradient glass-card deck ---------- */
@@ -2956,17 +2981,19 @@ button{font-family:inherit;cursor:pointer;}
   position: absolute;
   top: calc(100% + 8px);
   left: 0;
-  width: 440px;
+  width: 100%;
+  min-width: 400px;
+  max-width: 520px;
   max-height: 440px;
   overflow-y: auto;
-  background: rgba(14, 17, 28, 0.95);
-  border: 1px solid var(--border);
+  background: rgba(12, 15, 26, 0.98);
+  border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: var(--radius-md);
-  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.6);
-  z-index: 1000;
+  box-shadow: 0 20px 45px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(255,255,255,0.05);
+  z-index: 9999;
   padding: 8px;
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
   display: flex;
   flex-direction: column;
   gap: 6px;
