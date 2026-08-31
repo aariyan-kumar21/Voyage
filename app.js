@@ -518,9 +518,12 @@ function renderTodos(){
   const total = todosToday.length;
   const done = todosToday.filter(t=>t.done).length;
   const doneEl = document.getElementById('todoDone'); if (doneEl) doneEl.textContent = done;
-  const totalLbl = document.getElementById('todoTotalLbl'); if (totalLbl) totalLbl.textContent = `of ${total} tasks`;
-  const badge = document.getElementById('todoBadge'); if (badge) badge.textContent = total - done;
-  const ring = document.getElementById('todoRing');
+  const badge = document.getElementById('todoBadge'); 
+  if (badge) {
+    const pending = total - done;
+    badge.textContent = pending;
+    badge.style.display = pending > 0 ? 'block' : 'none';
+  }
   if (ring){
     const circumference = 314;
     const pct = total ? done/total : 0;
@@ -1362,7 +1365,6 @@ function renderProjects() {
     card.style.cursor = 'pointer';
     card.innerHTML = `
       <div class="folder-top-row">
-        <span class="folder-dot" style="background:${p.color}; color:${p.color};"></span>
         <span class="folder-title">${escapeHtml(p.title)}</span>
       </div>
       <div class="folder-bottom-row">
@@ -2358,6 +2360,7 @@ function initApp() {
   document.querySelectorAll('.nav-item[data-view]').forEach(item => {
     item.addEventListener('click', () => showView(item.dataset.view));
   });
+
   const ctaBtn = document.getElementById('ctaBtn');
   if (ctaBtn) ctaBtn.addEventListener('click', () => showView('goals'));
 

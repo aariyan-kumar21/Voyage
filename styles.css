@@ -64,113 +64,212 @@ button{font-family:inherit;cursor:pointer;}
   min-height:100vh;
 }
 
-/* ---------- Sidebar ---------- */
+/* ---------- Sidebar (Floating Expandable Capsule Pill Dock) ---------- */
 .sidebar{
   position:fixed;
-  top:0; left:0; bottom:0;
-  width:76px;
-  background:rgba(4,5,9,0.85);
-  backdrop-filter:blur(20px);
-  -webkit-backdrop-filter:blur(20px);
-  border-right:1px solid var(--border-soft);
+  top:18px; left:18px; bottom:18px;
+  width:62px;
+  background:rgba(10, 11, 15, 0.90);
+  backdrop-filter:blur(28px);
+  -webkit-backdrop-filter:blur(28px);
+  border:1px solid rgba(255, 255, 255, 0.09);
+  border-radius:36px;
+  box-shadow:0 18px 48px rgba(0, 0, 0, 0.72), 0 0 0 1px rgba(255, 255, 255, 0.03);
   display:flex;
   flex-direction:column;
-  padding:20px 0;
+  align-items:stretch;
+  justify-content:space-between;
+  padding:16px 9px;
   z-index:500;
-  transition:width .22s cubic-bezier(.4,0,.2,1);
   overflow:hidden;
+  transition:width 0.28s cubic-bezier(0.16, 1, 0.3, 1), border-radius 0.28s ease, border-color 0.2s ease, box-shadow 0.28s ease;
 }
-.sidebar:hover{ width:236px; }
+.sidebar:hover{
+  width:228px;
+  border-radius:28px;
+  border-color:rgba(255, 255, 255, 0.18);
+  box-shadow:0 22px 64px rgba(0, 0, 0, 0.88), 0 0 0 1px rgba(255, 255, 255, 0.06);
+}
 
-.brand{
-  display:flex; align-items:center; gap:12px;
-  padding:0 17.5px 24px 17.5px;
+/* Top Brand Logo & Name */
+.dock-brand{
+  display:flex;
+  align-items:center;
+  gap:12px;
+  padding:4px 5px 12px 5px;
+  cursor:pointer;
   white-space:nowrap;
-}
-.brand-mark{
-  width:41px;height:41px;flex:0 0 auto;
-  border-radius:11px;
-  display:flex;align-items:center;justify-content:center;
   overflow:hidden;
 }
-.brand-mark img,
-.brand-mark .brand-img{
-  width:100%;height:100%;
+.dock-brand-icon{
+  width:34px;
+  height:34px;
+  border-radius:10px;
+  flex:0 0 34px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  overflow:hidden;
+}
+.dock-brand-icon img,
+.dock-brand-icon .brand-img{
+  width:100%;
+  height:100%;
   object-fit:contain;
   border-radius:inherit;
   display:block;
 }
-.brand-mark svg{width:22px;height:22px;}
-.brand-name{
+.dock-brand-name{
   font-family:var(--font-display);
+  font-size:20px;
   font-weight:600;
-  font-size:21px;
   letter-spacing:0.2px;
   opacity:0;
-  transition:opacity .15s ease;
+  transform:translateX(-6px);
+  transition:opacity 0.18s ease, transform 0.18s ease;
+  pointer-events:none;
 }
-.sidebar:hover .brand-name{opacity:1; transition-delay:.05s;}
+.sidebar:hover .dock-brand-name{
+  opacity:1;
+  transform:translateX(0);
+  transition-delay:0.05s;
+  pointer-events:auto;
+}
 
+/* Navigation List */
 .nav{
   display:flex;
   flex-direction:column;
   gap:4px;
-  padding:0 14px;
   flex:1;
+  width:100%;
+  padding:0;
+  justify-content:flex-start;
 }
+
 .nav-item{
   display:flex;
   align-items:center;
-  gap:14px;
-  padding:11px 12px;
-  border-radius:11px;
-  color:var(--text-2);
+  gap:12px;
+  height:44px;
+  padding:0 10px;
+  border-radius:14px;
+  color:rgba(255, 255, 255, 0.44);
+  cursor:pointer;
+  text-decoration:none;
+  transition:background 0.18s ease, color 0.18s ease, transform 0.18s ease;
   white-space:nowrap;
-  position:relative;
+  overflow:hidden;
+  width:100%;
 }
-.nav-item svg{width:20px;height:20px;flex:0 0 auto;}
-.nav-item span{
-  font-size:14px; font-weight:500;
-  opacity:0;
-  transition:opacity .12s ease;
+.nav-item svg{
+  width:20px;
+  height:20px;
+  flex:0 0 20px;
+  stroke:currentColor;
+  transition:stroke 0.18s ease;
+  margin:0 2px;
 }
-.sidebar:hover .nav-item span{opacity:1; transition-delay:.04s;}
-.nav-item:hover{background:var(--surface); color:var(--text-1);}
-.nav-item.active{background:var(--blue-soft); color:#bcd2ff;}
-.nav-item.active svg{color:var(--blue);}
-.nav-item .badge{
-  margin-left:auto;
-  font-family:var(--font-mono);
-  font-size:11px;
-  background:var(--border);
-  color:var(--text-2);
-  padding:1px 7px;
-  border-radius:20px;
-  opacity:0;
-  transition:opacity .12s ease;
+.nav-item:hover{
+  color:#ffffff;
+  background:rgba(255, 255, 255, 0.07);
 }
-.sidebar:hover .nav-item .badge{opacity:1;}
 
-.sidebar-footer{
-  padding:14px 14px 4px 14px;
-  border-top:1px solid var(--border-soft);
-  margin-top:4px;
+/* Active Nav Item: Pure White Squircle Tile */
+.nav-item.active{
+  background:#ffffff !important;
+  color:#000000 !important;
+  border-radius:14px;
+  box-shadow:0 4px 18px rgba(255, 255, 255, 0.28);
+}
+.nav-item.active svg{
+  color:#000000 !important;
+  stroke:#000000 !important;
+  stroke-width:2.2;
+}
+.nav-item.active:hover{
+  background:#ffffff !important;
+}
+
+/* Nav Item Labels on Expand */
+.nav-label{
+  font-size:14px;
+  font-weight:500;
+  opacity:0;
+  transform:translateX(-6px);
+  transition:opacity 0.15s ease, transform 0.15s ease;
+  pointer-events:none;
+}
+.nav-item.active .nav-label{
+  color:#000000;
+  font-weight:600;
+}
+.sidebar:hover .nav-label{
+  opacity:1;
+  transform:translateX(0);
+  transition-delay:0.04s;
+  pointer-events:auto;
+}
+
+/* Bottom Account Area */
+.dock-bottom{
+  width:100%;
+  padding-top:6px;
+  overflow:hidden;
 }
 .account-item{
-  display:flex; align-items:center; gap:12px;
-  padding:8px 4px; border-radius:11px; cursor:pointer;
+  display:flex;
+  align-items:center;
+  gap:10px;
+  padding:6px 5px;
+  border-radius:12px;
+  cursor:pointer;
+  white-space:nowrap;
+  overflow:hidden;
+  transition:background 0.18s ease;
 }
-.account-item:hover{background:var(--surface);}
+.account-item:hover{
+  background:rgba(255, 255, 255, 0.06);
+}
+.account-item .avatar{
+  width:34px;
+  height:34px;
+  border-radius:50%;
+  background:linear-gradient(135deg, var(--violet), var(--blue));
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:14px;
+  font-weight:600;
+  color:#fff;
+  flex:0 0 34px;
+}
 .account-text{
-  white-space:nowrap; opacity:0; transition:opacity .12s ease;
+  opacity:0;
+  transform:translateX(-6px);
+  transition:opacity 0.15s ease, transform 0.15s ease;
+  overflow:hidden;
+  flex:1;
+  pointer-events:none;
 }
-.sidebar:hover .account-text{opacity:1; transition-delay:.04s;}
-.account-name{font-size:13.5px; font-weight:600; color:var(--text-1);}
-.account-sub{font-size:11.5px; color:var(--text-3);}
+.sidebar:hover .account-text{
+  opacity:1;
+  transform:translateX(0);
+  transition-delay:0.04s;
+  pointer-events:auto;
+}
+.account-name{
+  font-size:13px;
+  font-weight:600;
+  color:var(--text-1);
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
 
-/* ---------- Main ---------- */
+/* ---------- Main Layout ---------- */
 .main{
-  margin-left:76px;
+  margin-left:92px;
   flex:1;
   min-width:0;
   padding:22px 32px 60px 28px;
@@ -1508,14 +1607,6 @@ button{font-family:inherit;cursor:pointer;}
   align-items: flex-start;
   gap: 10px;
 }
-.folder-dot {
-  width: 9px;
-  height: 9px;
-  border-radius: 50%;
-  flex-shrink: 0;
-  margin-top: 5px;
-  box-shadow: 0 0 8px currentColor;
-}
 .folder-title {
   font-family: var(--font-display);
   font-size: 14.5px;
@@ -2368,14 +2459,6 @@ button{font-family:inherit;cursor:pointer;}
   display: flex;
   align-items: flex-start;
   gap: 10px;
-}
-.folder-dot {
-  width: 9px;
-  height: 9px;
-  border-radius: 50%;
-  flex-shrink: 0;
-  margin-top: 5px;
-  box-shadow: 0 0 8px currentColor;
 }
 .folder-title {
   font-family: var(--font-display);
