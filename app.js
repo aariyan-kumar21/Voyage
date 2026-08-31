@@ -1423,6 +1423,41 @@ function normalizeTags(rawTags) {
   });
 }
 
+function formatNotePreview(rawHtml, maxLength = 140) {
+  if (!rawHtml) return '';
+  let str = String(rawHtml);
+
+  // Replace line breaks and paragraph/block closures with newline characters
+  str = str.replace(/<br\s*\/?>/gi, '\n');
+  str = str.replace(/<li[^>]*>/gi, '\n• ');
+  str = str.replace(/<\/(div|p|h[1-6]|li|blockquote|pre|tr)>/gi, '\n');
+  str = str.replace(/<(div|p|h[1-6]|blockquote|pre|tr)[^>]*>/gi, '\n');
+
+  // Strip all other remaining HTML tags
+  str = str.replace(/<[^>]+>/g, '');
+
+  // Decode HTML entities
+  const parser = document.createElement('div');
+  parser.innerHTML = str;
+  str = parser.textContent || parser.innerText || '';
+
+  // Clean up extra blank lines while preserving meaningful line breaks
+  const lines = str.split('\n')
+    .map(line => line.trim())
+    .filter((line, idx, arr) => {
+      if (!line && idx > 0 && !arr[idx - 1]) return false;
+      return true;
+    });
+
+  let result = lines.join('\n').trim();
+
+  if (maxLength && result.length > maxLength) {
+    result = result.slice(0, maxLength).trim() + '...';
+  }
+
+  return result;
+}
+
 function renderNotes() {
   const allNotes = load('notes', DEFAULT_NOTES);
   const notes = allNotes.filter(n => !n.projectId); // Only top-level notes, exclude notes in folders
@@ -1442,7 +1477,7 @@ function renderNotes() {
           <button class="card-opts-btn" data-note-opts="${n.id}" title="Options">${OPTIONS_ICON_SVG}</button>
         </div>
         <h4 class="rich-note-title">${escapeHtml(n.title || 'Untitled')}</h4>
-        <p class="rich-note-body">${escapeHtml((n.body || '').replace(/<[^>]*>/g, '').slice(0, 140))}</p>
+        <p class="rich-note-body">${escapeHtml(formatNotePreview(n.body, 140))}</p>
       `;
 
       card.addEventListener('click', (e) => {
@@ -1479,21 +1514,27 @@ function renderNotes() {
     }
     notes.slice(0, 4).forEach((n) => {
       const el = document.createElement('div');
-      el.className = 'note-card';
+      el.className = 'rich-note-card note-card';
       el.style.cursor = 'pointer';
       el.innerHTML = `
-        <h5>${escapeHtml(n.title || 'Untitled')}</h5>
-        <p>${escapeHtml((n.body || '').replace(/<[^>]*>/g, '').slice(0, 80))}</p>
-        <button class="rm" data-rm="${n.id}" title="Remove">&times;</button>
+        <div class="rich-note-top">
+          <span>${escapeHtml(n.date || 'Today')}</span>
+          <button class="card-opts-btn" data-note-opts="${n.id}" title="Options">${OPTIONS_ICON_SVG}</button>
+        </div>
+        <h4 class="rich-note-title">${escapeHtml(n.title || 'Untitled')}</h4>
+        <p class="rich-note-body">${escapeHtml(formatNotePreview(n.body, 140))}</p>
       `;
       el.addEventListener('click', (e) => {
-        if (e.target.closest('.rm')) return;
+        if (e.target.closest('.card-opts-btn')) return;
         showView('notes');
         openNotionEditor(n, null, 'main');
       });
-      el.querySelector('.rm').addEventListener('click', (e) => {
+      el.querySelector('[data-note-opts]').addEventListener('click', (e) => {
         e.stopPropagation();
-        deleteNote(n.id);
+        openCardMenu(e.currentTarget, [
+          { label: 'Open / Edit Note', action: () => { showView('notes'); openNotionEditor(n, null, 'main'); } },
+          { label: 'Delete Note', danger: true, action: () => deleteNote(n.id) }
+        ]);
       });
       dashContainer.appendChild(el);
     });
@@ -1517,7 +1558,7 @@ function renderFolderNotes(projectId) {
         <button class="card-opts-btn" data-note-opts="${n.id}" title="Options">${OPTIONS_ICON_SVG}</button>
       </div>
       <h4 class="rich-note-title">${escapeHtml(n.title || 'Untitled')}</h4>
-      <p class="rich-note-body">${escapeHtml((n.body || '').replace(/<[^>]*>/g, '').slice(0, 140))}</p>
+      <p class="rich-note-body">${escapeHtml(formatNotePreview(n.body, 140))}</p>
     `;
 
     card.addEventListener('click', (e) => {
@@ -2052,7 +2093,7 @@ function performGlobalSearch(rawQ) {
 
   // 1. Matched Notes
   let scoredNotes = allNotes.map(n => {
-    const cleanBody = (n.body || '').replace(/<[^>]*>/g, '');
+    const cleanBody = formatNotePreview(n.body || '', 300);
     const tagStr = normalizeTags(n.tags).map(t => t.label).join(' ');
     const score = isNotesKeyword ? 100 : scoreMatch(n.title || '', cleanBody, tagStr);
     return { note: n, cleanBody, score };
