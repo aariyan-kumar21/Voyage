@@ -447,9 +447,22 @@ document.getElementById('streakCount').textContent = load('streak', 0);
 function wireAdd(btnId, inputId, handler){
   const btn = document.getElementById(btnId), input = document.getElementById(inputId);
   if (!btn || !input) return;
-  const go = () => { if (!input.value.trim()) return; handler(input.value.trim()); input.value=''; };
-  btn.addEventListener('click', go);
-  input.addEventListener('keydown', e => { if (e.key==='Enter') go(); });
+  const go = () => { 
+    const val = input.value.trim();
+    if (!val) return; 
+    input.value = ''; 
+    handler(val); 
+  };
+  btn.addEventListener('click', (e) => {
+    e.preventDefault();
+    go();
+  });
+  input.addEventListener('keydown', e => { 
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      go(); 
+    } 
+  });
 }
 
 /* ---------------- TODOS (tasks for today) ---------------- */
@@ -517,18 +530,28 @@ function renderTodos(){
   // stats reflect Today's tasks
   const total = todosToday.length;
   const done = todosToday.filter(t=>t.done).length;
-  const doneEl = document.getElementById('todoDone'); if (doneEl) doneEl.textContent = done;
+  const doneEl = document.getElementById('todoDone'); 
+  if (doneEl) doneEl.textContent = done;
+
+  const totalLbl = document.getElementById('todoTotalLbl');
+  if (totalLbl) {
+    totalLbl.textContent = `of ${total} ${total === 1 ? 'task' : 'tasks'}`;
+  }
+
+  const ring = document.getElementById('todoRing');
+  if (ring){
+    const circumference = 314;
+    const pct = total ? done/total : 0;
+    ring.style.strokeDashoffset = circumference - (circumference*pct);
+  }
+
   const badge = document.getElementById('todoBadge'); 
   if (badge) {
     const pending = total - done;
     badge.textContent = pending;
     badge.style.display = pending > 0 ? 'block' : 'none';
   }
-  if (ring){
-    const circumference = 314;
-    const pct = total ? done/total : 0;
-    ring.style.strokeDashoffset = circumference - (circumference*pct);
-  }
+
   const metricTasks = document.getElementById('metricTasks');
   if (metricTasks) metricTasks.innerHTML = `${done}<span class="u">tasks</span>`;
 
@@ -770,23 +793,23 @@ function renderProgressGraph(){
     const fillId = isToday ? 'gradToday' : (isFuture ? 'gradFuture' : 'gradPast');
     const opacity = isFuture ? 0.35 : (v > 0 ? 1 : 0.25);
     bars += `<rect x="${x}" y="${y}" width="${barW}" height="${bh}" rx="7" fill="url(#${fillId})" opacity="${opacity}"/>`;
-    bars += `<text x="${x+barW/2}" y="${padTop+chartH+18}" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="10" fill="${isToday ? '#ffcf7d' : 'rgba(255,255,255,0.35)'}">${d}</text>`;
+    bars += `<text x="${x+barW/2}" y="${padTop+chartH+18}" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="10" fill="${isToday ? '#d99bb4' : 'rgba(255,255,255,0.35)'}">${d}</text>`;
   }
 
   wrap.innerHTML = `
   <svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" style="display:block;">
     <defs>
       <linearGradient id="gradPast" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0%" stop-color="var(--violet)"/>
-        <stop offset="100%" stop-color="var(--blue)"/>
+        <stop offset="0%" stop-color="#d99bb4"/>
+        <stop offset="100%" stop-color="#7e4361"/>
       </linearGradient>
       <linearGradient id="gradToday" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0%" stop-color="#ffcf7d"/>
-        <stop offset="100%" stop-color="var(--amber)"/>
+        <stop offset="0%" stop-color="#f5d0e0"/>
+        <stop offset="100%" stop-color="#d99bb4"/>
       </linearGradient>
       <linearGradient id="gradFuture" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0%" stop-color="#3a4256"/>
-        <stop offset="100%" stop-color="#232a3a"/>
+        <stop offset="0%" stop-color="#2a2835"/>
+        <stop offset="100%" stop-color="#16151c"/>
       </linearGradient>
     </defs>
     ${[0,0.25,0.5,0.75,1].map(f => `<line x1="${padX-8}" y1="${padTop+chartH*(1-f)}" x2="${w-padX+8}" y2="${padTop+chartH*(1-f)}" stroke="rgba(255,255,255,0.045)" stroke-width="1"/>`).join('')}
