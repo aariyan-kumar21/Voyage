@@ -195,16 +195,18 @@ async function onAuthSuccess(user) {
 }
 
 function updateUserUI(name) {
-  // Personalize greeting
-  const hour = new Date().getHours();
-  const greeting = (hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening') + ', ' + name;
-  const greetEl = document.getElementById('greeting');
-  if (greetEl) greetEl.textContent = greeting;
   // Update sidebar
   const nameEl = document.getElementById('sidebarUserName');
   if (nameEl) nameEl.textContent = name;
   const avatarEl = document.getElementById('avatarInitial');
   if (avatarEl) avatarEl.textContent = name.charAt(0).toUpperCase();
+
+  // Personalize greeting if on dashboard
+  const activeView = document.querySelector('.nav-item.active')?.dataset.view || 'dashboard';
+  if (activeView === 'dashboard') {
+    const greetEl = document.getElementById('greeting');
+    if (greetEl) greetEl.textContent = getGreeting();
+  }
 }
 
 async function loadCloudData(userId) {
@@ -343,42 +345,34 @@ document.addEventListener('DOMContentLoaded', () => {
 
 /* ---------------- Storage defaults (reference design sample data if clean) ---------------- */
 const DEFAULT_PROJECTS = [
-  { id: 'p1', title: 'Workshop planning & ideas', color: '#8b6cf7', date: '27th April, 2026' },
-  { id: 'p2', title: 'Design exploration & aesthetics', color: '#34d399', date: '27th April, 2026' },
-  { id: 'p3', title: "User feedback & insights", color: '#ff9d3d', date: '27th April, 2026' },
-  { id: 'p4', title: 'Plans for future roadmap', color: '#ffcf7d', date: '27th April, 2026' },
-  { id: 'p5', title: 'Testing & benchmark results', color: '#ff6b8a', date: '27th April, 2026' },
-  { id: 'p6', title: 'Design system architecture', color: '#38bdf8', date: '27th April, 2026' }
+  { id: 'p1', title: 'Project idea', color: '#8b6cf7', date: '24th Aug, 2026' },
+  { id: 'p2', title: 'SIH', color: '#34d399', date: '23th Aug, 2026' }
 ];
 
 const DEFAULT_NOTES = [
   {
     id: 'n1',
-    title: 'Plans for future and creative directions',
-    body: 'A thoughtful design direction brings harmony and elegance to digital workspaces. It seamlessly marries art and strategy.',
-    date: '27th April, 2026',
-    tags: [{ label: 'Workshops', color: '#8b6cf7' }, { label: 'Strategy', color: '#ffcf7d' }]
+    title: "API'S",
+    icon: '',
+    body: "GOOGLE STUDIO\nRAILRADAR",
+    date: '27th Aug, 2026',
+    tags: []
   },
   {
     id: 'n2',
-    title: 'Design challenges & deep work rituals',
-    body: 'Creative habits thrive on intentional friction reduction. Daily sprints and habit checkpoints elevate craft consistently.',
-    date: '27th April, 2026',
-    tags: [{ label: 'Workshops', color: '#8b6cf7' }, { label: 'Exploration', color: '#ff9d3d' }, { label: 'In Progress', color: '#34d399' }]
+    title: 'LAPTOP',
+    icon: '',
+    body: 'Development workstation setup and tools',
+    date: '27th Aug, 2026',
+    tags: []
   },
   {
     id: 'n3',
-    title: 'How to conduct a user interview with active listening',
-    body: 'Exceptional products emerge when we observe human workflows intimately. Empathy informs structure and aesthetic clarity.',
-    date: '27th April, 2026',
-    tags: [{ label: 'Research', color: '#ffcf7d' }, { label: 'Feedback', color: '#38bdf8' }]
-  },
-  {
-    id: 'n4',
-    title: 'Visual aesthetics & micro-interaction design',
-    body: 'Curating tactile feedback, glowing accents, and disciplined geometric spacing elevates product feel.',
-    date: '27th April, 2026',
-    tags: [{ label: 'Portfolio', color: '#ff6b8a' }, { label: 'Strategy', color: '#8b6cf7' }]
+    title: 'PHONE',
+    icon: '',
+    body: 'Mobile applications and sync config',
+    date: '27th Aug, 2026',
+    tags: []
   }
 ];
 
@@ -1483,9 +1477,21 @@ function formatNotePreview(rawHtml, maxLength = 140) {
   return result;
 }
 
+const NOTION_COVERS = [
+  'linear-gradient(135deg, #4f46e5 0%, #9333ea 50%, #db2777 100%)',
+  'linear-gradient(135deg, #0ea5e9 0%, #6366f1 50%, #a855f7 100%)',
+  'linear-gradient(135deg, #059669 0%, #10b981 50%, #06b6d4 100%)',
+  'linear-gradient(135deg, #d97706 0%, #f59e0b 50%, #ef4444 100%)',
+  'linear-gradient(135deg, #e11d48 0%, #be185d 50%, #831843 100%)',
+  'linear-gradient(135deg, #1e293b 0%, #334155 50%, #475569 100%)'
+];
+
 function renderNotes() {
   const allNotes = load('notes', DEFAULT_NOTES);
-  const notes = allNotes.filter(n => !n.projectId); // Only top-level notes, exclude notes in folders
+  const notes = allNotes.filter(n => !n.projectId); // Top-level notes
+
+  const countBadge = document.getElementById('notesCountBadge');
+  if (countBadge) countBadge.textContent = String(allNotes.length);
 
   // Render on Notes Page (#pageNoteList)
   const pageContainer = document.getElementById('pageNoteList');
@@ -1502,7 +1508,7 @@ function renderNotes() {
           <button class="card-opts-btn" data-note-opts="${n.id}" title="Options">${OPTIONS_ICON_SVG}</button>
         </div>
         <h4 class="rich-note-title">${escapeHtml(n.title || 'Untitled')}</h4>
-        <p class="rich-note-body">${escapeHtml(formatNotePreview(n.body, 140))}</p>
+        <p class="rich-note-body">${escapeHtml(formatNotePreview(n.body, 140) || '')}</p>
       `;
 
       card.addEventListener('click', (e) => {
@@ -1513,8 +1519,8 @@ function renderNotes() {
       card.querySelector('[data-note-opts]').addEventListener('click', (e) => {
         e.stopPropagation();
         openCardMenu(e.currentTarget, [
-          { label: 'Open / Edit Note', action: () => openNotionEditor(n, null, 'main') },
-          { label: 'Delete Note', danger: true, action: () => deleteNote(n.id) }
+          { label: 'Open Page', action: () => openNotionEditor(n, null, 'main') },
+          { label: 'Delete Page', danger: true, action: () => deleteNote(n.id) }
         ]);
       });
 
@@ -1547,7 +1553,7 @@ function renderNotes() {
           <button class="card-opts-btn" data-note-opts="${n.id}" title="Options">${OPTIONS_ICON_SVG}</button>
         </div>
         <h4 class="rich-note-title">${escapeHtml(n.title || 'Untitled')}</h4>
-        <p class="rich-note-body">${escapeHtml(formatNotePreview(n.body, 140))}</p>
+        <p class="rich-note-body">${escapeHtml(formatNotePreview(n.body, 140) || '')}</p>
       `;
       el.addEventListener('click', (e) => {
         if (e.target.closest('.card-opts-btn')) return;
@@ -1557,8 +1563,8 @@ function renderNotes() {
       el.querySelector('[data-note-opts]').addEventListener('click', (e) => {
         e.stopPropagation();
         openCardMenu(e.currentTarget, [
-          { label: 'Open / Edit Note', action: () => { showView('notes'); openNotionEditor(n, null, 'main'); } },
-          { label: 'Delete Note', danger: true, action: () => deleteNote(n.id) }
+          { label: 'Open Page', action: () => { showView('notes'); openNotionEditor(n, null, 'main'); } },
+          { label: 'Delete Page', danger: true, action: () => deleteNote(n.id) }
         ]);
       });
       dashContainer.appendChild(el);
@@ -1583,7 +1589,7 @@ function renderFolderNotes(projectId) {
         <button class="card-opts-btn" data-note-opts="${n.id}" title="Options">${OPTIONS_ICON_SVG}</button>
       </div>
       <h4 class="rich-note-title">${escapeHtml(n.title || 'Untitled')}</h4>
-      <p class="rich-note-body">${escapeHtml(formatNotePreview(n.body, 140))}</p>
+      <p class="rich-note-body">${escapeHtml(formatNotePreview(n.body, 140) || '')}</p>
     `;
 
     card.addEventListener('click', (e) => {
@@ -1594,8 +1600,8 @@ function renderFolderNotes(projectId) {
     card.querySelector('[data-note-opts]').addEventListener('click', (e) => {
       e.stopPropagation();
       openCardMenu(e.currentTarget, [
-        { label: 'Open / Edit Note', action: () => openNotionEditor(n, projectId, 'folder') },
-        { label: 'Delete Note', danger: true, action: () => deleteNote(n.id) }
+        { label: 'Open Page', action: () => openNotionEditor(n, projectId, 'folder') },
+        { label: 'Delete Page', danger: true, action: () => deleteNote(n.id) }
       ]);
     });
 
@@ -1617,7 +1623,7 @@ function deleteNote(id) {
   if (currentFolderProjectId) renderFolderNotes(currentFolderProjectId);
 }
 
-/* ---------- NOTION-STYLE CANVAS DOCUMENT EDITOR ---------- */
+/* ---------- NOTION-STYLE WORKSPACE & DOCUMENT EDITOR ---------- */
 function openNotionEditor(noteToEdit = null, forProjectId = null, returnView = 'main') {
   const mainView = document.getElementById('notesMainView');
   const allSection = document.getElementById('notesAllSection');
@@ -1649,6 +1655,8 @@ function openNotionEditor(noteToEdit = null, forProjectId = null, returnView = '
       id: uid(),
       title: '',
       body: '',
+      icon: '',
+      cover: '',
       date: dateStr,
       tags: [{ label: 'General', color: '#8b6cf7' }],
       projectId: targetProj
@@ -1658,6 +1666,37 @@ function openNotionEditor(noteToEdit = null, forProjectId = null, returnView = '
     currentEditingNoteId = targetNote.id;
   }
 
+  // Update Breadcrumbs
+  const curProj = projects.find(p => p.id === targetNote.projectId);
+  const bcFolder = document.getElementById('notionBcFolder');
+  const bcTitle = document.getElementById('notionBcTitle');
+  if (bcFolder) bcFolder.textContent = curProj ? curProj.title : 'General';
+  if (bcTitle) bcTitle.textContent = targetNote.title || 'New page';
+
+  // Setup Cover Banner
+  const coverWrap = document.getElementById('notionCoverWrapper');
+  const coverImg = document.getElementById('notionCoverImg');
+  if (coverWrap && coverImg) {
+    if (targetNote.cover) {
+      coverWrap.style.display = 'block';
+      coverImg.style.background = targetNote.cover;
+    } else {
+      coverWrap.style.display = 'none';
+    }
+  }
+
+  // Setup Icon
+  const iconWrap = document.getElementById('notionIconWrapper');
+  const iconDisplay = document.getElementById('notionIconDisplay');
+  if (iconWrap && iconDisplay) {
+    if (targetNote.icon) {
+      iconWrap.style.display = 'inline-flex';
+      iconDisplay.textContent = targetNote.icon;
+    } else {
+      iconWrap.style.display = 'none';
+    }
+  }
+
   // Populate Title & Body
   const titleInput = document.getElementById('notionPageTitleInput');
   const canvas = document.getElementById('notionEditorCanvas');
@@ -1665,8 +1704,25 @@ function openNotionEditor(noteToEdit = null, forProjectId = null, returnView = '
   if (titleInput) titleInput.value = targetNote.title || '';
   if (canvas) canvas.innerHTML = targetNote.body || '';
 
-  if (titleInput && !targetNote.title) {
-    titleInput.focus();
+  // Populate Properties
+  const propDate = document.getElementById('notionPropDate');
+  if (propDate) propDate.textContent = targetNote.date || 'Today';
+
+  const folderSelect = document.getElementById('notionPropFolderSelect');
+  if (folderSelect) {
+    folderSelect.innerHTML = `<option value="">No Folder (General)</option>` +
+      projects.map(p => `<option value="${escapeHtml(p.id)}"${p.id === targetNote.projectId ? ' selected' : ''}>${escapeHtml(p.title)}</option>`).join('');
+    
+    folderSelect.onchange = () => {
+      const nList = load('notes', DEFAULT_NOTES);
+      const curN = nList.find(n => n.id === currentEditingNoteId);
+      if (curN) {
+        curN.projectId = folderSelect.value || null;
+        save('notes', nList);
+        const pMatch = projects.find(p => p.id === curN.projectId);
+        if (bcFolder) bcFolder.textContent = pMatch ? pMatch.title : 'General';
+      }
+    };
   }
 
   // Wire options button inside editor
@@ -1675,14 +1731,34 @@ function openNotionEditor(noteToEdit = null, forProjectId = null, returnView = '
     optsBtn.onclick = (e) => {
       e.stopPropagation();
       openCardMenu(optsBtn, [
-        { label: 'Delete Note', danger: true, action: () => { deleteNote(targetNote.id); closeNotionEditor(); } }
+        { label: 'Delete Page', danger: true, action: () => { deleteNote(targetNote.id); closeNotionEditor(); } }
       ]);
     };
+  }
+
+  // Wire new page button inside topbar
+  const newPageBtn = document.getElementById('notionEditorNewBtn');
+  if (newPageBtn) {
+    newPageBtn.onclick = () => {
+      saveCurrentNotionEditor();
+      openNotionEditor(null, targetNote.projectId, editorReturnView);
+    };
+  }
+
+  if (titleInput && !targetNote.title) {
+    titleInput.focus();
   }
 }
 
 function closeNotionEditor() {
   saveCurrentNotionEditor();
+  const emojiPopover = document.getElementById('notionEmojiPopover');
+  if (emojiPopover) emojiPopover.style.display = 'none';
+  const slashMenu = document.getElementById('notionSlashMenu');
+  if (slashMenu) slashMenu.style.display = 'none';
+  const floatBar = document.getElementById('notionFloatingToolbar');
+  if (floatBar) floatBar.style.display = 'none';
+
   if (editorReturnView === 'folder' && currentFolderProjectId) {
     showNotesFolderView(currentFolderProjectId);
   } else {
@@ -1700,15 +1776,33 @@ function saveCurrentNotionEditor() {
 
   const titleInput = document.getElementById('notionPageTitleInput');
   const canvas = document.getElementById('notionEditorCanvas');
+  const iconDisplay = document.getElementById('notionIconDisplay');
+  const iconWrap = document.getElementById('notionIconWrapper');
+  const coverWrap = document.getElementById('notionCoverWrapper');
+  const coverImg = document.getElementById('notionCoverImg');
+  const bcTitle = document.getElementById('notionBcTitle');
 
-  if (titleInput) note.title = titleInput.value.trim();
+  if (titleInput) {
+    note.title = titleInput.value.trim();
+    if (bcTitle) bcTitle.textContent = note.title || 'New page';
+  }
   if (canvas) note.body = canvas.innerHTML;
+  if (iconWrap && iconWrap.style.display !== 'none' && iconDisplay) {
+    note.icon = iconDisplay.textContent;
+  } else {
+    note.icon = '';
+  }
+  if (coverWrap && coverWrap.style.display !== 'none' && coverImg) {
+    note.cover = coverImg.style.background || '';
+  } else {
+    note.cover = '';
+  }
 
   save('notes', notes);
 
   const badge = document.getElementById('notionSaveBadge');
   if (badge) {
-    badge.textContent = 'Saved';
+    badge.querySelector('.save-text').textContent = 'Saved';
     badge.style.opacity = '1';
     setTimeout(() => { if (badge) badge.style.opacity = '0.6'; }, 1000);
   }
@@ -1717,7 +1811,10 @@ function saveCurrentNotionEditor() {
 function scheduleEditorAutoSave() {
   clearTimeout(editorAutoSaveTimer);
   const badge = document.getElementById('notionSaveBadge');
-  if (badge) badge.textContent = 'Saving...';
+  if (badge) {
+    badge.querySelector('.save-text').textContent = 'Saving...';
+    badge.style.opacity = '1';
+  }
   editorAutoSaveTimer = setTimeout(saveCurrentNotionEditor, 400);
 }
 
@@ -1728,13 +1825,29 @@ function handleSlashCommand(cmd) {
   menu.style.display = 'none';
 
   canvas.focus();
-  if (cmd === 'h1') document.execCommand('formatBlock', false, '<h1>');
-  else if (cmd === 'h2') document.execCommand('formatBlock', false, '<h2>');
-  else if (cmd === 'bullet') document.execCommand('insertUnorderedList', false, null);
-  else if (cmd === 'quote') document.execCommand('formatBlock', false, '<blockquote>');
-  else if (cmd === 'code') document.execCommand('formatBlock', false, '<pre>');
-  else if (cmd === 'todo') document.execCommand('insertHTML', false, '<div>☑ Task checklist item</div>');
-  else if (cmd === 'callout') document.execCommand('insertHTML', false, '<div class="notion-callout">💡 <span>Callout note box...</span></div>');
+  if (cmd === 'text') {
+    document.execCommand('formatBlock', false, '<p>');
+  } else if (cmd === 'h1') {
+    document.execCommand('formatBlock', false, '<h1>');
+  } else if (cmd === 'h2') {
+    document.execCommand('formatBlock', false, '<h2>');
+  } else if (cmd === 'h3') {
+    document.execCommand('formatBlock', false, '<h3>');
+  } else if (cmd === 'bullet') {
+    document.execCommand('insertUnorderedList', false, null);
+  } else if (cmd === 'number') {
+    document.execCommand('insertOrderedList', false, null);
+  } else if (cmd === 'quote') {
+    document.execCommand('formatBlock', false, '<blockquote>');
+  } else if (cmd === 'code') {
+    document.execCommand('insertHTML', false, '<pre><code>// Code snippet...</code></pre>');
+  } else if (cmd === 'todo') {
+    document.execCommand('insertHTML', false, '<div class="notion-todo-item"><div class="notion-checkbox"></div><div class="notion-todo-text">Checklist item</div></div>');
+  } else if (cmd === 'callout') {
+    document.execCommand('insertHTML', false, '<div class="notion-callout"><div class="notion-callout-icon">💡</div><div class="notion-callout-text">Callout tip or highlight...</div></div>');
+  } else if (cmd === 'divider') {
+    document.execCommand('insertHorizontalRule', false, null);
+  }
 
   scheduleEditorAutoSave();
 }
@@ -1819,26 +1932,121 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  // Cover Banner controls
+  const addCoverBtn = document.getElementById('notionAddCoverBtn');
+  const coverWrap = document.getElementById('notionCoverWrapper');
+  const coverImg = document.getElementById('notionCoverImg');
+  const changeCoverBtn = document.getElementById('notionChangeCoverBtn');
+  const removeCoverBtn = document.getElementById('notionRemoveCoverBtn');
+
+  let currentCoverIdx = 0;
+  if (addCoverBtn) {
+    addCoverBtn.addEventListener('click', () => {
+      if (coverWrap && coverImg) {
+        currentCoverIdx = 0;
+        coverImg.style.background = NOTION_COVERS[0];
+        coverWrap.style.display = 'block';
+        scheduleEditorAutoSave();
+      }
+    });
+  }
+
+  if (changeCoverBtn) {
+    changeCoverBtn.addEventListener('click', () => {
+      if (coverWrap && coverImg) {
+        currentCoverIdx = (currentCoverIdx + 1) % NOTION_COVERS.length;
+        coverImg.style.background = NOTION_COVERS[currentCoverIdx];
+        scheduleEditorAutoSave();
+      }
+    });
+  }
+
+  if (removeCoverBtn) {
+    removeCoverBtn.addEventListener('click', () => {
+      if (coverWrap) {
+        coverWrap.style.display = 'none';
+        scheduleEditorAutoSave();
+      }
+    });
+  }
+
   // Notion Editor input auto-saving
   const titleInput = document.getElementById('notionPageTitleInput');
   const canvas = document.getElementById('notionEditorCanvas');
   const slashMenu = document.getElementById('notionSlashMenu');
+  const floatingToolbar = document.getElementById('notionFloatingToolbar');
 
   if (titleInput) titleInput.addEventListener('input', scheduleEditorAutoSave);
 
   if (canvas) {
     canvas.addEventListener('input', () => {
       scheduleEditorAutoSave();
-      const text = canvas.innerText || '';
-      if (text.endsWith('/')) {
-        if (slashMenu) {
-          slashMenu.style.display = 'flex';
-          slashMenu.style.top = '140px';
-          slashMenu.style.left = '20px';
+      const sel = window.getSelection();
+      if (sel && sel.focusNode) {
+        const textBefore = sel.focusNode.textContent || '';
+        if (textBefore.endsWith('/')) {
+          if (slashMenu) {
+            const rect = canvas.getBoundingClientRect();
+            slashMenu.style.display = 'flex';
+            slashMenu.style.top = '120px';
+            slashMenu.style.left = '56px';
+          }
+        } else {
+          if (slashMenu) slashMenu.style.display = 'none';
         }
-      } else {
-        if (slashMenu) slashMenu.style.display = 'none';
       }
+    });
+
+    // Checkbox toggle click delegation inside editor canvas
+    canvas.addEventListener('click', (e) => {
+      const checkbox = e.target.closest('.notion-checkbox');
+      if (checkbox) {
+        checkbox.classList.toggle('checked');
+        const textEl = checkbox.parentElement.querySelector('.notion-todo-text');
+        if (textEl) textEl.classList.toggle('checked', checkbox.classList.contains('checked'));
+        scheduleEditorAutoSave();
+      }
+    });
+
+    // Floating toolbar on text selection
+    const checkSelection = () => {
+      const sel = window.getSelection();
+      if (!floatingToolbar) return;
+      if (sel && !sel.isCollapsed && canvas.contains(sel.anchorNode)) {
+        const range = sel.getRangeAt(0);
+        const rect = range.getBoundingClientRect();
+        const canvasRect = canvas.parentElement.getBoundingClientRect();
+        floatingToolbar.style.display = 'flex';
+        floatingToolbar.style.top = `${Math.max(10, rect.top - canvasRect.top - 44)}px`;
+        floatingToolbar.style.left = `${Math.max(20, rect.left - canvasRect.left)}px`;
+      } else {
+        floatingToolbar.style.display = 'none';
+      }
+    };
+
+    canvas.addEventListener('mouseup', checkSelection);
+    canvas.addEventListener('keyup', checkSelection);
+  }
+
+  // Floating toolbar buttons
+  if (floatingToolbar) {
+    floatingToolbar.querySelectorAll('.toolbar-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.preventDefault();
+        const fmt = btn.dataset.format;
+        if (fmt === 'bold' || fmt === 'italic' || fmt === 'underline' || fmt === 'strikeThrough') {
+          document.execCommand(fmt, false, null);
+        } else if (fmt === 'code') {
+          document.execCommand('formatBlock', false, '<pre>');
+        } else if (fmt === 'h1') {
+          document.execCommand('formatBlock', false, '<h1>');
+        } else if (fmt === 'h2') {
+          document.execCommand('formatBlock', false, '<h2>');
+        } else if (fmt === 'highlight') {
+          document.execCommand('hiliteColor', false, '#fef08a');
+        }
+        scheduleEditorAutoSave();
+      });
     });
   }
 
@@ -1952,11 +2160,6 @@ function updateTimerDisplay(){
   flipTile('tileS1', digits[2]);
   flipTile('tileS2', digits[3]);
   lastShownDigits = digits;
-
-  const label = document.getElementById('flipPhaseLabel');
-  if (label){
-    label.textContent = timerMode === 'pomodoro' ? (pomodoroPhase === 'work' ? 'FOCUS' : 'BREAK') : 'TIMER';
-  }
 }
 function stopTimerInterval(){
   clearInterval(timerInterval);
@@ -1982,70 +2185,110 @@ function setMode(mode){
   resetTimer();
 }
 
-const timerStartBtn = document.getElementById('timerStart');
-if (timerStartBtn){
-  timerStartBtn.addEventListener('click', () => {
-    if (timerInterval){
-      stopTimerInterval();
-      document.getElementById('timerState').textContent = 'Paused';
-      return;
-    }
-    timerStartBtn.textContent = 'Pause';
-    timerStartBtn.classList.add('running');
-    document.getElementById('timerState').textContent = timerMode === 'pomodoro'
-      ? (pomodoroPhase === 'work' ? 'Focusing...' : 'On a break...')
-      : 'Counting up...';
-    timerInterval = setInterval(() => {
-      if (timerMode === 'timer'){
-        timerSeconds++;
-        updateTimerDisplay();
-        return;
-      }
-      timerSeconds--;
-      if (timerSeconds <= 0){
-        pomodoroPhase = pomodoroPhase === 'work' ? 'break' : 'work';
-        timerSeconds = secondsForCurrentMode();
-        updateTimerDisplay();
-        document.getElementById('timerState').textContent = pomodoroPhase === 'work' ? 'Focusing...' : 'On a break...';
-        updateStreakDisplay();
-        return;
-      }
+function startTimer(){
+  if (timerInterval){
+    stopTimerInterval();
+    const stateEl = document.getElementById('timerState');
+    if (stateEl) stateEl.textContent = 'Paused';
+    return;
+  }
+  const btn = document.getElementById('timerStart');
+  if (btn) {
+    btn.textContent = 'Pause';
+    btn.classList.add('running');
+  }
+  const stateEl = document.getElementById('timerState');
+  if (stateEl) stateEl.textContent = timerMode === 'pomodoro' ? (pomodoroPhase === 'work' ? 'Focusing...' : 'Break time...') : 'Running...';
+
+  timerInterval = setInterval(() => {
+    if (timerMode === 'timer'){
+      timerSeconds++;
       updateTimerDisplay();
-    }, 1000);
-  });
-  document.getElementById('timerReset').addEventListener('click', resetTimer);
-  document.getElementById('modeTimerBtn').addEventListener('click', () => setMode('timer'));
-  document.getElementById('modePomodoroBtn').addEventListener('click', () => setMode('pomodoro'));
+    } else {
+      if (timerSeconds > 0){
+        timerSeconds--;
+        updateTimerDisplay();
+      } else {
+        stopTimerInterval();
+        playBeep();
+        if (pomodoroPhase === 'work'){
+          pomodoroPhase = 'break';
+          timerSeconds = 5*60;
+          if (stateEl) stateEl.textContent = 'Take a 5-min break!';
+        } else {
+          pomodoroPhase = 'work';
+          timerSeconds = 25*60;
+          if (stateEl) stateEl.textContent = 'Break over. Ready to focus.';
+        }
+        updateTimerDisplay();
+      }
+    }
+  }, 1000);
 }
 
-/* ---------------- View routing (sidebar navigation) ---------------- */
-const pageMeta = {
-  notes:    { title: 'Notes',         sub: 'Capture ideas before they slip away.' },
-  habits:   { title: 'Habit Tracker', sub: 'Stay consistent, one day at a time.' },
-  timer:    { title: 'Focus Timer',   sub: 'Deep work, tracked automatically.' },
-  todo:     { title: 'To-Do',         sub: 'Everything on your plate today.' },
-  goals:    { title: 'Roadmap',       sub: 'Chart your long-term course.' },
-  calendar: { title: 'Calendar',      sub: 'Plan ahead and never miss a date.' },
-};
-function showView(view){
-  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
-  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+function playBeep(){
+  try{
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(880, ctx.currentTime);
+    gain.gain.setValueAtTime(0.15, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.5);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start();
+    osc.stop(ctx.currentTime + 0.5);
+  }catch(e){}
+}
 
-  const target = document.getElementById(`view-${view}`);
-  if (target) target.classList.add('active');
+/* ---------------- Global Navigation ---------------- */
+function showView(view) {
+  document.querySelectorAll('.nav-item').forEach(b => {
+    b.classList.toggle('active', b.dataset.view === view);
+  });
+  document.querySelectorAll('.view').forEach(v => {
+    v.classList.remove('active');
+  });
+  const activeEl = document.getElementById('view-' + view);
+  if (activeEl) activeEl.classList.add('active');
 
-  const nav = document.querySelector(`.nav-item[data-view="${view}"]`);
-  if (nav) nav.classList.add('active');
+  const viewHeaders = {
+    dashboard: {
+      title: getGreeting(),
+      subtitle: 'Take control of your day.'
+    },
+    notes: {
+      title: 'Notes',
+      subtitle: 'Capture ideas before they slip away.'
+    },
+    habits: {
+      title: 'Habit Tracker',
+      subtitle: 'Build consistency day by day.'
+    },
+    timer: {
+      title: 'Focus Timer',
+      subtitle: 'Stay in flow with the Pomodoro technique.'
+    },
+    todo: {
+      title: 'To-Do Tasks',
+      subtitle: 'Track and complete your daily goals.'
+    },
+    goals: {
+      title: 'Roadmap',
+      subtitle: 'Plan and track your milestones with AI.'
+    },
+    calendar: {
+      title: 'Calendar',
+      subtitle: 'Manage your schedule and upcoming events.'
+    }
+  };
 
-  const h1 = document.getElementById('greeting');
-  const sub = h1 ? h1.nextElementSibling : null;
-  if (view === 'dashboard'){
-    if (h1) h1.textContent = getGreeting();
-    if (sub) sub.textContent = 'Take control of your day.';
-  } else if (pageMeta[view]){
-    if (h1) h1.textContent = pageMeta[view].title;
-    if (sub) sub.textContent = pageMeta[view].sub;
-  }
+  const headerInfo = viewHeaders[view] || { title: 'Dashboard', subtitle: '' };
+  const greetEl = document.getElementById('greeting');
+  const subEl = document.getElementById('pageSubtitle');
+  if (greetEl) greetEl.textContent = headerInfo.title;
+  if (subEl) subEl.textContent = headerInfo.subtitle;
 
   if (view === 'dashboard') { renderTodos(); renderHabitQuickList(); renderEvents(); renderNotes(); renderBars(); }
   if (view === 'notes') { showNotesMainView(); renderProjects(); renderNotes(); }
@@ -2056,7 +2299,7 @@ function showView(view){
   if (view === 'calendar') { renderMiniCalendar(); renderEvents(); }
 }
 
-/* ---------------- Global Search with Dropdown & Open ---------------- */
+/* ---------------- Global Search with Exact Results ---------------- */
 function performGlobalSearch(rawQ) {
   const dropdown = document.getElementById('searchDropdown');
   const clearBtn = document.getElementById('searchClearBtn');
@@ -2072,7 +2315,6 @@ function performGlobalSearch(rawQ) {
   }
 
   const qLower = q.toLowerCase();
-  const searchWords = qLower.split(/\s+/).filter(Boolean);
 
   const allNotes = load('notes', DEFAULT_NOTES);
   const allTodos = load('todos', []);
@@ -2087,71 +2329,42 @@ function performGlobalSearch(rawQ) {
   const isGoalsKeyword = /^(goal|goals|roadmap|roadmaps|ai roadmap)$/i.test(qLower);
   const isCalendarKeyword = /^(calendar|event|events|schedule)$/i.test(qLower);
 
-  // Helper to score similarity
-  function scoreMatch(title = '', body = '', tag = '') {
-    const t = title.toLowerCase();
-    const b = body.toLowerCase();
-    const g = tag.toLowerCase();
+  // Exact Substring Matching for Notes
+  let matchedNotes = allNotes.filter(n => {
+    if (isNotesKeyword) return true;
+    const title = (n.title || '').toLowerCase();
+    const cleanBody = formatNotePreview(n.body || '', 300).toLowerCase();
+    const tagStr = normalizeTags(n.tags).map(t => t.label).join(' ').toLowerCase();
+    return title.includes(qLower) || cleanBody.includes(qLower) || tagStr.includes(qLower);
+  }).map(n => ({ note: n, cleanBody: formatNotePreview(n.body || '', 300) }));
 
-    if (t === qLower) return 100; // Exact title match
-    if (t.includes(qLower)) return 80; // Full query in title
-    if (b.includes(qLower)) return 60; // Full query in body
-    if (g.includes(qLower)) return 55; // Full query in tags
+  // Exact Substring Matching for Tasks
+  let matchedTodos = allTodos.filter(t => {
+    if (isTodoKeyword) return true;
+    return (t.text || '').toLowerCase().includes(qLower);
+  }).map(t => ({ todo: t }));
 
-    // Word-by-word tokenized scoring
-    let wordScore = 0;
-    let wordsMatched = 0;
-    for (const w of searchWords) {
-      if (t.includes(w)) {
-        wordsMatched++;
-        wordScore += 20;
-      } else if (b.includes(w) || g.includes(w)) {
-        wordsMatched++;
-        wordScore += 8;
-      }
-    }
-    if (wordsMatched > 0) {
-      return wordScore + (wordsMatched / searchWords.length) * 15;
-    }
-    return 0;
-  }
+  // Exact Substring Matching for Roadmaps
+  let matchedGoals = allGoals.filter(g => {
+    if (isGoalsKeyword) return true;
+    const title = (g.title || '').toLowerCase();
+    const summary = (g.summary || '').toLowerCase();
+    return title.includes(qLower) || summary.includes(qLower);
+  }).map(g => ({ goal: g }));
 
-  // 1. Matched Notes
-  let scoredNotes = allNotes.map(n => {
-    const cleanBody = formatNotePreview(n.body || '', 300);
-    const tagStr = normalizeTags(n.tags).map(t => t.label).join(' ');
-    const score = isNotesKeyword ? 100 : scoreMatch(n.title || '', cleanBody, tagStr);
-    return { note: n, cleanBody, score };
-  }).filter(item => item.score > 0);
-
-  scoredNotes.sort((a, b) => b.score - a.score);
-
-  // 2. Matched Todos
-  let scoredTodos = allTodos.map(t => {
-    const score = isTodoKeyword ? 100 : scoreMatch(t.text || '', '', '');
-    return { todo: t, score };
-  }).filter(item => item.score > 0);
-  scoredTodos.sort((a, b) => b.score - a.score);
-
-  // 3. Matched Goals
-  let scoredGoals = allGoals.map(g => {
-    const score = isGoalsKeyword ? 100 : scoreMatch(g.title || '', g.summary || '', '');
-    return { goal: g, score };
-  }).filter(item => item.score > 0);
-  scoredGoals.sort((a, b) => b.score - a.score);
-
-  // 4. Matched Events
-  let scoredEvents = allEvents.map(e => {
-    const score = isCalendarKeyword ? 100 : scoreMatch(e.title || '', '', e.tag || '');
-    return { event: e, score };
-  }).filter(item => item.score > 0);
-  scoredEvents.sort((a, b) => b.score - a.score);
+  // Exact Substring Matching for Events
+  let matchedEvents = allEvents.filter(e => {
+    if (isCalendarKeyword) return true;
+    const title = (e.title || '').toLowerCase();
+    const tag = (e.tag || '').toLowerCase();
+    return title.includes(qLower) || tag.includes(qLower);
+  }).map(e => ({ event: e }));
 
   const hasQuickLinks = isNotesKeyword || isTodoKeyword || isHabitsKeyword || isTimerKeyword || isGoalsKeyword || isCalendarKeyword;
-  const totalMatches = scoredNotes.length + scoredTodos.length + scoredGoals.length + scoredEvents.length;
+  const totalMatches = matchedNotes.length + matchedTodos.length + matchedGoals.length + matchedEvents.length;
 
   if (totalMatches === 0 && !hasQuickLinks) {
-    dropdown.innerHTML = `<div class="search-empty-message">No results found for "<b>${escapeHtml(q)}</b>"</div>`;
+    dropdown.innerHTML = `<div class="search-empty-message">No exact results found for "<b>${escapeHtml(q)}</b>"</div>`;
     dropdown.style.display = 'flex';
     return;
   }
@@ -2160,7 +2373,6 @@ function performGlobalSearch(rawQ) {
 
   // Quick Navigation Section
   if (hasQuickLinks) {
-    html += `<div class="search-group-head">Quick Navigation</div>`;
     if (isNotesKeyword) {
       html += `
         <div class="search-result-item" data-search-type="nav" data-nav-target="notes">
@@ -2182,7 +2394,7 @@ function performGlobalSearch(rawQ) {
             <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
           </div>
           <div class="search-result-content">
-            <div class="search-result-title">Go to To-Do Tasks</div>
+            <div class="search-result-title">Go to Tasks</div>
             <div class="search-result-subtitle">Manage daily tasks & checklists</div>
           </div>
           <span class="search-result-tag">Section</span>
@@ -2247,17 +2459,17 @@ function performGlobalSearch(rawQ) {
     }
   }
 
-  // 1. Notes Suggestions
-  if (scoredNotes.length > 0) {
-    html += `<div class="search-group-head">Notes Suggestions (${scoredNotes.length})</div>`;
-    scoredNotes.slice(0, 6).forEach(({ note: n, cleanBody }) => {
+  // 1. Notes (Clean matching items directly)
+  if (matchedNotes.length > 0) {
+    matchedNotes.slice(0, 8).forEach(({ note: n, cleanBody }) => {
       const parentProj = projects.find(p => p.id === n.projectId);
       const projLabel = parentProj ? parentProj.title : 'Notes';
       const snippet = cleanBody.slice(0, 75);
+      const icon = n.icon || '📄';
       html += `
         <div class="search-result-item" data-search-type="note" data-note-id="${n.id}">
-          <div class="search-result-icon note">
-            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h13l3 3v13H4z"/><path d="M8 9h9M8 13h9M8 17h5"/></svg>
+          <div class="search-result-icon note" style="font-size:15px;display:flex;align-items:center;justify-content:center;">
+            ${escapeHtml(icon)}
           </div>
           <div class="search-result-content">
             <div class="search-result-title">${escapeHtml(n.title || 'Untitled Note')}</div>
@@ -2270,9 +2482,8 @@ function performGlobalSearch(rawQ) {
   }
 
   // 2. Tasks
-  if (scoredTodos.length > 0) {
-    html += `<div class="search-group-head">Tasks (${scoredTodos.length})</div>`;
-    scoredTodos.slice(0, 5).forEach(({ todo: t }) => {
+  if (matchedTodos.length > 0) {
+    matchedTodos.slice(0, 6).forEach(({ todo: t }) => {
       html += `
         <div class="search-result-item" data-search-type="todo" data-todo-id="${t.id}">
           <div class="search-result-icon todo">
@@ -2289,9 +2500,8 @@ function performGlobalSearch(rawQ) {
   }
 
   // 3. Roadmaps
-  if (scoredGoals.length > 0) {
-    html += `<div class="search-group-head">Roadmap (${scoredGoals.length})</div>`;
-    scoredGoals.slice(0, 5).forEach(({ goal: g }) => {
+  if (matchedGoals.length > 0) {
+    matchedGoals.slice(0, 6).forEach(({ goal: g }) => {
       html += `
         <div class="search-result-item" data-search-type="goal" data-goal-id="${g.id}">
           <div class="search-result-icon goal">
@@ -2308,9 +2518,8 @@ function performGlobalSearch(rawQ) {
   }
 
   // 4. Events
-  if (scoredEvents.length > 0) {
-    html += `<div class="search-group-head">Events (${scoredEvents.length})</div>`;
-    scoredEvents.slice(0, 5).forEach(({ event: e }) => {
+  if (matchedEvents.length > 0) {
+    matchedEvents.slice(0, 6).forEach(({ event: e }) => {
       html += `
         <div class="search-result-item" data-search-type="event" data-event-id="${e.id}">
           <div class="search-result-icon event">
@@ -2418,6 +2627,18 @@ function initApp() {
       if (dropdown) dropdown.style.display = 'none';
     }
   });
+
+  const timerStartBtn = document.getElementById('timerStart');
+  if (timerStartBtn) timerStartBtn.addEventListener('click', startTimer);
+
+  const timerResetBtn = document.getElementById('timerReset');
+  if (timerResetBtn) timerResetBtn.addEventListener('click', resetTimer);
+
+  const modeTimerBtn = document.getElementById('modeTimerBtn');
+  if (modeTimerBtn) modeTimerBtn.addEventListener('click', () => setMode('timer'));
+
+  const modePomodoroBtn = document.getElementById('modePomodoroBtn');
+  if (modePomodoroBtn) modePomodoroBtn.addEventListener('click', () => setMode('pomodoro'));
 
   bindTrackerToolbar();
 
