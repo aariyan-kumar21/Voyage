@@ -1666,35 +1666,20 @@ function openNotionEditor(noteToEdit = null, forProjectId = null, returnView = '
     currentEditingNoteId = targetNote.id;
   }
 
-  // Update Breadcrumbs
-  const curProj = projects.find(p => p.id === targetNote.projectId);
-  const bcFolder = document.getElementById('notionBcFolder');
-  const bcTitle = document.getElementById('notionBcTitle');
-  if (bcFolder) bcFolder.textContent = curProj ? curProj.title : 'General';
-  if (bcTitle) bcTitle.textContent = targetNote.title || 'New page';
-
-  // Setup Cover Banner
-  const coverWrap = document.getElementById('notionCoverWrapper');
-  const coverImg = document.getElementById('notionCoverImg');
-  if (coverWrap && coverImg) {
-    if (targetNote.cover) {
-      coverWrap.style.display = 'block';
-      coverImg.style.background = targetNote.cover;
-    } else {
-      coverWrap.style.display = 'none';
-    }
-  }
-
-  // Setup Icon
-  const iconWrap = document.getElementById('notionIconWrapper');
-  const iconDisplay = document.getElementById('notionIconDisplay');
-  if (iconWrap && iconDisplay) {
-    if (targetNote.icon) {
-      iconWrap.style.display = 'inline-flex';
-      iconDisplay.textContent = targetNote.icon;
-    } else {
-      iconWrap.style.display = 'none';
-    }
+  // Update Top Date Badge with note creation date
+  const todayDateEl = document.getElementById('todayDate');
+  const todayChipEl = document.querySelector('.today-chip');
+  if (todayDateEl) todayDateEl.textContent = targetNote.date || 'Today';
+  if (todayChipEl) {
+    todayChipEl.innerHTML = `
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <rect x="3" y="4" width="18" height="18" rx="2" />
+        <line x1="16" y1="2" x2="16" y2="6"/>
+        <line x1="8" y1="2" x2="8" y2="6"/>
+        <line x1="3" y1="10" x2="21" y2="10"/>
+      </svg>
+      Created
+    `;
   }
 
   // Populate Title & Body
@@ -1704,56 +1689,31 @@ function openNotionEditor(noteToEdit = null, forProjectId = null, returnView = '
   if (titleInput) titleInput.value = targetNote.title || '';
   if (canvas) canvas.innerHTML = targetNote.body || '';
 
-  // Populate Properties
-  const propDate = document.getElementById('notionPropDate');
-  if (propDate) propDate.textContent = targetNote.date || 'Today';
-
-  const folderSelect = document.getElementById('notionPropFolderSelect');
-  if (folderSelect) {
-    folderSelect.innerHTML = `<option value="">No Folder (General)</option>` +
-      projects.map(p => `<option value="${escapeHtml(p.id)}"${p.id === targetNote.projectId ? ' selected' : ''}>${escapeHtml(p.title)}</option>`).join('');
-    
-    folderSelect.onchange = () => {
-      const nList = load('notes', DEFAULT_NOTES);
-      const curN = nList.find(n => n.id === currentEditingNoteId);
-      if (curN) {
-        curN.projectId = folderSelect.value || null;
-        save('notes', nList);
-        const pMatch = projects.find(p => p.id === curN.projectId);
-        if (bcFolder) bcFolder.textContent = pMatch ? pMatch.title : 'General';
-      }
-    };
-  }
-
-  // Wire options button inside editor
-  const optsBtn = document.getElementById('notionEditorOptsBtn');
-  if (optsBtn) {
-    optsBtn.onclick = (e) => {
-      e.stopPropagation();
-      openCardMenu(optsBtn, [
-        { label: 'Delete Page', danger: true, action: () => { deleteNote(targetNote.id); closeNotionEditor(); } }
-      ]);
-    };
-  }
-
-  // Wire new page button inside topbar
-  const newPageBtn = document.getElementById('notionEditorNewBtn');
-  if (newPageBtn) {
-    newPageBtn.onclick = () => {
-      saveCurrentNotionEditor();
-      openNotionEditor(null, targetNote.projectId, editorReturnView);
-    };
-  }
-
   if (titleInput && !targetNote.title) {
     titleInput.focus();
   }
 }
 
+function resetTopDateBadge() {
+  const todayDateEl = document.getElementById('todayDate');
+  const todayChipEl = document.querySelector('.today-chip');
+  if (todayDateEl) {
+    todayDateEl.textContent = new Date().toLocaleDateString(undefined, { day:'numeric', month:'long', year:'numeric' });
+  }
+  if (todayChipEl) {
+    todayChipEl.innerHTML = `
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <rect x="3" y="4" width="18" height="17" rx="2" />
+        <path d="M16 2v4M8 2v4M3 10h18" />
+      </svg>
+      Today
+    `;
+  }
+}
+
 function closeNotionEditor() {
   saveCurrentNotionEditor();
-  const emojiPopover = document.getElementById('notionEmojiPopover');
-  if (emojiPopover) emojiPopover.style.display = 'none';
+  resetTopDateBadge();
   const slashMenu = document.getElementById('notionSlashMenu');
   if (slashMenu) slashMenu.style.display = 'none';
   const floatBar = document.getElementById('notionFloatingToolbar');
@@ -1776,29 +1736,14 @@ function saveCurrentNotionEditor() {
 
   const titleInput = document.getElementById('notionPageTitleInput');
   const canvas = document.getElementById('notionEditorCanvas');
-  const iconDisplay = document.getElementById('notionIconDisplay');
-  const iconWrap = document.getElementById('notionIconWrapper');
-  const coverWrap = document.getElementById('notionCoverWrapper');
-  const coverImg = document.getElementById('notionCoverImg');
-  const bcTitle = document.getElementById('notionBcTitle');
 
   if (titleInput) {
     note.title = titleInput.value.trim();
-    if (bcTitle) bcTitle.textContent = note.title || 'New page';
   }
   if (canvas) note.body = canvas.innerHTML;
-  if (iconWrap && iconWrap.style.display !== 'none' && iconDisplay) {
-    note.icon = iconDisplay.textContent;
-  } else {
-    note.icon = '';
-  }
-  if (coverWrap && coverWrap.style.display !== 'none' && coverImg) {
-    note.cover = coverImg.style.background || '';
-  } else {
-    note.cover = '';
-  }
 
   save('notes', notes);
+}
 
   const badge = document.getElementById('notionSaveBadge');
   if (badge) {
@@ -1844,7 +1789,7 @@ function handleSlashCommand(cmd) {
   } else if (cmd === 'todo') {
     document.execCommand('insertHTML', false, '<div class="notion-todo-item"><div class="notion-checkbox"></div><div class="notion-todo-text">Checklist item</div></div>');
   } else if (cmd === 'callout') {
-    document.execCommand('insertHTML', false, '<div class="notion-callout"><div class="notion-callout-icon">💡</div><div class="notion-callout-text">Callout tip or highlight...</div></div>');
+    document.execCommand('insertHTML', false, '<div class="notion-callout"><div class="notion-callout-icon">!</div><div class="notion-callout-text">Callout tip or highlight...</div></div>');
   } else if (cmd === 'divider') {
     document.execCommand('insertHorizontalRule', false, null);
   }
@@ -2290,6 +2235,7 @@ function showView(view) {
   if (greetEl) greetEl.textContent = headerInfo.title;
   if (subEl) subEl.textContent = headerInfo.subtitle;
 
+  resetTopDateBadge();
   if (view === 'dashboard') { renderTodos(); renderHabitQuickList(); renderEvents(); renderNotes(); renderBars(); }
   if (view === 'notes') { showNotesMainView(); renderProjects(); renderNotes(); }
   if (view === 'habits') { renderHabitGrid(); }
