@@ -645,32 +645,50 @@ button {
 .date-badge {
   display: flex;
   align-items: center;
+}
+
+.date-badge-inner {
+  display: flex;
+  align-items: center;
   gap: 10px;
+  background: rgba(26, 21, 33, 0.75);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(226, 165, 190, 0.16);
+  padding: 6px 14px 6px 12px;
+  border-radius: 9999px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.date-badge-inner:hover {
+  border-color: rgba(226, 165, 190, 0.35);
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.45), 0 0 16px rgba(226, 165, 190, 0.12);
+}
+
+.date-badge-calendar-icon {
+  width: 15px;
+  height: 15px;
+  color: var(--mauve);
+  flex-shrink: 0;
 }
 
 .date-text {
   font-size: 13px;
-  color: var(--text-3);
-}
-
-.today-chip {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  background: rgba(28, 24, 34, 0.88);
-  border: 1px solid rgba(226, 165, 190, 0.15);
-  padding: 9px 16px;
-  border-radius: 9999px;
-  font-size: 13px;
-  font-weight: 600;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+  font-weight: 500;
   color: var(--text-1);
+  letter-spacing: -0.01em;
 }
 
-.today-chip svg {
-  width: 14px;
-  height: 14px;
-  color: var(--mauve);
+.date-badge-pill {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--mauve-light);
+  background: rgba(226, 165, 190, 0.14);
+  border: 1px solid rgba(226, 165, 190, 0.25);
+  padding: 2px 9px;
+  border-radius: 9999px;
+  letter-spacing: 0.02em;
 }
 
 /* ---------- Grid ---------- */
@@ -928,12 +946,22 @@ button {
   box-shadow: 0 2px 14px rgba(226, 165, 190, 0.3);
 }
 
+.timer-page-card {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  padding: 40px 32px 76px 32px !important;
+  min-height: 480px !important;
+  justify-content: flex-start;
+}
+
 .timer-controls {
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 16px;
-  margin-top: 18px;
+  margin-top: 24px;
+  margin-bottom: 24px;
 }
 
 .timer-btn,
@@ -1969,7 +1997,9 @@ button {
 .goals-roadmaps-section {
   display: flex;
   flex-direction: column;
-  height: 640px;
+  height: calc(100vh - 200px);
+  min-height: 420px;
+  max-height: 700px;
   overflow: hidden;
 }
 
@@ -2137,7 +2167,10 @@ button {
 .goals-chat-section {
   display: flex;
   flex-direction: column;
-  height: 640px;
+  height: calc(100vh - 200px);
+  min-height: 420px;
+  max-height: 700px;
+  overflow: hidden;
 }
 
 .goals-chat-section .card-head {
@@ -4213,4 +4246,77 @@ button {
   text-align: center;
   font-size: 13px;
   color: var(--text-2);
+}
+
+/* ================================================================
+   Notes & Notion Editor Top Action Bar & Back Button
+   ================================================================ */
+.notion-editor-top-actions {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 24px;
+  padding: 4px 0;
+}
+
+.notes-back-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(28, 24, 34, 0.85);
+  border: 1px solid rgba(226, 165, 190, 0.18);
+  color: var(--text-1);
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 600;
+  padding: 7px 14px 7px 10px;
+  border-radius: 9999px;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.notes-back-btn svg {
+  width: 15px;
+  height: 15px;
+  color: var(--mauve);
+  transition: transform 0.2s ease;
+}
+
+.notes-back-btn:hover {
+  background: rgba(38, 30, 48, 0.95);
+  border-color: rgba(226, 165, 190, 0.4);
+  transform: translateX(-2px);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.5), 0 0 12px rgba(226, 165, 190, 0.15);
+}
+
+.notes-back-btn:hover svg {
+  transform: translateX(-2px);
+}
+
+.notion-editor-crumb {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--text-3);
+}
+
+.crumb-section {
+  color: var(--text-2);
+  font-weight: 500;
+}
+
+.crumb-sep {
+  color: var(--text-3);
+  opacity: 0.6;
+}
+
+.crumb-title {
+  color: var(--mauve-light);
+  font-weight: 600;
+  max-width: 260px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }

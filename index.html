@@ -253,14 +253,14 @@
           <h1 id="greeting">Good evening, Voyager</h1>
           <p id="pageSubtitle">Take control of your day.</p>
         </div>
-        <div class="date-badge">
-          <span class="date-text" id="todayDate">-</span>
-          <div class="today-chip">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <div class="date-badge" id="topDateBadge">
+          <div class="date-badge-inner">
+            <svg class="date-badge-calendar-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <rect x="3" y="4" width="18" height="17" rx="2" />
               <path d="M16 2v4M8 2v4M3 10h18" />
             </svg>
-            Today
+            <span class="date-text" id="todayDate">-</span>
+            <span class="date-badge-pill" id="todayChipText">Today</span>
           </div>
         </div>
       </div>
@@ -477,6 +477,22 @@
           <!-- SECTION 3: NOTION-STYLE FULL DOCUMENT EDITOR VIEW -->
           <div class="notes-section" id="notionEditorView" style="display:none;">
 
+            <!-- Notion Document Top Navigation Bar -->
+            <div class="notion-editor-top-actions">
+              <button type="button" class="notes-back-btn" id="notionEditorBackBtn" title="Back to notes">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                  <path d="M19 12H5" />
+                  <path d="M12 19l-7-7 7-7" />
+                </svg>
+                <span>Back</span>
+              </button>
+              <div class="notion-editor-crumb" id="notionEditorCrumb">
+                <span class="crumb-section" id="notionCrumbSection">Notes</span>
+                <span class="crumb-sep">/</span>
+                <span class="crumb-title" id="notionCrumbTitle">Untitled Note</span>
+              </div>
+            </div>
+
             <!-- Notion Document Sheet Canvas Container -->
             <div class="notion-doc-container">
               <div class="notion-doc-body">
@@ -636,8 +652,7 @@
       <!-- TIMER PAGE -->
       <div class="view" id="view-timer">
         <div class="grid">
-          <section class="card col-12"
-            style="display:flex; flex-direction:column; align-items:center; padding:36px 20px;">
+          <section class="card col-12 timer-page-card">
             <div class="card-head" style="align-self:flex-start; margin-bottom:22px;">
               <div class="card-icon" style="background:var(--blue-soft);color:var(--blue);">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">

@@ -1364,6 +1364,11 @@ function showNotesMainView() {
   if (folderView) folderView.style.display = 'none';
   if (editorView) editorView.style.display = 'none';
   currentFolderProjectId = null;
+
+  const greetEl = document.getElementById('greeting');
+  const subEl = document.getElementById('pageSubtitle');
+  if (greetEl) greetEl.textContent = 'Notes';
+  if (subEl) subEl.textContent = 'Capture ideas before they slip away.';
 }
 
 function showNotesFolderView(projectId) {
@@ -1381,6 +1386,11 @@ function showNotesFolderView(projectId) {
   const project = projects.find(p => p.id === projectId);
   const folderTitle = document.getElementById('folderViewTitle');
   if (folderTitle && project) folderTitle.textContent = project.title;
+
+  const greetEl = document.getElementById('greeting');
+  const subEl = document.getElementById('pageSubtitle');
+  if (greetEl) greetEl.textContent = 'My projects';
+  if (subEl) subEl.textContent = project ? project.title : 'Folder workspace collection';
 
   renderFolderNotes(projectId);
 }
@@ -1683,25 +1693,26 @@ function openNotionEditor(noteToEdit = null, forProjectId = null, returnView = '
 
   // Update Top Date Badge with note creation date
   const todayDateEl = document.getElementById('todayDate');
-  const todayChipEl = document.querySelector('.today-chip');
+  const todayChipText = document.getElementById('todayChipText');
   if (todayDateEl) todayDateEl.textContent = targetNote.date || 'Today';
-  if (todayChipEl) {
-    todayChipEl.innerHTML = `
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <rect x="3" y="4" width="18" height="18" rx="2" />
-        <line x1="16" y1="2" x2="16" y2="6"/>
-        <line x1="8" y1="2" x2="8" y2="6"/>
-        <line x1="3" y1="10" x2="21" y2="10"/>
-      </svg>
-      Created
-    `;
-  }
+  if (todayChipText) todayChipText.textContent = 'Created';
+
+  // Update Breadcrumb inside Notion editor
+  const crumbSection = document.getElementById('notionCrumbSection');
+  const crumbTitle = document.getElementById('notionCrumbTitle');
+  if (crumbSection) crumbSection.textContent = (returnView === 'folder' || forProjectId) ? 'Projects' : 'Notes';
+  if (crumbTitle) crumbTitle.textContent = targetNote.title || 'Untitled Note';
 
   // Populate Title & Body
   const titleInput = document.getElementById('notionPageTitleInput');
   const canvas = document.getElementById('notionEditorCanvas');
 
-  if (titleInput) titleInput.value = targetNote.title || '';
+  if (titleInput) {
+    titleInput.value = targetNote.title || '';
+    titleInput.oninput = () => {
+      if (crumbTitle) crumbTitle.textContent = titleInput.value.trim() || 'Untitled Note';
+    };
+  }
   if (canvas) canvas.innerHTML = targetNote.body || '';
 
   if (titleInput && !targetNote.title) {
@@ -1710,19 +1721,18 @@ function openNotionEditor(noteToEdit = null, forProjectId = null, returnView = '
 }
 
 function resetTopDateBadge() {
+  const activeView = document.querySelector('.nav-item.active')?.dataset.view || 'dashboard';
+  const topDateBadge = document.getElementById('topDateBadge') || document.querySelector('.date-badge');
+  if (topDateBadge) {
+    topDateBadge.style.display = (activeView === 'timer' || activeView === 'goals') ? 'none' : 'flex';
+  }
   const todayDateEl = document.getElementById('todayDate');
-  const todayChipEl = document.querySelector('.today-chip');
+  const todayChipText = document.getElementById('todayChipText');
   if (todayDateEl) {
     todayDateEl.textContent = new Date().toLocaleDateString(undefined, { day:'numeric', month:'long', year:'numeric' });
   }
-  if (todayChipEl) {
-    todayChipEl.innerHTML = `
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <rect x="3" y="4" width="18" height="17" rx="2" />
-        <path d="M16 2v4M8 2v4M3 10h18" />
-      </svg>
-      Today
-    `;
+  if (todayChipText) {
+    todayChipText.textContent = 'Today';
   }
 }
 
@@ -2249,6 +2259,11 @@ function showView(view) {
   const subEl = document.getElementById('pageSubtitle');
   if (greetEl) greetEl.textContent = headerInfo.title;
   if (subEl) subEl.textContent = headerInfo.subtitle;
+
+  const topDateBadge = document.getElementById('topDateBadge') || document.querySelector('.date-badge');
+  if (topDateBadge) {
+    topDateBadge.style.display = (view === 'timer' || view === 'goals') ? 'none' : 'flex';
+  }
 
   resetTopDateBadge();
   if (view === 'dashboard') { renderTodos(); renderHabitQuickList(); renderEvents(); renderNotes(); renderBars(); }
