@@ -20,8 +20,8 @@
 
 <body>
 
-  <!-- AUTH OVERLAY -->
-  <div id="auth-overlay">
+  <!-- AUTH OVERLAY (Temporarily disabled) -->
+  <div id="auth-overlay" class="auth-hidden" style="display:none !important;">
     <div class="auth-bg-orbs">
       <div class="auth-orb auth-orb-1"></div>
       <div class="auth-orb auth-orb-2"></div>
@@ -42,7 +42,8 @@
         <button type="button" class="auth-tab" id="tab-signup" onclick="switchAuthTab('signup')">Sign Up</button>
       </div>
 
-      <form class="auth-form active" id="form-login" onsubmit="return false;">
+      <!-- Login form -->
+      <form class="auth-form active" id="form-login" onsubmit="handleLogin(); return false;">
         <div class="auth-field">
           <label>Email</label>
           <input type="email" id="login-email" placeholder="you@example.com" autocomplete="email" required>
@@ -74,7 +75,7 @@
       </form>
 
       <!-- Signup form -->
-      <form class="auth-form" id="form-signup" onsubmit="return false;">
+      <form class="auth-form" id="form-signup" onsubmit="handleSignup(); return false;">
         <div class="auth-field">
           <label>Your Name</label>
           <input type="text" id="signup-name" placeholder="Aariyan" autocomplete="name" required>

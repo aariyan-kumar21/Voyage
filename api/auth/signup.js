@@ -44,12 +44,16 @@ async function getDb() {
     throw new Error('MONGODB_URI is not configured. Please set it in your .env.local file or Vercel environment variables.');
   }
   if (!cachedClient) {
+    try { dns.setServers(['8.8.8.8', '1.1.1.1']); } catch(e) {}
     cachedClient = new MongoClient(uri, {
       serverApi: {
         version: ServerApiVersion.v1,
         strict: true,
         deprecationErrors: true,
       },
+      connectTimeoutMS: 6000,
+      socketTimeoutMS: 6000,
+      serverSelectionTimeoutMS: 6000,
     });
     try {
       await cachedClient.connect();

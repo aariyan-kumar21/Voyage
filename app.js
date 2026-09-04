@@ -55,29 +55,24 @@ function clearSession() {
 
 function showAuthOverlay() {
   const overlay = document.getElementById('auth-overlay');
-  if (overlay) { overlay.classList.remove('auth-hidden'); }
+  if (overlay) { overlay.classList.add('auth-hidden'); overlay.style.display = 'none'; }
 }
 function hideAuthOverlay() {
   const overlay = document.getElementById('auth-overlay');
-  if (overlay) { overlay.classList.add('auth-hidden'); }
+  if (overlay) { overlay.classList.add('auth-hidden'); overlay.style.display = 'none'; }
 }
 
-/* Smart API fetch helper: routes to port 5000 if frontend is served on port 3000 static */
+/* Smart API fetch helper with 6s timeout protection */
 async function apiFetch(path, options = {}) {
-  let initialUrl = path;
-  if (location.port === '3000' && (location.hostname === 'localhost' || location.hostname === '127.0.0.1')) {
-    initialUrl = 'http://localhost:5000' + path;
-  }
+  const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
+  const timeoutId = controller ? setTimeout(() => controller.abort(), 6000) : null;
   try {
-    const res = await fetch(initialUrl, options);
-    if (!res.ok && res.status === 404 && initialUrl !== path) {
-      return await fetch(path, options);
-    }
+    const fetchOpts = controller ? { ...options, signal: controller.signal } : options;
+    const res = await fetch(path, fetchOpts);
+    if (timeoutId) clearTimeout(timeoutId);
     return res;
   } catch(e) {
-    if (initialUrl !== path) {
-      return await fetch(path, options);
-    }
+    if (timeoutId) clearTimeout(timeoutId);
     throw e;
   }
 }
@@ -121,8 +116,10 @@ function setAuthLoading(formId, loading) {
   const btn = document.getElementById(formId === 'login' ? 'login-btn' : 'signup-btn');
   if (!btn) return;
   btn.disabled = loading;
-  btn.querySelector('.auth-btn-text').style.display = loading ? 'none' : '';
-  btn.querySelector('.auth-spinner').style.display = loading ? 'block' : 'none';
+  const textEl = btn.querySelector('.auth-btn-text');
+  const spinEl = btn.querySelector('.auth-spinner');
+  if (textEl) textEl.style.display = loading ? 'none' : '';
+  if (spinEl) spinEl.style.display = loading ? 'block' : 'none';
 }
 
 window.handleLogin = async function() {
@@ -138,15 +135,25 @@ window.handleLogin = async function() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, password })
     });
-    const data = await res.json();
-    if (!res.ok) {
-      // Fallback for local demo
-      const nameFromEmail = email.split('@')[0] || 'User';
-      const user = { userId: 'local-' + uid(), name: nameFromEmail.charAt(0).toUpperCase() + nameFromEmail.slice(1), email };
-      await onAuthSuccess(user);
+    let data = null;
+    try { data = await res.json(); } catch(e) {}
+
+    if (res.ok && data && data.userId) {
+      await onAuthSuccess(data);
       return;
     }
-    await onAuthSuccess(data);
+
+    // If server returned specific credential error
+    if (res.status === 401 || (data && data.error && !data.error.includes('Could not connect') && !data.error.includes('MONGODB_URI'))) {
+      if (errEl) errEl.textContent = data.error || 'Invalid email or password.';
+      setAuthLoading('login', false);
+      return;
+    }
+
+    // Fallback for offline / static preview
+    const nameFromEmail = email.split('@')[0] || 'User';
+    const user = { userId: 'local-' + uid(), name: nameFromEmail.charAt(0).toUpperCase() + nameFromEmail.slice(1), email };
+    await onAuthSuccess(user);
   } catch(e) {
     const nameFromEmail = email.split('@')[0] || 'User';
     const user = { userId: 'local-' + uid(), name: nameFromEmail.charAt(0).toUpperCase() + nameFromEmail.slice(1), email };
@@ -163,6 +170,7 @@ window.handleSignup = async function() {
   const errEl = document.getElementById('signup-error');
   if (errEl) errEl.textContent = '';
   if (!name || !email || !password) { if (errEl) errEl.textContent = 'Please fill in all fields.'; return; }
+  if (password.length < 6) { if (errEl) errEl.textContent = 'Password must be at least 6 characters.'; return; }
   setAuthLoading('signup', true);
   try {
     const res = await apiFetch('/api/auth/signup', {
@@ -170,13 +178,24 @@ window.handleSignup = async function() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ name, email, password })
     });
-    const data = await res.json();
-    if (!res.ok) {
-      const user = { userId: 'local-' + uid(), name, email };
-      await onAuthSuccess(user);
+    let data = null;
+    try { data = await res.json(); } catch(e) {}
+
+    if (res.ok && data && data.userId) {
+      await onAuthSuccess(data);
       return;
     }
-    await onAuthSuccess(data);
+
+    // Duplicate email or invalid input error from backend
+    if (res.status === 409 || res.status === 400) {
+      if (errEl) errEl.textContent = data.error || 'Signup failed.';
+      setAuthLoading('signup', false);
+      return;
+    }
+
+    // Fallback for offline / static preview
+    const user = { userId: 'local-' + uid(), name, email };
+    await onAuthSuccess(user);
   } catch(e) {
     const user = { userId: 'local-' + uid(), name, email };
     await onAuthSuccess(user);
@@ -188,10 +207,10 @@ window.handleSignup = async function() {
 async function onAuthSuccess(user) {
   currentUser = user;
   saveSession(user);
-  // Load cloud data into local state
-  await loadCloudData(user.userId);
   updateUserUI(user.name);
   hideAuthOverlay();
+  // Hydrate cloud data asynchronously in the background
+  loadCloudData(user.userId).catch(e => console.warn('[Voyage] Cloud load error:', e));
 }
 
 function updateUserUI(name) {
@@ -323,18 +342,14 @@ function handleLogout() {
 }
 
 /* ============================================================
-   BOOT: check session -> load cloud data or show auth
+   BOOT: instant direct access (auth temporarily disabled)
    ============================================================ */
-(async function boot() {
-  const session = getSession();
-  if (session && session.userId) {
-    currentUser = session;
-    await loadCloudData(session.userId);
-    updateUserUI(session.name);
-    hideAuthOverlay();
-  } else {
-    showAuthOverlay();
-  }
+(function boot() {
+  const session = getSession() || { userId: 'local-dev', name: 'Aariyan Kumar', email: 'aariyan2137@gmail.com' };
+  currentUser = session;
+  saveSession(session);
+  updateUserUI(session.name);
+  hideAuthOverlay();
 })();
 
 /* ---------------- Wire logout button ---------------- */
@@ -1743,11 +1758,11 @@ function saveCurrentNotionEditor() {
   if (canvas) note.body = canvas.innerHTML;
 
   save('notes', notes);
-}
 
   const badge = document.getElementById('notionSaveBadge');
   if (badge) {
-    badge.querySelector('.save-text').textContent = 'Saved';
+    const textEl = badge.querySelector('.save-text');
+    if (textEl) textEl.textContent = 'Saved';
     badge.style.opacity = '1';
     setTimeout(() => { if (badge) badge.style.opacity = '0.6'; }, 1000);
   }
