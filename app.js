@@ -2836,6 +2836,19 @@ function initApp() {
   renderBars();
   renderMiniCalendar();
   updateTimerDisplay();
+
+  // Initialize Flatpickr for the calendar page event date input
+  if (window.flatpickr) {
+    flatpickr("#pageEventDate", {
+      allowInput: true,
+      dateFormat: "Y-m-d", // matches standard HTML date format
+      altInput: true,
+      altFormat: "d-m-Y", // dd-mm-yyyy display format
+      theme: "dark",
+      placeholder: "dd-mm-yyyy",
+      monthSelectorType: "static"
+    });
+  }
 }
 
 if (document.readyState === 'loading') {
