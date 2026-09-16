@@ -314,9 +314,8 @@ function showSyncState(state) {
     lbl.textContent = 'Saved';
     setTimeout(() => el.classList.remove('visible'), 2000);
   } else {
-    el.classList.add('visible', 'error');
-    lbl.textContent = 'Sync failed';
-    setTimeout(() => el.classList.remove('visible'), 3000);
+    // Silently fail background sync so it doesn't distract the user
+    el.classList.remove('visible');
   }
 }
 
@@ -1317,10 +1316,12 @@ function renderMiniCalendar(){
   for (let i=0;i<firstDow;i++) html += '<div class="day-cell empty"></div>';
   for (let d=1; d<=daysCount; d++){
     const isToday = d === todayNum;
+    const isPast = d < todayNum;
+    const pastClass = isPast ? ' past' : '';
     const dayEvents = eventsByDay[d];
     if (dayEvents && dayEvents.length){
       const extra = dayEvents.length - 1;
-      html += `<div class="day-cell has-event${isToday?' today':''}" data-day="${d}" title="${escapeHtml(dayEvents.map(e=>e.name).join(', '))}">
+      html += `<div class="day-cell has-event${isToday?' today':''}${pastClass}" data-day="${d}" title="${escapeHtml(dayEvents.map(e=>e.name).join(', '))}">
         <span class="day-num">${d}</span>
         <span class="evt-label">${escapeHtml(dayEvents[0].name)}</span>
         ${extra > 0 ? `<span class="evt-more">+${extra} more</span>` : ''}
@@ -1390,7 +1391,7 @@ function showNotesFolderView(projectId) {
   const greetEl = document.getElementById('greeting');
   const subEl = document.getElementById('pageSubtitle');
   if (greetEl) greetEl.textContent = 'My projects';
-  if (subEl) subEl.textContent = project ? project.title : 'Folder workspace collection';
+  if (subEl) subEl.textContent = '';
 
   renderFolderNotes(projectId);
 }
@@ -1946,7 +1947,15 @@ document.addEventListener('DOMContentLoaded', () => {
   const slashMenu = document.getElementById('notionSlashMenu');
   const floatingToolbar = document.getElementById('notionFloatingToolbar');
 
-  if (titleInput) titleInput.addEventListener('input', scheduleEditorAutoSave);
+  if (titleInput) {
+    titleInput.addEventListener('input', scheduleEditorAutoSave);
+    titleInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        if (canvas) canvas.focus();
+      }
+    });
+  }
 
   if (canvas) {
     canvas.addEventListener('input', () => {

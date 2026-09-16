@@ -729,6 +729,8 @@ button {
   align-items: center;
   justify-content: center;
   flex: 0 0 auto;
+  background: transparent !important;
+  color: #ffffff !important;
 }
 
 .card-icon svg {
@@ -1247,6 +1249,12 @@ button {
   padding: 5px 4px;
   background: rgba(226, 165, 190, 0.14);
   border-color: rgba(226, 165, 190, 0.4);
+}
+
+.mini-cal .day-cell.has-event.past {
+  background: rgba(226, 165, 190, 0.05);
+  border-color: rgba(226, 165, 190, 0.15);
+  opacity: 0.6;
 }
 
 .mini-cal .day-cell.has-event .day-num {
