@@ -2232,6 +2232,11 @@ function showView(view) {
   const activeEl = document.getElementById('view-' + view);
   if (activeEl) activeEl.classList.add('active');
 
+  // Control MoltenMetal animation depending on view
+  if (window.moltenMetalInstance) {
+    window.moltenMetalInstance.play();
+  }
+
   const viewHeaders = {
     dashboard: {
       title: getGreeting(),
@@ -2644,3 +2649,211 @@ if (document.readyState === 'loading') {
   initApp();
 }
 
+/* ============================================================
+      const icon = n.icon || '📄';
+      html += `
+        <div class="search-result-item" data-search-type="note" data-note-id="${n.id}">
+          <div class="search-result-icon note" style="font-size:15px;display:flex;align-items:center;justify-content:center;">
+            ${escapeHtml(icon)}
+          </div>
+          <div class="search-result-content">
+            <div class="search-result-title">${escapeHtml(n.title || 'Untitled Note')}</div>
+            <div class="search-result-subtitle">${escapeHtml(snippet || 'Click to open note in editor')}</div>
+          </div>
+          <span class="search-result-tag">${escapeHtml(projLabel)}</span>
+        </div>
+      `;
+    });
+  }
+
+  // 2. Tasks
+  if (matchedTodos.length > 0) {
+    matchedTodos.slice(0, 6).forEach(({ todo: t }) => {
+      html += `
+        <div class="search-result-item" data-search-type="todo" data-todo-id="${t.id}">
+          <div class="search-result-icon todo">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+          </div>
+          <div class="search-result-content">
+            <div class="search-result-title">${escapeHtml(t.text)}</div>
+            <div class="search-result-subtitle">${t.done ? 'Completed' : 'Pending'} &middot; ${escapeHtml(t.date || 'Today')}</div>
+          </div>
+          <span class="search-result-tag">Task</span>
+        </div>
+      `;
+    });
+  }
+
+  // 3. Roadmaps
+  if (matchedGoals.length > 0) {
+    matchedGoals.slice(0, 6).forEach(({ goal: g }) => {
+      html += `
+        <div class="search-result-item" data-search-type="goal" data-goal-id="${g.id}">
+          <div class="search-result-icon goal">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/></svg>
+          </div>
+          <div class="search-result-content">
+            <div class="search-result-title">${escapeHtml(g.title)}</div>
+            <div class="search-result-subtitle">${escapeHtml(g.summary || 'Roadmap plan')}</div>
+          </div>
+          <span class="search-result-tag">${g.progress || 0}%</span>
+        </div>
+      `;
+    });
+  }
+
+  // 4. Events
+  if (matchedEvents.length > 0) {
+    matchedEvents.slice(0, 6).forEach(({ event: e }) => {
+      html += `
+        <div class="search-result-item" data-search-type="event" data-event-id="${e.id}">
+          <div class="search-result-icon event">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+          </div>
+          <div class="search-result-content">
+            <div class="search-result-title">${escapeHtml(e.title)}</div>
+            <div class="search-result-subtitle">${escapeHtml(e.time || '')} &middot; ${escapeHtml(e.date || '')}</div>
+          </div>
+          <span class="search-result-tag">${escapeHtml(e.tag || 'Calendar')}</span>
+        </div>
+      `;
+    });
+  }
+
+  dropdown.innerHTML = html;
+  dropdown.style.display = 'flex';
+
+  // Attach click handlers
+  dropdown.querySelectorAll('.search-result-item').forEach(item => {
+    item.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const type = item.dataset.searchType;
+      if (type === 'nav') {
+        const targetView = item.dataset.navTarget;
+        if (targetView) showView(targetView);
+      } else if (type === 'note') {
+        const noteId = item.dataset.noteId;
+        const note = allNotes.find(n => n.id === noteId);
+        if (note) {
+          showView('notes');
+          openNotionEditor(note, note.projectId, note.projectId ? 'folder' : 'main');
+        }
+      } else if (type === 'todo') {
+        showView('todo');
+      } else if (type === 'goal') {
+        showView('goals');
+      } else if (type === 'event') {
+        showView('calendar');
+      }
+      closeSearchDropdown();
+    });
+  });
+}
+
+function closeSearchDropdown() {
+  const dropdown = document.getElementById('searchDropdown');
+  if (dropdown) {
+    dropdown.style.display = 'none';
+    dropdown.innerHTML = '';
+  }
+  const input = document.getElementById('globalSearchInput');
+  if (input) input.value = '';
+  const clearBtn = document.getElementById('searchClearBtn');
+  if (clearBtn) clearBtn.style.display = 'none';
+}
+
+/* ---------------- Global Modal Controls ---------------- */
+window.openNoteModal = function() {
+  const modal = document.getElementById('noteModal');
+  if (modal) modal.style.display = 'flex';
+};
+window.closeNoteModal = function() {
+  const modal = document.getElementById('noteModal');
+  if (modal) modal.style.display = 'none';
+};
+
+/* ---------------- Init & Event Binding ---------------- */
+function initApp() {
+  document.querySelectorAll('.nav-item[data-view]').forEach(item => {
+    item.addEventListener('click', () => showView(item.dataset.view));
+  });
+
+  const ctaBtn = document.getElementById('ctaBtn');
+  if (ctaBtn) ctaBtn.addEventListener('click', () => showView('goals'));
+
+  const searchInput = document.getElementById('globalSearchInput') || document.querySelector('.search-wrap input');
+  const searchClearBtn = document.getElementById('searchClearBtn');
+
+  if (searchInput) {
+    searchInput.addEventListener('input', (e) => {
+      performGlobalSearch(e.target.value);
+    });
+    searchInput.addEventListener('focus', (e) => {
+      if (e.target.value.trim()) {
+        performGlobalSearch(e.target.value);
+      }
+    });
+    searchInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') closeSearchDropdown();
+    });
+  }
+
+  if (searchClearBtn) {
+    searchClearBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      closeSearchDropdown();
+      if (searchInput) searchInput.focus();
+    });
+  }
+
+  document.addEventListener('click', (e) => {
+    if (!e.target.closest('.search-wrap')) {
+      const dropdown = document.getElementById('searchDropdown');
+      if (dropdown) dropdown.style.display = 'none';
+    }
+  });
+
+  const timerStartBtn = document.getElementById('timerStart');
+  if (timerStartBtn) timerStartBtn.addEventListener('click', startTimer);
+
+  const timerResetBtn = document.getElementById('timerReset');
+  if (timerResetBtn) timerResetBtn.addEventListener('click', resetTimer);
+
+  const modeTimerBtn = document.getElementById('modeTimerBtn');
+  if (modeTimerBtn) modeTimerBtn.addEventListener('click', () => setMode('timer'));
+
+  const modePomodoroBtn = document.getElementById('modePomodoroBtn');
+  if (modePomodoroBtn) modePomodoroBtn.addEventListener('click', () => setMode('pomodoro'));
+
+  bindTrackerToolbar();
+
+  renderTodos();
+  renderHabitGrid();
+  renderRoadmaps();
+  renderEvents();
+  renderProjects();
+  renderNotes();
+  renderBars();
+  renderMiniCalendar();
+  updateTimerDisplay();
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initApp);
+} else {
+  initApp();
+}
+
+/* ============================================================
+   Molten Metal Background Initialization
+   ============================================================ */
+window.moltenMetalInstance = null;
+import('./MoltenMetal.js').then((module) => {
+  const MoltenMetal = module.default;
+  const container = document.getElementById('moltenMetalBg');
+  if (container) {
+    window.moltenMetalInstance = new MoltenMetal(container, {
+      speed: 0.245 // Reduced speed by 30% from the default 0.35
+    });
+  }
+}).catch(console.error);

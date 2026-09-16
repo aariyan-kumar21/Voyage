@@ -1,5 +1,5 @@
 /* ================================================
-   Voyage — Personal Productivity Workspace
+   Voyage â€” Personal Productivity Workspace
    Theme: Helios Dark Obsidian & Glowing Mauve Pink
    Matching Helios Investments Luxury Dark Dashboard Reference
    ================================================ */
@@ -65,10 +65,6 @@
 }
 
 /* Custom Scrollbars to blend seamlessly with dark website background */
-html {
-  scrollbar-color: rgba(226, 165, 190, 0.28) #0e0b13;
-  scrollbar-width: thin;
-}
 
 ::-webkit-scrollbar {
   width: 8px;
@@ -76,21 +72,24 @@ html {
 }
 
 ::-webkit-scrollbar-track {
-  background: #0e0b13;
+  background: transparent;
 }
 
 ::-webkit-scrollbar-thumb {
   background: rgba(226, 165, 190, 0.26);
   border-radius: 9999px;
-  border: 2px solid #0e0b13;
+  border: 2px solid transparent;
+  background-clip: padding-box;
 }
 
 ::-webkit-scrollbar-thumb:hover {
   background: rgba(226, 165, 190, 0.48);
+  border: 2px solid transparent;
+  background-clip: padding-box;
 }
 
 ::-webkit-scrollbar-corner {
-  background: #0e0b13;
+  background: transparent;
 }
 
 html, body {
@@ -136,23 +135,7 @@ button {
   cursor: pointer;
 }
 
-::-webkit-scrollbar {
-  width: 7px;
-  height: 7px;
-}
 
-::-webkit-scrollbar-thumb {
-  background: rgba(226, 165, 190, 0.25);
-  border-radius: 8px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: rgba(226, 165, 190, 0.45);
-}
-
-::-webkit-scrollbar-track {
-  background: transparent;
-}
 
 /* ---------- Layout ---------- */
 .app {
@@ -1987,7 +1970,7 @@ button {
 }
 
 /* ================================================================
-   Goals page — AI Roadmap + Chat (Helios style)
+   Goals page â€” AI Roadmap + Chat (Helios style)
    ================================================================ */
 .goals-layout {
   display: grid;
@@ -2719,7 +2702,9 @@ button {
   display: flex;
   align-items: center;
   justify-content: center;
-  flex-shrink: 0;
+  flex: 0 0 auto;
+  background: transparent !important;
+  color: #ffffff !important;
 }
 
 .section-head-icon svg {
@@ -4189,6 +4174,8 @@ button {
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
+  background: transparent !important;
+  color: #ffffff !important;
   font-size: 13px;
 }
 
@@ -4328,3 +4315,17 @@ button {
   overflow: hidden;
   text-overflow: ellipsis;
 }
+
+/* MoltenMetal Background */
+.molten-metal-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  z-index: -1;
+  pointer-events: auto;
+  background-color: #000000;
+}
+
