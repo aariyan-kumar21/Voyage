@@ -655,7 +655,7 @@
       <div class="view" id="view-timer">
         <div class="grid">
           <section class="card col-12 timer-page-card">
-            <div class="card-head" style="align-self:flex-start; margin-bottom:22px;">
+            <div class="card-head" style="align-self:flex-start; margin-bottom:22px; position:relative;">
               <div class="card-icon" style="background:var(--blue-soft);color:var(--blue);">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <circle cx="12" cy="13" r="8" />
@@ -667,6 +667,13 @@
                 <button class="active" id="modeTimerBtn">Timer</button>
                 <button id="modePomodoroBtn">Pomodoro</button>
               </div>
+              <button class="minimize-timer-btn" id="minimizeTimerBtn" title="Pop out timer" aria-label="Pop out timer" style="margin-left:16px; margin-right:0;">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+                  <polyline points="15 3 21 3 21 9"></polyline>
+                  <line x1="10" y1="14" x2="21" y2="3"></line>
+                </svg>
+              </button>
             </div>
 
             <div class="flip-clock" id="flipClock">
@@ -895,6 +902,29 @@
   <div class="sync-indicator" id="syncIndicator">
     <span class="sync-dot"></span>
     <span id="syncLabel">Saved</span>
+  </div>
+
+  <!-- Floating Mini Timer -->
+  <div class="mini-timer-floating" id="miniTimerUI" aria-label="Floating Focus Timer">
+    <div class="mini-timer-body">
+      <div class="flip-clock" id="miniFlipClock" style="transform: scale(0.65); transform-origin: center;">
+        <div class="flip-row">
+          <div class="flip-group">
+            <div class="flip-tile" id="miniTileM1"><span>0</span></div>
+            <div class="flip-tile" id="miniTileM2"><span>0</span></div>
+          </div>
+          <div class="flip-colon">:</div>
+          <div class="flip-group">
+            <div class="flip-tile" id="miniTileS1"><span>0</span></div>
+            <div class="flip-tile" id="miniTileS2"><span>0</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="timer-controls" style="margin-top: -10px; transform: scale(0.85);">
+        <button class="timer-btn timer-btn-primary" id="miniTimerPlayBtn">Start</button>
+        <button class="timer-btn timer-btn-secondary" id="miniTimerResetBtn">Reset</button>
+      </div>
+    </div>
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>

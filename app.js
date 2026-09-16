@@ -2118,8 +2118,24 @@ function secondsForCurrentMode(){
   return pomodoroPhase === 'work' ? 25*60 : 5*60;
 }
 
+function getElById(id) {
+  let el = document.getElementById(id);
+  if (!el && window.documentPictureInPicture && window.documentPictureInPicture.window) {
+    el = window.documentPictureInPicture.window.document.getElementById(id);
+  }
+  return el;
+}
+
+function getQuery(sel) {
+  let el = document.querySelector(sel);
+  if (!el && window.documentPictureInPicture && window.documentPictureInPicture.window) {
+    el = window.documentPictureInPicture.window.document.querySelector(sel);
+  }
+  return el;
+}
+
 function flipTile(id, newDigit){
-  const tile = document.getElementById(id);
+  const tile = getElById(id);
   if (!tile) return;
   const span = tile.querySelector('span');
   if (span.textContent === newDigit) return;
@@ -2138,6 +2154,13 @@ function updateTimerDisplay(){
   flipTile('tileM2', digits[1]);
   flipTile('tileS1', digits[2]);
   flipTile('tileS2', digits[3]);
+
+  // Sync mini timer flip clock
+  flipTile('miniTileM1', digits[0]);
+  flipTile('miniTileM2', digits[1]);
+  flipTile('miniTileS1', digits[2]);
+  flipTile('miniTileS2', digits[3]);
+
   lastShownDigits = digits;
 }
 function stopTimerInterval(){
@@ -2147,6 +2170,12 @@ function stopTimerInterval(){
   if (btn) {
     btn.textContent = 'Start';
     btn.classList.remove('running');
+  }
+
+  const miniPlay = getElById('miniTimerPlayBtn');
+  if (miniPlay) {
+    miniPlay.textContent = 'Start';
+    miniPlay.classList.remove('running');
   }
 }
 function resetTimer(){
@@ -2176,6 +2205,13 @@ function startTimer(){
     btn.textContent = 'Pause';
     btn.classList.add('running');
   }
+
+  const miniPlay = getElById('miniTimerPlayBtn');
+  if (miniPlay) {
+    miniPlay.textContent = 'Pause';
+    miniPlay.classList.add('running');
+  }
+
   const stateEl = document.getElementById('timerState');
   if (stateEl) stateEl.textContent = timerMode === 'pomodoro' ? (pomodoroPhase === 'work' ? 'Focusing...' : 'Break time...') : 'Running...';
 
@@ -2641,201 +2677,6 @@ function initApp() {
   renderBars();
   renderMiniCalendar();
   updateTimerDisplay();
-}
-
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', initApp);
-} else {
-  initApp();
-}
-
-/* ============================================================
-      const icon = n.icon || '📄';
-      html += `
-        <div class="search-result-item" data-search-type="note" data-note-id="${n.id}">
-          <div class="search-result-icon note" style="font-size:15px;display:flex;align-items:center;justify-content:center;">
-            ${escapeHtml(icon)}
-          </div>
-          <div class="search-result-content">
-            <div class="search-result-title">${escapeHtml(n.title || 'Untitled Note')}</div>
-            <div class="search-result-subtitle">${escapeHtml(snippet || 'Click to open note in editor')}</div>
-          </div>
-          <span class="search-result-tag">${escapeHtml(projLabel)}</span>
-        </div>
-      `;
-    });
-  }
-
-  // 2. Tasks
-  if (matchedTodos.length > 0) {
-    matchedTodos.slice(0, 6).forEach(({ todo: t }) => {
-      html += `
-        <div class="search-result-item" data-search-type="todo" data-todo-id="${t.id}">
-          <div class="search-result-icon todo">
-            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
-          </div>
-          <div class="search-result-content">
-            <div class="search-result-title">${escapeHtml(t.text)}</div>
-            <div class="search-result-subtitle">${t.done ? 'Completed' : 'Pending'} &middot; ${escapeHtml(t.date || 'Today')}</div>
-          </div>
-          <span class="search-result-tag">Task</span>
-        </div>
-      `;
-    });
-  }
-
-  // 3. Roadmaps
-  if (matchedGoals.length > 0) {
-    matchedGoals.slice(0, 6).forEach(({ goal: g }) => {
-      html += `
-        <div class="search-result-item" data-search-type="goal" data-goal-id="${g.id}">
-          <div class="search-result-icon goal">
-            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/></svg>
-          </div>
-          <div class="search-result-content">
-            <div class="search-result-title">${escapeHtml(g.title)}</div>
-            <div class="search-result-subtitle">${escapeHtml(g.summary || 'Roadmap plan')}</div>
-          </div>
-          <span class="search-result-tag">${g.progress || 0}%</span>
-        </div>
-      `;
-    });
-  }
-
-  // 4. Events
-  if (matchedEvents.length > 0) {
-    matchedEvents.slice(0, 6).forEach(({ event: e }) => {
-      html += `
-        <div class="search-result-item" data-search-type="event" data-event-id="${e.id}">
-          <div class="search-result-icon event">
-            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
-          </div>
-          <div class="search-result-content">
-            <div class="search-result-title">${escapeHtml(e.title)}</div>
-            <div class="search-result-subtitle">${escapeHtml(e.time || '')} &middot; ${escapeHtml(e.date || '')}</div>
-          </div>
-          <span class="search-result-tag">${escapeHtml(e.tag || 'Calendar')}</span>
-        </div>
-      `;
-    });
-  }
-
-  dropdown.innerHTML = html;
-  dropdown.style.display = 'flex';
-
-  // Attach click handlers
-  dropdown.querySelectorAll('.search-result-item').forEach(item => {
-    item.addEventListener('click', (e) => {
-      e.stopPropagation();
-      const type = item.dataset.searchType;
-      if (type === 'nav') {
-        const targetView = item.dataset.navTarget;
-        if (targetView) showView(targetView);
-      } else if (type === 'note') {
-        const noteId = item.dataset.noteId;
-        const note = allNotes.find(n => n.id === noteId);
-        if (note) {
-          showView('notes');
-          openNotionEditor(note, note.projectId, note.projectId ? 'folder' : 'main');
-        }
-      } else if (type === 'todo') {
-        showView('todo');
-      } else if (type === 'goal') {
-        showView('goals');
-      } else if (type === 'event') {
-        showView('calendar');
-      }
-      closeSearchDropdown();
-    });
-  });
-}
-
-function closeSearchDropdown() {
-  const dropdown = document.getElementById('searchDropdown');
-  if (dropdown) {
-    dropdown.style.display = 'none';
-    dropdown.innerHTML = '';
-  }
-  const input = document.getElementById('globalSearchInput');
-  if (input) input.value = '';
-  const clearBtn = document.getElementById('searchClearBtn');
-  if (clearBtn) clearBtn.style.display = 'none';
-}
-
-/* ---------------- Global Modal Controls ---------------- */
-window.openNoteModal = function() {
-  const modal = document.getElementById('noteModal');
-  if (modal) modal.style.display = 'flex';
-};
-window.closeNoteModal = function() {
-  const modal = document.getElementById('noteModal');
-  if (modal) modal.style.display = 'none';
-};
-
-/* ---------------- Init & Event Binding ---------------- */
-function initApp() {
-  document.querySelectorAll('.nav-item[data-view]').forEach(item => {
-    item.addEventListener('click', () => showView(item.dataset.view));
-  });
-
-  const ctaBtn = document.getElementById('ctaBtn');
-  if (ctaBtn) ctaBtn.addEventListener('click', () => showView('goals'));
-
-  const searchInput = document.getElementById('globalSearchInput') || document.querySelector('.search-wrap input');
-  const searchClearBtn = document.getElementById('searchClearBtn');
-
-  if (searchInput) {
-    searchInput.addEventListener('input', (e) => {
-      performGlobalSearch(e.target.value);
-    });
-    searchInput.addEventListener('focus', (e) => {
-      if (e.target.value.trim()) {
-        performGlobalSearch(e.target.value);
-      }
-    });
-    searchInput.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape') closeSearchDropdown();
-    });
-  }
-
-  if (searchClearBtn) {
-    searchClearBtn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      closeSearchDropdown();
-      if (searchInput) searchInput.focus();
-    });
-  }
-
-  document.addEventListener('click', (e) => {
-    if (!e.target.closest('.search-wrap')) {
-      const dropdown = document.getElementById('searchDropdown');
-      if (dropdown) dropdown.style.display = 'none';
-    }
-  });
-
-  const timerStartBtn = document.getElementById('timerStart');
-  if (timerStartBtn) timerStartBtn.addEventListener('click', startTimer);
-
-  const timerResetBtn = document.getElementById('timerReset');
-  if (timerResetBtn) timerResetBtn.addEventListener('click', resetTimer);
-
-  const modeTimerBtn = document.getElementById('modeTimerBtn');
-  if (modeTimerBtn) modeTimerBtn.addEventListener('click', () => setMode('timer'));
-
-  const modePomodoroBtn = document.getElementById('modePomodoroBtn');
-  if (modePomodoroBtn) modePomodoroBtn.addEventListener('click', () => setMode('pomodoro'));
-
-  bindTrackerToolbar();
-
-  renderTodos();
-  renderHabitGrid();
-  renderRoadmaps();
-  renderEvents();
-  renderProjects();
-  renderNotes();
-  renderBars();
-  renderMiniCalendar();
-  updateTimerDisplay();
 
   // Initialize Flatpickr for the calendar page event date input
   if (window.flatpickr) {
@@ -2849,6 +2690,205 @@ function initApp() {
       monthSelectorType: "static"
     });
   }
+
+  // Mini Timer Initialization
+  const minimizeBtn = document.getElementById('minimizeTimerBtn');
+  const expandBtn = document.getElementById('miniTimerExpandBtn');
+  const closeBtn = document.getElementById('miniTimerCloseBtn');
+  const resetBtn = document.getElementById('miniTimerResetBtn');
+  const miniUI = document.getElementById('miniTimerUI');
+  const miniPlayBtn = document.getElementById('miniTimerPlayBtn');
+
+  const closeFloatingTimer = () => {
+    if (window.documentPictureInPicture && window.documentPictureInPicture.window) {
+      window.documentPictureInPicture.window.close();
+    } else {
+      miniUI.classList.remove('visible');
+      const timerCard = document.querySelector('.timer-page-card');
+      if (timerCard) timerCard.style.display = '';
+    }
+  };
+
+  if (minimizeBtn && miniUI) {
+    minimizeBtn.addEventListener('click', async () => {
+      const timerCard = document.querySelector('.timer-page-card');
+      if (timerCard) timerCard.style.display = 'none';
+
+      if ('documentPictureInPicture' in window) {
+        try {
+          const pipWindow = await window.documentPictureInPicture.requestWindow({
+            width: 320,
+            height: 180,
+          });
+
+          // Copy styles to PiP window
+          [...document.styleSheets].forEach((styleSheet) => {
+            try {
+              if (styleSheet.href) {
+                const link = document.createElement('link');
+                link.rel = 'stylesheet';
+                link.href = styleSheet.href;
+                pipWindow.document.head.appendChild(link);
+              } else {
+                const style = document.createElement('style');
+                style.textContent = Array.from(styleSheet.cssRules)
+                  .map(rule => rule.cssText)
+                  .join('');
+                pipWindow.document.head.appendChild(style);
+              }
+            } catch (e) {}
+          });
+
+          pipWindow.document.body.style.margin = '0';
+          pipWindow.document.body.style.backgroundColor = '#18151d';
+          pipWindow.document.body.style.display = 'flex';
+          pipWindow.document.body.style.alignItems = 'center';
+          pipWindow.document.body.style.justifyContent = 'center';
+
+          // Override fixed positioning for window mode
+          miniUI.style.position = 'relative';
+          miniUI.style.bottom = 'auto';
+          miniUI.style.right = 'auto';
+          miniUI.style.transform = 'none';
+          
+          // Make it fill the window
+          miniUI.style.width = '100vw';
+          miniUI.style.height = '100vh';
+          miniUI.style.maxWidth = '100%';
+          miniUI.style.maxHeight = '100%';
+          miniUI.style.borderRadius = '0';
+          miniUI.style.border = 'none';
+          miniUI.style.boxShadow = 'none';
+          
+          const miniBody = miniUI.querySelector('.mini-timer-body');
+          if (miniBody) {
+            miniBody.style.flex = '1';
+            miniBody.style.justifyContent = 'center';
+            miniBody.style.gap = '32px';
+            miniBody.style.padding = '0 24px';
+          }
+          
+          miniUI.classList.add('visible');
+          
+          const handle = document.getElementById('miniTimerDragHandle');
+          if (handle) {
+            handle.style.cursor = 'default';
+            const dragIcon = handle.querySelector('.drag-icon');
+            if (dragIcon) dragIcon.style.display = 'none';
+          }
+
+          pipWindow.document.body.appendChild(miniUI);
+
+          pipWindow.addEventListener("pagehide", () => {
+            miniUI.style.position = '';
+            miniUI.style.bottom = '';
+            miniUI.style.right = '';
+            miniUI.style.transform = '';
+            
+            miniUI.style.width = '';
+            miniUI.style.height = '';
+            miniUI.style.maxWidth = '';
+            miniUI.style.maxHeight = '';
+            miniUI.style.borderRadius = '';
+            miniUI.style.border = '';
+            miniUI.style.boxShadow = '';
+            
+            if (miniBody) {
+              miniBody.style.flex = '';
+              miniBody.style.justifyContent = '';
+              miniBody.style.gap = '';
+              miniBody.style.padding = '';
+            }
+            
+            miniUI.classList.remove('visible');
+            
+            if (handle) {
+              handle.style.cursor = '';
+              const dragIcon = handle.querySelector('.drag-icon');
+              if (dragIcon) dragIcon.style.display = '';
+            }
+            
+            document.body.appendChild(miniUI);
+            if (timerCard) timerCard.style.display = '';
+          });
+          
+          return;
+        } catch (err) {
+          console.error("PiP failed, falling back to overlay:", err);
+        }
+      }
+
+      // Fallback overlay
+      miniUI.classList.add('visible');
+    });
+  }
+
+  if (expandBtn && miniUI) {
+    expandBtn.addEventListener('click', closeFloatingTimer);
+  }
+  
+  if (closeBtn && miniUI) {
+    closeBtn.addEventListener('click', closeFloatingTimer);
+  }
+
+  if (miniPlayBtn) {
+    miniPlayBtn.addEventListener('click', () => {
+      startTimer();
+    });
+  }
+  
+  if (resetBtn) {
+    resetBtn.addEventListener('click', () => {
+      resetTimer();
+    });
+  }
+
+  const handle = document.getElementById('miniTimerDragHandle');
+  if (handle && miniUI) {
+    let isDragging = false;
+    let startX, startY, initialX, initialY;
+
+    handle.addEventListener('pointerdown', (e) => {
+      isDragging = true;
+      startX = e.clientX;
+      startY = e.clientY;
+      
+      const rect = miniUI.getBoundingClientRect();
+      initialX = rect.left;
+      initialY = rect.top;
+      
+      miniUI.style.bottom = 'auto';
+      miniUI.style.right = 'auto';
+      miniUI.style.left = initialX + 'px';
+      miniUI.style.top = initialY + 'px';
+      miniUI.style.transform = 'none'; 
+      miniUI.style.transition = 'none';
+      
+      handle.setPointerCapture(e.pointerId);
+    });
+
+    handle.addEventListener('pointermove', (e) => {
+      if (!isDragging) return;
+      const dx = e.clientX - startX;
+      const dy = e.clientY - startY;
+      
+      let newX = initialX + dx;
+      let newY = initialY + dy;
+      
+      newX = Math.max(0, Math.min(newX, window.innerWidth - miniUI.offsetWidth));
+      newY = Math.max(0, Math.min(newY, window.innerHeight - miniUI.offsetHeight));
+      
+      miniUI.style.left = newX + 'px';
+      miniUI.style.top = newY + 'px';
+    });
+
+    handle.addEventListener('pointerup', (e) => {
+      if (!isDragging) return;
+      isDragging = false;
+      handle.releasePointerCapture(e.pointerId);
+      miniUI.style.transition = 'opacity 0.3s ease';
+    });
+  }
 }
 
 if (document.readyState === 'loading') {
@@ -2856,6 +2896,8 @@ if (document.readyState === 'loading') {
 } else {
   initApp();
 }
+
+
 
 /* ============================================================
    Molten Metal Background Initialization

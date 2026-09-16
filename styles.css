@@ -4627,3 +4627,174 @@ span.flatpickr-weekday {
   color: var(--text-1) !important;
   fill: var(--text-1) !important;
 }
+
+/* ============================================================
+   Mini Timer (Floating)
+   ============================================================ */
+.minimize-timer-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--text-3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  padding: 0;
+  margin-right: 8px;
+}
+
+.minimize-timer-btn:hover {
+  background: rgba(226, 165, 190, 0.08);
+  border-color: rgba(226, 165, 190, 0.15);
+  color: var(--mauve);
+}
+
+.minimize-timer-btn svg {
+  width: 14px;
+  height: 14px;
+}
+
+.mini-timer-floating {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  width: 180px;
+  background: rgba(24, 21, 31, 0.85);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(226, 165, 190, 0.15);
+  border-radius: var(--radius-md);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  user-select: none;
+  opacity: 0;
+  transform: translateY(20px) scale(0.95);
+  transition: opacity 0.3s ease, transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  pointer-events: none;
+}
+
+.mini-timer-floating.visible {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  pointer-events: auto;
+}
+
+.mini-timer-drag-handle {
+  display: flex;
+  align-items: center;
+  padding: 6px 10px;
+  background: rgba(0, 0, 0, 0.2);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+  cursor: grab;
+}
+
+.mini-timer-drag-handle:active {
+  cursor: grabbing;
+}
+
+.drag-icon {
+  width: 14px;
+  height: 14px;
+  color: var(--text-3);
+  margin-right: 6px;
+}
+
+.mini-timer-title {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-2);
+  flex: 1;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+.mini-timer-header-btn {
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  color: var(--text-3);
+  cursor: pointer;
+  border-radius: 4px;
+  transition: all 0.15s ease;
+}
+
+.mini-timer-header-btn:hover {
+  background: rgba(226, 165, 190, 0.1);
+  color: var(--mauve);
+}
+
+.mini-timer-header-btn svg {
+  width: 12px;
+  height: 12px;
+}
+
+.mini-timer-body {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 14px;
+}
+
+.mini-timer-time {
+  font-family: var(--font-mono);
+  font-size: 22px;
+  font-weight: 600;
+  color: var(--text-1);
+  letter-spacing: -0.5px;
+}
+
+.mini-timer-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.mini-timer-action-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--mauve-soft);
+  color: var(--mauve);
+  border: 1px solid var(--border-mauve);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.mini-timer-action-btn:hover {
+  background: var(--mauve-glow);
+  color: #fff;
+  transform: scale(1.05);
+}
+
+.mini-timer-action-btn.secondary {
+  width: 28px;
+  height: 28px;
+  background: transparent;
+  color: var(--text-3);
+  border-color: transparent;
+}
+
+.mini-timer-action-btn.secondary:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-1);
+  transform: scale(1.05);
+}
+
+.mini-timer-action-btn svg {
+  width: 14px;
+  height: 14px;
+}
