@@ -2051,18 +2051,14 @@ button {
 }
 
 .roadmap-card {
-  background: rgba(24, 21, 29, 0.90);
-  border: 1px solid rgba(226, 165, 190, 0.12);
-  border-radius: var(--radius-md);
   padding: 18px 20px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
-  transition: border-color .2s ease, box-shadow .2s ease, transform .2s ease;
+  margin-bottom: 24px;
+  border-bottom: 1px solid rgba(226, 165, 190, 0.12);
 }
 
-.roadmap-card:hover {
-  border-color: rgba(226, 165, 190, 0.45);
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.55), 0 0 20px rgba(226, 165, 190, 0.12);
-  transform: translateY(-2px);
+.roadmap-card:last-child {
+  border-bottom: none;
+  margin-bottom: 0;
 }
 
 .roadmap-card-header {
@@ -2115,66 +2111,137 @@ button {
   transition: width .4s ease;
 }
 
-.roadmap-milestones {
+
+.roadmap-timeline {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  padding-top: 8px;
 }
 
-.roadmap-milestone {
+.roadmap-timeline-item {
   display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 9px 10px;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: background .15s ease;
+  gap: 16px;
+  align-items: stretch;
 }
 
-.roadmap-milestone:hover {
-  background: rgba(226, 165, 190, 0.08);
-}
-
-.milestone-info {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  flex: 1;
-  min-width: 0;
-}
-
-.milestone-title {
-  font-size: 13px;
-  color: var(--text-1);
-  font-weight: 500;
-  flex: 1;
-  min-width: 0;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  transition: color .15s ease, text-decoration .15s ease;
-}
-
-.milestone-timeframe {
-  font-size: 11px;
+.timeline-timeframe {
+  width: 85px;
+  flex-shrink: 0;
+  text-align: right;
+  font-size: 11.5px;
   color: var(--mauve-light);
   font-family: var(--font-mono);
-  background: rgba(226, 165, 190, 0.15);
-  border: 1px solid rgba(226, 165, 190, 0.28);
-  padding: 2px 8px;
-  border-radius: 20px;
-  white-space: nowrap;
-  flex: 0 0 auto;
+  padding-top: 2px;
 }
 
-.milestone-done .milestone-title {
+.timeline-divider {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex-shrink: 0;
+  width: 24px;
+}
+
+.timeline-dot {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.15);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  z-index: 2;
+  transition: all 0.2s ease;
+  background: var(--bg-1);
+}
+
+.timeline-line {
+  width: 2px;
+  background: rgba(255, 255, 255, 0.1);
+  flex-grow: 1;
+  margin: 4px 0;
+  border-radius: 1px;
+}
+
+.timeline-content {
+  flex-grow: 1;
+  padding-bottom: 24px;
+}
+
+.roadmap-timeline-item:last-child .timeline-content {
+  padding-bottom: 0;
+}
+
+.timeline-title {
+  font-size: 13.5px;
+  color: var(--text-1);
+  font-weight: 600;
+  margin-bottom: 4px;
+  line-height: 1.3;
+}
+
+.timeline-desc {
+  font-size: 12.5px;
+  color: var(--text-2);
+  line-height: 1.5;
+}
+
+.check-icon {
+  width: 12px;
+  height: 12px;
+}
+
+/* Done state */
+.milestone-done .timeline-dot {
+  background: var(--gradient-accent);
+  border-color: transparent;
+  color: #fff;
+}
+.milestone-done .timeline-line {
+  background: rgba(167, 139, 250, 0.5);
+}
+.milestone-done .timeline-title {
   color: var(--text-3);
   text-decoration: line-through;
 }
-
-.milestone-done .milestone-timeframe {
-  opacity: 0.5;
+.milestone-done .timeline-desc {
+  opacity: 0.6;
 }
+.milestone-done .timeline-timeframe {
+  opacity: 0.7;
+}
+
+/* Active state */
+.milestone-active .timeline-dot {
+  border-color: var(--violet);
+  box-shadow: 0 0 0 3px rgba(167, 139, 250, 0.2);
+  background: var(--bg-1);
+}
+.milestone-active .timeline-title {
+  color: var(--text-1);
+}
+
+/* Locked state */
+.milestone-locked .timeline-dot {
+  border-color: rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.03);
+}
+.milestone-locked .timeline-timeframe,
+.milestone-locked .timeline-title,
+.milestone-locked .timeline-desc {
+  opacity: 0.4;
+}
+
+/* Interactive */
+.roadmap-timeline-item.can-toggle .timeline-dot {
+  cursor: pointer;
+}
+.roadmap-timeline-item.can-toggle .timeline-dot:hover {
+  transform: scale(1.15);
+  box-shadow: 0 0 0 4px rgba(167, 139, 250, 0.3);
+}
+
 
 /* --- Chat panel --- */
 .goals-chat-section {

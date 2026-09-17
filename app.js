@@ -908,7 +908,7 @@ bindTrackerToolbar();
 
 /* ---------------- GOALS: AI Roadmap + Chat ---------------- */
 
-const GOALS_SYSTEM_INSTRUCTION = "You are a goal-planning coach inside a personal productivity app called Voyage. Your job is to help the person turn a vague goal into a concrete, realistic roadmap. Ask focused questions one or two at a time (not a huge list at once) to learn: what the goal actually is, their target timeframe, their current starting point/experience level, and any real constraints (time available per week, obstacles). Keep your tone encouraging and concise - this is a chat UI, not an essay. Once you have enough to propose a genuinely useful roadmap (usually after 3-5 exchanges), set roadmapReady to true and fill in the roadmap field with 4-8 concrete, sequential milestones with realistic timeframes. Keep asking questions (roadmapReady: false, roadmap: null) until you actually have enough information - don't rush to generate a generic roadmap from a one-line goal.";
+const GOALS_SYSTEM_INSTRUCTION = "You are a domain-expert coach inside a productivity app called Voyage. Help the user turn a vague goal into a concrete, realistic roadmap. Flow: ask 1-2 focused questions at a time to learn their starting point, timeframe, and constraints. Keep tone encouraging and concise. Keep asking (roadmapReady: false, roadmap: null) until you have enough info to propose a genuinely useful roadmap (usually 3-5 exchanges). Once ready, set roadmapReady to true and follow these STRICT RULES: 1. GOAL TITLE: Generate a clean, short, properly-capitalized title (e.g., 'Learn the MERN Stack'); NEVER reuse the user's raw conversational input. 2. ACT AS A DOMAIN EXPERT: Think through how a professional would sequence real sub-topics based on genuine prerequisites (e.g., foundational skills before frameworks). 3. SKILLS, NOT STUDY PROCESS: Every milestone title MUST name a concrete, specific skill, technology, tool, or concept. NEVER use generic process words like 'curate', 'core curriculum', 'foundational modules', 'deep dive', 'practical exercises', 'study block', 'review', or 'synthesis'. If the goal isn't a well-known field, still be concrete about sub-skills. 4. ONE SKILL PER MILESTONE: Never bundle multiple skills with '&' or 'and'; split them into separate sequential milestones. 5. ACTIONABLE DESCRIPTIONS: State specifically what to do by naming sub-topics and, where applicable, a small concrete practice task or mini-project. Avoid vague verbs like 'explore' without naming what's being explored. 6. PACING & SCALE: For broad multi-skill goals, generate 12-20 milestones. Scale down for narrower goals, but never bundle distinct topics. Each milestone should span roughly 1-2 weeks.";
 
 const GOALS_RESPONSE_SCHEMA = {
   type: "object",
@@ -930,7 +930,7 @@ const GOALS_RESPONSE_SCHEMA = {
               timeframe: { type: "string" },
               description: { type: "string" }
             },
-            required: ["title", "timeframe"]
+            required: ["title", "timeframe", "description"]
           }
         }
       },
@@ -969,16 +969,46 @@ function renderRoadmaps() {
     const pct = totalMilestones > 0 ? Math.round((checkedCount / totalMilestones) * 100) : 0;
 
     let milestonesHtml = '';
+    let activeIdx = 0;
+    
+    // Determine which milestone is currently active (first unchecked)
+    while(activeIdx < totalMilestones && checks[activeIdx]) {
+      activeIdx++;
+    }
+
     (rm.milestones || []).forEach((ms, msIdx) => {
       const isChecked = !!checks[msIdx];
+      const desc = ms.description || '';
+      
+      let stateClass = '';
+      let canToggle = false;
+      
+      if (isChecked) {
+        stateClass = 'milestone-done';
+        if (msIdx === activeIdx - 1) {
+          canToggle = true; // Can undo the last completed milestone
+        }
+      } else if (msIdx === activeIdx) {
+        stateClass = 'milestone-active';
+        canToggle = true; // Can check off the current active milestone
+      } else {
+        stateClass = 'milestone-locked';
+      }
+
       milestonesHtml += `
-        <label class="roadmap-milestone${isChecked ? ' milestone-done' : ''}" data-rm="${rmIdx}" data-ms="${msIdx}">
-          <input type="checkbox" class="chk roadmap-chk" style="--c:var(--violet);" ${isChecked ? 'checked' : ''}>
-          <div class="milestone-info">
-            <span class="milestone-title">${escapeHtml(ms.title)}</span>
-            <span class="milestone-timeframe">${escapeHtml(ms.timeframe)}</span>
+        <div class="roadmap-timeline-item ${stateClass} ${canToggle ? 'can-toggle' : ''}" data-rm="${rmIdx}" data-ms="${msIdx}">
+          <div class="timeline-timeframe">${escapeHtml(ms.timeframe)}</div>
+          <div class="timeline-divider">
+            <div class="timeline-dot" ${canToggle ? 'role="button" tabindex="0"' : ''}>
+              ${isChecked ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" class="check-icon"><polyline points="20 6 9 17 4 12"></polyline></svg>' : ''}
+            </div>
+            ${msIdx < totalMilestones - 1 ? '<div class="timeline-line"></div>' : ''}
           </div>
-        </label>`;
+          <div class="timeline-content">
+            <div class="timeline-title">${escapeHtml(ms.title)}</div>
+            ${desc ? `<div class="timeline-desc">${escapeHtml(desc)}</div>` : ''}
+          </div>
+        </div>`;
     });
 
     card.innerHTML = `
@@ -994,16 +1024,19 @@ function renderRoadmaps() {
       <div class="roadmap-progress-bar">
         <div class="roadmap-progress-fill" style="width:${pct}%"></div>
       </div>
-      <div class="roadmap-milestones">${milestonesHtml}</div>
+      <div class="roadmap-timeline">${milestonesHtml}</div>
     `;
 
-    card.querySelectorAll('.roadmap-chk').forEach(chk => {
-      chk.addEventListener('change', () => {
-        const ri = parseInt(chk.closest('[data-rm]').dataset.rm);
-        const mi = parseInt(chk.closest('[data-ms]').dataset.ms);
+    // Add click listeners to the toggleable dots
+    card.querySelectorAll('.roadmap-timeline-item.can-toggle .timeline-dot').forEach(dot => {
+      dot.addEventListener('click', (e) => {
+        const item = e.target.closest('.roadmap-timeline-item');
+        const ri = parseInt(item.dataset.rm);
+        const mi = parseInt(item.dataset.ms);
         const ck = `roadmap_checks_${ri}`;
         const c = load(ck, {});
-        c[mi] = chk.checked;
+        // Toggle the completed status
+        c[mi] = !c[mi];
         save(ck, c);
         renderRoadmaps();
       });
@@ -1565,11 +1598,8 @@ function renderNotes() {
   const dashContainer = document.getElementById('noteList');
   if (dashContainer) {
     dashContainer.innerHTML = '';
-    if (!notes.length) {
-      dashContainer.innerHTML = `<div class="event-empty" style="grid-column:1/-1;">No notes yet - tap + to add one.</div>`;
-      return;
-    }
-    notes.slice(0, 4).forEach((n) => {
+
+    notes.slice(0, 3).forEach((n) => {
       const el = document.createElement('div');
       el.className = 'rich-note-card note-card';
       el.style.cursor = 'pointer';
@@ -1595,6 +1625,15 @@ function renderNotes() {
       });
       dashContainer.appendChild(el);
     });
+
+    const addTile = document.createElement('div');
+    addTile.className = 'rich-note-add-tile';
+    addTile.innerHTML = `<span class="plus-icon">+</span><span>Add note</span>`;
+    addTile.addEventListener('click', () => {
+      showView('notes');
+      openNotionEditor(null, null, 'main');
+    });
+    dashContainer.appendChild(addTile);
   }
 }
 
@@ -2764,8 +2803,18 @@ function initApp() {
           if (miniBody) {
             miniBody.style.flex = '1';
             miniBody.style.justifyContent = 'center';
-            miniBody.style.gap = '32px';
-            miniBody.style.padding = '0 24px';
+            miniBody.style.flexDirection = 'column';
+            miniBody.style.gap = '12px';
+            miniBody.style.padding = '8px 24px';
+          }
+
+          const flipClock = miniUI.querySelector('#miniFlipClock');
+          if (flipClock) {
+            flipClock.style.transform = 'scale(0.55)';
+          }
+          const timerControls = miniUI.querySelector('.timer-controls');
+          if (timerControls) {
+            timerControls.style.marginTop = '0';
           }
           
           miniUI.classList.add('visible');
@@ -2798,6 +2847,13 @@ function initApp() {
               miniBody.style.justifyContent = '';
               miniBody.style.gap = '';
               miniBody.style.padding = '';
+              miniBody.style.flexDirection = '';
+            }
+            if (flipClock) {
+              flipClock.style.transform = 'scale(0.65)';
+            }
+            if (timerControls) {
+              timerControls.style.marginTop = '-10px';
             }
             
             miniUI.classList.remove('visible');
