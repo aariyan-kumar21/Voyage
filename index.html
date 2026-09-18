@@ -906,23 +906,25 @@
 
   <!-- Floating Mini Timer -->
   <div class="mini-timer-floating" id="miniTimerUI" aria-label="Floating Focus Timer">
-    <div class="mini-timer-body">
-      <div class="flip-clock" id="miniFlipClock" style="transform: scale(0.65); transform-origin: center;">
-        <div class="flip-row">
-          <div class="flip-group">
-            <div class="flip-tile" id="miniTileM1"><span>0</span></div>
-            <div class="flip-tile" id="miniTileM2"><span>0</span></div>
-          </div>
-          <div class="flip-colon">:</div>
-          <div class="flip-group">
-            <div class="flip-tile" id="miniTileS1"><span>0</span></div>
-            <div class="flip-tile" id="miniTileS2"><span>0</span></div>
+    <div class="mini-timer-body" id="miniTimerBody">
+      <div class="mini-timer-content" id="miniTimerContent">
+        <div class="flip-clock" id="miniFlipClock">
+          <div class="flip-row">
+            <div class="flip-group">
+              <div class="flip-tile" id="miniTileM1"><span>0</span></div>
+              <div class="flip-tile" id="miniTileM2"><span>0</span></div>
+            </div>
+            <div class="flip-colon">:</div>
+            <div class="flip-group">
+              <div class="flip-tile" id="miniTileS1"><span>0</span></div>
+              <div class="flip-tile" id="miniTileS2"><span>0</span></div>
+            </div>
           </div>
         </div>
-      </div>
-      <div class="timer-controls" style="margin-top: -10px; transform: scale(0.85);">
-        <button class="timer-btn timer-btn-primary" id="miniTimerPlayBtn">Start</button>
-        <button class="timer-btn timer-btn-secondary" id="miniTimerResetBtn">Reset</button>
+        <div class="timer-controls" id="miniTimerControls">
+          <button class="timer-btn timer-btn-primary" id="miniTimerPlayBtn">Start</button>
+          <button class="timer-btn timer-btn-secondary" id="miniTimerResetBtn">Reset</button>
+        </div>
       </div>
     </div>
   </div>

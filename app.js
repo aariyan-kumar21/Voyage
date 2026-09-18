@@ -2736,7 +2736,34 @@ function initApp() {
   const closeBtn = document.getElementById('miniTimerCloseBtn');
   const resetBtn = document.getElementById('miniTimerResetBtn');
   const miniUI = document.getElementById('miniTimerUI');
+  const miniContent = document.getElementById('miniTimerContent');
   const miniPlayBtn = document.getElementById('miniTimerPlayBtn');
+
+  const updateMiniTimerScale = () => {
+    if (!miniUI || !miniContent) return;
+    const w = miniUI.clientWidth || window.innerWidth;
+    const h = miniUI.clientHeight || window.innerHeight;
+    if (w <= 0 || h <= 0) return;
+
+    // Base dimensions of flip clock + controls
+    const baseW = 490;
+    const baseH = 210;
+    const paddingX = 16;
+    const paddingY = 16;
+
+    const availableW = Math.max(20, w - paddingX);
+    const availableH = Math.max(20, h - paddingY);
+
+    const scale = Math.min(availableW / baseW, availableH / baseH);
+    miniContent.style.transform = `scale(${Math.max(0.1, scale)})`;
+  };
+
+  if (window.ResizeObserver && miniUI) {
+    const miniObserver = new ResizeObserver(() => {
+      updateMiniTimerScale();
+    });
+    miniObserver.observe(miniUI);
+  }
 
   const closeFloatingTimer = () => {
     if (window.documentPictureInPicture && window.documentPictureInPicture.window) {
@@ -2756,26 +2783,13 @@ function initApp() {
       if ('documentPictureInPicture' in window) {
         try {
           const pipWindow = await window.documentPictureInPicture.requestWindow({
-            width: 320,
-            height: 180,
+            width: 340,
+            height: 190,
           });
 
-          // Copy styles to PiP window
-          [...document.styleSheets].forEach((styleSheet) => {
-            try {
-              if (styleSheet.href) {
-                const link = document.createElement('link');
-                link.rel = 'stylesheet';
-                link.href = styleSheet.href;
-                pipWindow.document.head.appendChild(link);
-              } else {
-                const style = document.createElement('style');
-                style.textContent = Array.from(styleSheet.cssRules)
-                  .map(rule => rule.cssText)
-                  .join('');
-                pipWindow.document.head.appendChild(style);
-              }
-            } catch (e) {}
+          // Copy all stylesheets and styles to PiP window
+          document.querySelectorAll('link[rel="stylesheet"], style').forEach((node) => {
+            pipWindow.document.head.appendChild(node.cloneNode(true));
           });
 
           pipWindow.document.body.style.margin = '0';
@@ -2783,14 +2797,17 @@ function initApp() {
           pipWindow.document.body.style.display = 'flex';
           pipWindow.document.body.style.alignItems = 'center';
           pipWindow.document.body.style.justifyContent = 'center';
+          pipWindow.document.body.style.overflow = 'hidden';
+          pipWindow.document.body.style.width = '100vw';
+          pipWindow.document.body.style.height = '100vh';
 
           // Override fixed positioning for window mode
           miniUI.style.position = 'relative';
           miniUI.style.bottom = 'auto';
           miniUI.style.right = 'auto';
+          miniUI.style.left = 'auto';
+          miniUI.style.top = 'auto';
           miniUI.style.transform = 'none';
-          
-          // Make it fill the window
           miniUI.style.width = '100vw';
           miniUI.style.height = '100vh';
           miniUI.style.maxWidth = '100%';
@@ -2798,42 +2815,23 @@ function initApp() {
           miniUI.style.borderRadius = '0';
           miniUI.style.border = 'none';
           miniUI.style.boxShadow = 'none';
-          
-          const miniBody = miniUI.querySelector('.mini-timer-body');
-          if (miniBody) {
-            miniBody.style.flex = '1';
-            miniBody.style.justifyContent = 'center';
-            miniBody.style.flexDirection = 'column';
-            miniBody.style.gap = '12px';
-            miniBody.style.padding = '8px 24px';
-          }
 
-          const flipClock = miniUI.querySelector('#miniFlipClock');
-          if (flipClock) {
-            flipClock.style.transform = 'scale(0.55)';
-          }
-          const timerControls = miniUI.querySelector('.timer-controls');
-          if (timerControls) {
-            timerControls.style.marginTop = '0';
-          }
-          
           miniUI.classList.add('visible');
-          
-          const handle = document.getElementById('miniTimerDragHandle');
-          if (handle) {
-            handle.style.cursor = 'default';
-            const dragIcon = handle.querySelector('.drag-icon');
-            if (dragIcon) dragIcon.style.display = 'none';
-          }
-
           pipWindow.document.body.appendChild(miniUI);
 
+          const pipResizeHandler = () => updateMiniTimerScale();
+          pipWindow.addEventListener('resize', pipResizeHandler);
+          requestAnimationFrame(updateMiniTimerScale);
+          setTimeout(updateMiniTimerScale, 50);
+
           pipWindow.addEventListener("pagehide", () => {
+            pipWindow.removeEventListener('resize', pipResizeHandler);
             miniUI.style.position = '';
             miniUI.style.bottom = '';
             miniUI.style.right = '';
+            miniUI.style.left = '';
+            miniUI.style.top = '';
             miniUI.style.transform = '';
-            
             miniUI.style.width = '';
             miniUI.style.height = '';
             miniUI.style.maxWidth = '';
@@ -2842,30 +2840,10 @@ function initApp() {
             miniUI.style.border = '';
             miniUI.style.boxShadow = '';
             
-            if (miniBody) {
-              miniBody.style.flex = '';
-              miniBody.style.justifyContent = '';
-              miniBody.style.gap = '';
-              miniBody.style.padding = '';
-              miniBody.style.flexDirection = '';
-            }
-            if (flipClock) {
-              flipClock.style.transform = 'scale(0.65)';
-            }
-            if (timerControls) {
-              timerControls.style.marginTop = '-10px';
-            }
-            
             miniUI.classList.remove('visible');
-            
-            if (handle) {
-              handle.style.cursor = '';
-              const dragIcon = handle.querySelector('.drag-icon');
-              if (dragIcon) dragIcon.style.display = '';
-            }
-            
             document.body.appendChild(miniUI);
             if (timerCard) timerCard.style.display = '';
+            updateMiniTimerScale();
           });
           
           return;
@@ -2876,6 +2854,7 @@ function initApp() {
 
       // Fallback overlay
       miniUI.classList.add('visible');
+      updateMiniTimerScale();
     });
   }
 

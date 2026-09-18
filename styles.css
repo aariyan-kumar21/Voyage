@@ -2182,9 +2182,10 @@ button {
 }
 
 .timeline-desc {
-  font-size: 12.5px;
+  font-size: 13.5px;
   color: var(--text-2);
-  line-height: 1.5;
+  line-height: 1.4;
+  margin-top: 2px;
 }
 
 .check-icon {
@@ -2218,7 +2219,8 @@ button {
   box-shadow: 0 0 0 3px rgba(167, 139, 250, 0.2);
   background: var(--bg-1);
 }
-.milestone-active .timeline-title {
+.milestone-active .timeline-title,
+.milestone-active .timeline-desc {
   color: var(--text-1);
 }
 
@@ -4729,22 +4731,25 @@ span.flatpickr-weekday {
   position: fixed;
   bottom: 24px;
   right: 24px;
-  width: 180px;
-  background: rgba(24, 21, 31, 0.85);
+  width: 320px;
+  height: 180px;
+  background: #18151d;
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(226, 165, 190, 0.15);
-  border-radius: var(--radius-md);
+  border: 1px solid rgba(226, 165, 190, 0.18);
+  border-radius: var(--radius-md, 16px);
   box-shadow: 0 16px 40px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.04);
   z-index: 9999;
   display: flex;
-  flex-direction: column;
+  align-items: center;
+  justify-content: center;
   overflow: hidden;
   user-select: none;
   opacity: 0;
   transform: translateY(20px) scale(0.95);
   transition: opacity 0.3s ease, transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
   pointer-events: none;
+  box-sizing: border-box;
 }
 
 .mini-timer-floating.visible {
@@ -4753,115 +4758,50 @@ span.flatpickr-weekday {
   pointer-events: auto;
 }
 
-.mini-timer-drag-handle {
-  display: flex;
-  align-items: center;
-  padding: 6px 10px;
-  background: rgba(0, 0, 0, 0.2);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.03);
-  cursor: grab;
-}
-
-.mini-timer-drag-handle:active {
-  cursor: grabbing;
-}
-
-.drag-icon {
-  width: 14px;
-  height: 14px;
-  color: var(--text-3);
-  margin-right: 6px;
-}
-
-.mini-timer-title {
-  font-size: 11px;
-  font-weight: 600;
-  color: var(--text-2);
-  flex: 1;
-  letter-spacing: 0.5px;
-  text-transform: uppercase;
-}
-
-.mini-timer-header-btn {
-  width: 20px;
-  height: 20px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: transparent;
-  border: none;
-  color: var(--text-3);
-  cursor: pointer;
-  border-radius: 4px;
-  transition: all 0.15s ease;
-}
-
-.mini-timer-header-btn:hover {
-  background: rgba(226, 165, 190, 0.1);
-  color: var(--mauve);
-}
-
-.mini-timer-header-btn svg {
-  width: 12px;
-  height: 12px;
-}
-
 .mini-timer-body {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 12px 14px;
-}
-
-.mini-timer-time {
-  font-family: var(--font-mono);
-  font-size: 22px;
-  font-weight: 600;
-  color: var(--text-1);
-  letter-spacing: -0.5px;
-}
-
-.mini-timer-controls {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.mini-timer-action-btn {
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  background: var(--mauve-soft);
-  color: var(--mauve);
-  border: 1px solid var(--border-mauve);
+  width: 100%;
+  height: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
-  cursor: pointer;
-  transition: all 0.2s ease;
+  padding: 0;
+  margin: 0;
+  overflow: hidden;
+  box-sizing: border-box;
 }
 
-.mini-timer-action-btn:hover {
-  background: var(--mauve-glow);
-  color: #fff;
-  transform: scale(1.05);
+.mini-timer-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 490px;
+  height: 210px;
+  transform-origin: center center;
+  flex-shrink: 0;
+  user-select: none;
+  transition: transform 0.05s linear;
 }
 
-.mini-timer-action-btn.secondary {
-  width: 28px;
-  height: 28px;
-  background: transparent;
-  color: var(--text-3);
-  border-color: transparent;
+.mini-timer-floating #miniFlipClock {
+  margin: 0;
+  gap: 0;
+  transform-origin: center center;
 }
 
-.mini-timer-action-btn.secondary:hover {
-  background: rgba(255, 255, 255, 0.05);
-  color: var(--text-1);
-  transform: scale(1.05);
+.mini-timer-floating .timer-controls {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  margin-top: 16px;
+  margin-bottom: 0;
+  width: auto;
 }
 
-.mini-timer-action-btn svg {
-  width: 14px;
-  height: 14px;
+.mini-timer-floating .timer-btn {
+  padding: 10px 32px;
+  min-width: 120px;
+  font-size: 14.5px;
+  white-space: nowrap;
 }
