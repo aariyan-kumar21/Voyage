@@ -6,11 +6,11 @@
  */
 
 import dns from 'dns';
-try { dns.setServers(['8.8.8.8', '1.1.1.1']); } catch(e) {}
-
 import fs from 'fs';
 import path from 'path';
 import { MongoClient, ObjectId, ServerApiVersion } from 'mongodb';
+
+try { dns.setServers(['8.8.8.8', '1.1.1.1']); } catch(e) {}
 
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',

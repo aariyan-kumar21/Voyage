@@ -908,7 +908,54 @@ bindTrackerToolbar();
 
 /* ---------------- GOALS: AI Roadmap + Chat ---------------- */
 
-const GOALS_SYSTEM_INSTRUCTION = "You are a domain-expert coach inside a productivity app called Voyage. Help the user turn a vague goal into a concrete, realistic roadmap. Flow: ask 1-2 focused questions at a time to learn their starting point, timeframe, and constraints. Keep tone encouraging and concise. Keep asking (roadmapReady: false, roadmap: null) until you have enough info to propose a genuinely useful roadmap (usually 3-5 exchanges). Once ready, set roadmapReady to true and follow these STRICT RULES: 1. GOAL TITLE: Generate a clean, short, properly-capitalized title (e.g., 'Learn the MERN Stack'); NEVER reuse the user's raw conversational input. 2. ACT AS A DOMAIN EXPERT: Think through how a professional would sequence real sub-topics based on genuine prerequisites (e.g., foundational skills before frameworks). 3. SKILLS, NOT STUDY PROCESS: Every milestone title MUST name a concrete, specific skill, technology, tool, or concept. NEVER use generic process words like 'curate', 'core curriculum', 'foundational modules', 'deep dive', 'practical exercises', 'study block', 'review', or 'synthesis'. If the goal isn't a well-known field, still be concrete about sub-skills. 4. ONE SKILL PER MILESTONE: Never bundle multiple skills with '&' or 'and'; split them into separate sequential milestones. 5. ACTIONABLE DESCRIPTIONS: State specifically what to do by naming sub-topics and, where applicable, a small concrete practice task or mini-project. Avoid vague verbs like 'explore' without naming what's being explored. 6. PACING & SCALE: For broad multi-skill goals, generate 12-20 milestones. Scale down for narrower goals, but never bundle distinct topics. Each milestone should span roughly 1-2 weeks.";
+const GOALS_SYSTEM_INSTRUCTION = `You are a domain-expert coach inside a productivity app called Voyage. Help the user turn a vague goal into a concrete, realistic roadmap.
+Flow: ask 1-2 focused questions at a time to learn their starting point, timeframe, and constraints. Keep tone encouraging and concise. Keep asking (roadmapReady: false, roadmap: null) until you have enough info to propose a genuinely useful roadmap (usually 2-3 exchanges).
+
+When ready, set roadmapReady to true and generate a tailored roadmap following these STRICT RULES:
+1. GOAL TITLE: Generate a clean, short, properly-capitalized title (e.g., 'Full-Stack MERN Mastery Roadmap'); NEVER reuse the user's raw conversational input.
+2. TIMELINE STAGES: Sequence 4 to 8 realistic, sequential stages/milestones (e.g., Phase 1, Phase 2... or Month 1, Month 2...).
+3. STAGE TITLE: Every milestone 'title' MUST be a clean, bold, punchy title naming the specific domain skill, technology, or concept (e.g., 'REACT CORE & STATE HOOKS', 'NODE.JS & RESTFUL API ARCHITECTURE', 'MONGODB DATA MODELING'). NEVER use generic process placeholders like 'Curate core curriculum' or 'Foundational modules'.
+4. TIMEFRAME: The 'timeframe' MUST be a concise label (e.g., 'Phase 1', 'Weeks 1–2', 'Month 1', '2026 Q1').
+5. SHORT EXPLANATORY PARAGRAPH: The 'description' MUST be a well-crafted, informative short paragraph (2–4 concise sentences) explaining what this stage entails, the exact tools or techniques mastered, and the practical deliverable or project built.
+
+CONCRETE WORKED PATTERN EXAMPLE:
+Goal: "I want to learn full stack MERN development"
+Output JSON:
+{
+  "reply": "I've designed a comprehensive MERN development roadmap for you. Here is your step-by-step path to full-stack mastery!",
+  "roadmapReady": true,
+  "roadmap": {
+    "goalTitle": "Full-Stack MERN Mastery Roadmap",
+    "summary": "Comprehensive 5-stage pathway from frontend React architecture to scalable Node and MongoDB backend systems.",
+    "milestones": [
+      {
+        "title": "Modern JavaScript (ES6+) & DOM Engineering",
+        "timeframe": "Weeks 1–3",
+        "description": "Master JavaScript closures, promises, async/await, and modern ES6 modules. Build interactive web applications with dynamic DOM rendering and Fetch API integrations."
+      },
+      {
+        "title": "React Component Architecture & State Hooks",
+        "timeframe": "Weeks 4–7",
+        "description": "Develop modular user interfaces with functional components, useState, useEffect, and custom hooks. Construct a multi-view application with React Router and centralized context management."
+      },
+      {
+        "title": "Node.js & Express RESTful API Design",
+        "timeframe": "Weeks 8–11",
+        "description": "Engineer scalable backend HTTP microservices, custom middleware, and error-handling controllers with Express.js. Implement robust JWT token authentication and request validation."
+      },
+      {
+        "title": "MongoDB Schema Modeling & Aggregation",
+        "timeframe": "Weeks 12–14",
+        "description": "Design relational-style schemas and indexes with Mongoose ODM. Implement complex data aggregation pipelines, pagination, and transactional database integrity."
+      },
+      {
+        "title": "Full-Stack Integration, Testing & CI/CD Deployment",
+        "timeframe": "Weeks 15–18",
+        "description": "Connect the React frontend to the Node backend with full CRUD capability. Configure automated Jest test suites, containerized builds, and deploy to cloud hosting with continuous integration."
+      }
+    ]
+  }
+}`;
 
 const GOALS_RESPONSE_SCHEMA = {
   type: "object",
@@ -1006,7 +1053,7 @@ function renderRoadmaps() {
           </div>
           <div class="timeline-content">
             <div class="timeline-title">${escapeHtml(ms.title)}</div>
-            ${desc ? `<div class="timeline-desc">${escapeHtml(desc)}</div>` : ''}
+            ${desc ? `<p class="timeline-desc">${escapeHtml(desc)}</p>` : ''}
           </div>
         </div>`;
     });
@@ -1071,10 +1118,11 @@ function generateFallbackGoalResponse(messages, latestText) {
   const initialGoal = userMessages[0] || latestText;
   
   let goalTitle = initialGoal
-    .replace(/^(i want to|i wanna|i would like to|my goal is to|how to|i plan to|help me)\s+/i, '')
+    .replace(/^(i want to|i wanna|i would like to|my goal is to|how to|i plan to|help me|learn|master|build)\s+/i, '')
     .trim();
   goalTitle = goalTitle.charAt(0).toUpperCase() + goalTitle.slice(1);
-  if (!goalTitle) goalTitle = 'Personal Goal Roadmap';
+  if (!goalTitle) goalTitle = 'Mastery Roadmap';
+  else if (!goalTitle.toLowerCase().includes('roadmap')) goalTitle = `${goalTitle} Roadmap`;
 
   const isFirstMessage = userMessages.length <= 1;
   const hasDetails = /\b(\d+\s*(weeks?|months?|days?|hours?)|beginner|advanced|intermediate|full\s*stack|front\s*end|back\s*end|yes|sure|okay)\b/i.test(latestText);
@@ -1086,47 +1134,35 @@ function generateFallbackGoalResponse(messages, latestText) {
     };
   }
 
-  const lower = (initialGoal + ' ' + latestText).toLowerCase();
-  let milestones = [];
-
-  if (lower.includes('web') || lower.includes('code') || lower.includes('program') || lower.includes('develop') || lower.includes('software') || lower.includes('app')) {
-    milestones = [
-      { title: 'Core Fundamentals & HTML/CSS layout essentials', timeframe: 'Weeks 1–3' },
-      { title: 'Modern JavaScript (ES6+) & DOM interactivity', timeframe: 'Weeks 4–7' },
-      { title: 'Front-end Framework (React/Next.js) & Component state', timeframe: 'Weeks 8–11' },
-      { title: 'API Integration, Backend server basics & Database storage', timeframe: 'Weeks 12–15' },
-      { title: 'Build & Deploy 2 full-stack showcase projects', timeframe: 'Weeks 16–18' }
-    ];
-  } else if (lower.includes('fit') || lower.includes('weight') || lower.includes('run') || lower.includes('gym') || lower.includes('muscle') || lower.includes('health')) {
-    milestones = [
-      { title: 'Baseline assessment & establish 3x weekly workout habit', timeframe: 'Week 1' },
-      { title: 'Consistent progressive training & nutrition tracking', timeframe: 'Weeks 2–4' },
-      { title: 'Increase intensity & progressive overload checkpoints', timeframe: 'Weeks 5–8' },
-      { title: 'Midpoint evaluation & milestone performance test', timeframe: 'Weeks 9–10' },
-      { title: 'Achieve primary benchmark & long-term maintenance', timeframe: 'Weeks 11–12' }
-    ];
-  } else if (lower.includes('read') || lower.includes('book') || lower.includes('study') || lower.includes('learn') || lower.includes('exam')) {
-    milestones = [
-      { title: 'Curate core curriculum & daily 30-min focused study block', timeframe: 'Week 1' },
-      { title: 'Complete foundational modules & active note synthesis', timeframe: 'Weeks 2–4' },
-      { title: 'Deep dive into advanced topics & practical exercises', timeframe: 'Weeks 5–8' },
-      { title: 'Practical project application & final review', timeframe: 'Weeks 9–10' }
-    ];
-  } else {
-    milestones = [
-      { title: 'Initial research, resource setup & baseline planning', timeframe: 'Phase 1 (Weeks 1–2)' },
-      { title: 'Core skill acquisition & focused daily execution sprint', timeframe: 'Phase 2 (Weeks 3–6)' },
-      { title: 'Midpoint checkpoint & refining approach based on feedback', timeframe: 'Phase 3 (Weeks 7–8)' },
-      { title: 'Practical application & building milestone deliverables', timeframe: 'Phase 4 (Weeks 9–11)' },
-      { title: 'Final milestone review & long-term mastery routine', timeframe: 'Phase 5 (Week 12)' }
-    ];
-  }
+  const cleanSubject = goalTitle.replace(/\s*Roadmap$/i, '');
+  const milestones = [
+    {
+      title: `${cleanSubject} Foundations & Core Principles`,
+      timeframe: 'Phase 1 (Weeks 1–2)',
+      description: `Establish a solid groundwork in ${cleanSubject}. Audit essential concepts, configure your development environment and tools, and complete introductory hands-on milestones.`
+    },
+    {
+      title: `Intermediate Skills & Hands-On Practice`,
+      timeframe: 'Phase 2 (Weeks 3–6)',
+      description: `Deep dive into the primary techniques, syntax, and methodologies of ${cleanSubject}. Build practical mini-projects and solve structured challenge sets to reinforce core knowledge.`
+    },
+    {
+      title: `Advanced Concepts & System Architecture`,
+      timeframe: 'Phase 3 (Weeks 7–9)',
+      description: `Master complex topic areas, performance optimization, and architectural best practices within ${cleanSubject}. Implement comprehensive real-world scenarios.`
+    },
+    {
+      title: `Capstone Deliverable & Production Polish`,
+      timeframe: 'Phase 4 (Weeks 10–12)',
+      description: `Design, execute, and polish an end-to-end showcase deliverable demonstrating complete proficiency in ${cleanSubject}. Document and publish your final work.`
+    }
+  ];
 
   return {
-    reply: `I've created a tailored roadmap for "${goalTitle}" with actionable milestones! You can track and check off your progress in the roadmap panel above.`,
+    reply: `I've prepared a tailored roadmap for "${goalTitle}" with structured stages! You can track and check off your progress in the roadmap timeline above.`,
     roadmap: {
       goalTitle,
-      summary: `Actionable milestone plan to achieve ${goalTitle.toLowerCase()}.`,
+      summary: `Comprehensive milestone plan to achieve ${goalTitle.toLowerCase()}.`,
       milestones
     }
   };
@@ -1139,6 +1175,7 @@ async function sendGoalMessage() {
   if (!text) return;
 
   input.value = '';
+  input.style.height = 'auto';
   appendChatMsg('user', text);
   goalConversation.push({ role: 'user', text });
 
@@ -1159,8 +1196,14 @@ async function sendGoalMessage() {
 
     if (res && res.ok) {
       const data = await res.json();
+      console.log('[/api/chat raw response text]', data?.text);
+      console.log('[/api/chat full response payload]', data);
+
       let parsed;
-      try { parsed = typeof data.text === 'string' ? JSON.parse(data.text) : data; } catch(e) {
+      try { 
+        parsed = typeof data.text === 'string' ? JSON.parse(data.text) : data; 
+      } catch(e) {
+        console.warn('[/api/chat JSON parse error]', e, data.text);
         parsed = null;
       }
 
@@ -1180,9 +1223,11 @@ async function sendGoalMessage() {
         }
         success = true;
       }
+    } else {
+      console.warn('[/api/chat HTTP error response]', res ? res.status : 'No response');
     }
   } catch(err) {
-    console.warn('[GoalChat] API unavailable or rate-limited, engaging smart fallback planner:', err);
+    console.warn('[GoalChat] API unavailable or network error, engaging smart dynamic planner:', err);
   }
 
   // Smart Offline/Rate-limit Fallback Engine
@@ -1217,15 +1262,35 @@ function resetGoalChat() {
     appendChatMsg('assistant', INITIAL_CHAT_MSG);
   }
   const input = document.getElementById('goalChatInput');
-  if (input) { input.value = ''; input.focus(); }
+  if (input) { 
+    input.value = ''; 
+    input.style.height = 'auto';
+    input.focus(); 
+  }
 }
 
 (function initGoalChat() {
   const sendBtn = document.getElementById('goalChatSendBtn');
   const input = document.getElementById('goalChatInput');
   const resetBtn = document.getElementById('goalChatResetBtn');
+  
+  const autoResizeInput = () => {
+    if (!input) return;
+    input.style.height = 'auto';
+    input.style.height = Math.min(input.scrollHeight, 140) + 'px';
+  };
+
+  if (input) {
+    input.addEventListener('input', autoResizeInput);
+    input.addEventListener('keydown', e => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        sendGoalMessage();
+      }
+    });
+  }
+
   if (sendBtn) sendBtn.addEventListener('click', sendGoalMessage);
-  if (input) input.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) sendGoalMessage(); });
   if (resetBtn) resetBtn.addEventListener('click', resetGoalChat);
 })();
 

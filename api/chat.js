@@ -9,6 +9,8 @@
  *   GEMINI_API_KEY = <your Gemini API key>
  *   GROQ_API_KEY   = <your Groq API key>
  */
+import fs from 'fs';
+import path from 'path';
 
 // --- CORS helpers ------------------------------------------------------------
 
@@ -89,6 +91,23 @@ async function callGroqFallback(messages, systemInstruction, responseSchema, api
 
 // --- Main handler ------------------------------------------------------------
 
+function getEnvKey(keyName) {
+  let val = process.env[keyName];
+  if (!val) {
+    try {
+      const envPath = path.resolve(process.cwd(), '.env.local');
+      if (fs.existsSync(envPath)) {
+        const content = fs.readFileSync(envPath, 'utf8');
+        const match = content.match(new RegExp(`^${keyName}=(.*)$`, 'm'));
+        if (match && match[1]) {
+          val = match[1].trim().replace(/^["']|["']$/g, '');
+        }
+      }
+    } catch (e) {}
+  }
+  return val;
+}
+
 export default async function handler(req, res) {
   // Handle CORS preflight
   if (req.method === "OPTIONS") {
@@ -105,8 +124,8 @@ export default async function handler(req, res) {
       .json({ error: `Method ${req.method} not allowed. Use POST.` });
   }
 
-  const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
-  const GROQ_API_KEY = process.env.GROQ_API_KEY;
+  const GEMINI_API_KEY = getEnvKey('GEMINI_API_KEY');
+  const GROQ_API_KEY = getEnvKey('GROQ_API_KEY');
 
   if (!GEMINI_API_KEY && !GROQ_API_KEY) {
     return res.status(500).json({
@@ -155,11 +174,10 @@ export default async function handler(req, res) {
     }
 
     const CANDIDATE_MODELS = [
-      "gemini-3.6-flash",
-      "gemini-3.5-flash-lite",
-      "gemini-3.5-flash",
-      "gemini-2.5-flash",
-      "gemini-2.0-flash"
+      "gemini-2.0-flash",
+      "gemini-1.5-flash",
+      "gemini-1.5-flash-8b",
+      "gemini-1.5-pro"
     ];
 
     for (const model of CANDIDATE_MODELS) {
