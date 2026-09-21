@@ -11,13 +11,15 @@
  */
 import fs from 'fs';
 import path from 'path';
+import { extractToken, verifyToken } from './_lib/auth.js';
+import { getClientIp, checkRateLimit, applyRateLimitHeaders } from './_lib/ratelimit.js';
 
 // --- CORS helpers ------------------------------------------------------------
 
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
-  "Access-Control-Allow-Headers": "Content-Type",
+  "Access-Control-Allow-Headers": "Content-Type, Authorization, x-auth-token",
 };
 
 function setCors(res) {
@@ -122,6 +124,30 @@ export default async function handler(req, res) {
     return res
       .status(405)
       .json({ error: `Method ${req.method} not allowed. Use POST.` });
+  }
+
+  // Rate Limiting: 20 requests per minute per user / IP
+  const token = extractToken(req);
+  const payload = token ? verifyToken(token) : null;
+  const clientIp = getClientIp(req);
+  const rateLimitKey = payload?.userId ? `chat:usr_${payload.userId}` : `chat:ip_${clientIp}`;
+
+  const rateLimit = await checkRateLimit({
+    key: rateLimitKey,
+    limit: 20,
+    windowSeconds: 60,
+  });
+
+  applyRateLimitHeaders(res, {
+    limit: 20,
+    remaining: rateLimit.remaining,
+    resetInSeconds: rateLimit.resetInSeconds,
+  });
+
+  if (!rateLimit.allowed) {
+    return res.status(429).json({
+      error: `You are sending messages too quickly. Please slow down and wait ${rateLimit.resetInSeconds} second(s) before trying again.`,
+    });
   }
 
   const GEMINI_API_KEY = getEnvKey('GEMINI_API_KEY');

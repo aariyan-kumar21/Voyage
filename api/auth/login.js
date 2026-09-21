@@ -10,6 +10,8 @@ import fs from 'fs';
 import path from 'path';
 import bcrypt from 'bcryptjs';
 import { MongoClient, ServerApiVersion } from 'mongodb';
+import { signToken, buildAuthCookie } from '../_lib/auth.js';
+import { getClientIp, checkRateLimit, applyRateLimitHeaders } from '../_lib/ratelimit.js';
 
 try { dns.setServers(['8.8.8.8', '1.1.1.1']); } catch(e) {}
 
@@ -71,6 +73,26 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(204).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed.' });
 
+  // Rate Limiting: 10 attempts per 15 minutes per IP
+  const clientIp = getClientIp(req);
+  const rateLimit = await checkRateLimit({
+    key: `login:${clientIp}`,
+    limit: 10,
+    windowSeconds: 15 * 60,
+  });
+
+  applyRateLimitHeaders(res, {
+    limit: 10,
+    remaining: rateLimit.remaining,
+    resetInSeconds: rateLimit.resetInSeconds,
+  });
+
+  if (!rateLimit.allowed) {
+    return res.status(429).json({
+      error: `Too many login attempts. Please wait ${Math.ceil(rateLimit.resetInSeconds / 60)} minute(s) and try again.`,
+    });
+  }
+
   const { email, password } = req.body || {};
 
   if (!email || !password) {
@@ -81,16 +103,24 @@ export default async function handler(req, res) {
     const db = await getDb();
     const users = db.collection('users');
 
-    const user = await users.findOne({ email: email.toLowerCase().trim() });
-
-    if (!user) {
-      return res.status(401).json({ error: 'No account found with that email.' });
+    let match = false;
+    if (user && user.passwordHash) {
+      match = await bcrypt.compare(password, user.passwordHash);
+    } else {
+      // Constant-time comparison to prevent timing-based user enumeration
+      await bcrypt.compare(password, '$2b$10$123456789012345678901234567890123456789012345678901234');
     }
 
-    const match = await bcrypt.compare(password, user.passwordHash);
-    if (!match) {
-      return res.status(401).json({ error: 'Incorrect password.' });
+    if (!user || !match) {
+      return res.status(401).json({ error: 'Invalid email or password.' });
     }
+
+    const token = signToken({
+      userId: user._id.toString(),
+      email: user.email,
+    });
+
+    res.setHeader('Set-Cookie', buildAuthCookie(token));
 
     return res.status(200).json({
       userId: user._id.toString(),

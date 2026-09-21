@@ -10,6 +10,8 @@ import fs from 'fs';
 import path from 'path';
 import bcrypt from 'bcryptjs';
 import { MongoClient, ServerApiVersion } from 'mongodb';
+import { signToken, buildAuthCookie } from '../_lib/auth.js';
+import { getClientIp, checkRateLimit, applyRateLimitHeaders } from '../_lib/ratelimit.js';
 
 try { dns.setServers(['8.8.8.8', '1.1.1.1']); } catch(e) {}
 
@@ -71,6 +73,26 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(204).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed.' });
 
+  // Rate Limiting: 10 signup attempts per hour per IP
+  const clientIp = getClientIp(req);
+  const rateLimit = await checkRateLimit({
+    key: `signup:${clientIp}`,
+    limit: 10,
+    windowSeconds: 60 * 60,
+  });
+
+  applyRateLimitHeaders(res, {
+    limit: 10,
+    remaining: rateLimit.remaining,
+    resetInSeconds: rateLimit.resetInSeconds,
+  });
+
+  if (!rateLimit.allowed) {
+    return res.status(429).json({
+      error: `Too many signup attempts. Please wait ${Math.ceil(rateLimit.resetInSeconds / 60)} minute(s) and try again.`,
+    });
+  }
+
   const { name, email, password } = req.body || {};
 
   // --- Validate inputs ---
@@ -113,8 +135,16 @@ export default async function handler(req, res) {
       },
     });
 
+    const newUserId = result.insertedId.toString();
+    const token = signToken({
+      userId: newUserId,
+      email: email.toLowerCase().trim(),
+    });
+
+    res.setHeader('Set-Cookie', buildAuthCookie(token));
+
     return res.status(201).json({
-      userId: result.insertedId.toString(),
+      userId: newUserId,
       name: name.trim(),
     });
   } catch (err) {

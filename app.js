@@ -40,6 +40,27 @@ const uid = () => Math.random().toString(36).slice(2,9);
 function escapeHtml(str){
   return String(str).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
 }
+
+function sanitizeHtml(dirtyHtml) {
+  if (!dirtyHtml) return '';
+  if (typeof DOMPurify !== 'undefined' && typeof DOMPurify.sanitize === 'function') {
+    return DOMPurify.sanitize(String(dirtyHtml), {
+      ALLOWED_TAGS: [
+        'p', 'br', 'b', 'strong', 'i', 'em', 'u', 's', 'strike', 'del',
+        'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
+        'ul', 'ol', 'li', 'blockquote', 'pre', 'code', 'hr',
+        'div', 'span', 'a'
+      ],
+      ALLOWED_ATTR: [
+        'class', 'style', 'id', 'href', 'target', 'rel', 'title', 'data-checked', 'data-todo-id'
+      ],
+      ALLOW_DATA_ATTR: true
+    });
+  }
+  return String(dirtyHtml)
+    .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
+    .replace(/on\w+\s*=\s*(?:["'][^"']*["']|[^\s>]+)/gi, '');
+}
 function nextDate(days){
   const d = new Date(); d.setDate(d.getDate()+days);
   return d.toISOString().slice(0,10);
@@ -50,15 +71,8 @@ function todayISO(){ return new Date().toISOString().slice(0,10); }
    AUTH & SESSION MANAGEMENT
    ============================================================ */
 
-function loadUsers() {
-  try {
-    const u = localStorage.getItem('voyage_users');
-    return u ? JSON.parse(u) : [];
-  } catch(e) { return []; }
-}
-function saveUsers(users) {
-  try { localStorage.setItem('voyage_users', JSON.stringify(users)); } catch(e) {}
-}
+/* Clear legacy plaintext users store if present */
+try { localStorage.removeItem('voyage_users'); } catch(e) {}
 
 function getSession() {
   try {
@@ -94,12 +108,16 @@ function hideAuthOverlay() {
   }
 }
 
-/* Smart API fetch helper with 5s timeout protection */
+/* Smart API fetch helper with 5s timeout protection & automatic cookie credentials */
 async function apiFetch(path, options = {}) {
   const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
   const timeoutId = controller ? setTimeout(() => controller.abort(), 5000) : null;
   try {
-    const fetchOpts = controller ? { ...options, signal: controller.signal } : options;
+    const fetchOpts = {
+      credentials: 'same-origin',
+      ...options,
+      signal: controller ? controller.signal : undefined
+    };
     const res = await fetch(path, fetchOpts);
     if (timeoutId) clearTimeout(timeoutId);
     return res;
@@ -182,12 +200,7 @@ window.handleLogin = async function() {
   }
 
   setAuthLoading('login', true);
-
   const cleanEmail = email.toLowerCase().trim();
-  const users = loadUsers();
-  const localMatch = users.find(u => u.email.toLowerCase() === cleanEmail);
-
-  let loggedInUser = null;
 
   try {
     const res = await apiFetch('/api/auth/login', {
@@ -199,40 +212,30 @@ window.handleLogin = async function() {
     try { data = await res.json(); } catch(e) {}
 
     if (res && res.ok && data && data.userId) {
-      loggedInUser = { userId: data.userId, name: data.name || localMatch?.name || cleanEmail.split('@')[0], email: cleanEmail };
-    } else if (res && res.status === 401) {
-      // Check local stored credentials as fallback
-      if (localMatch && localMatch.password === password) {
-        loggedInUser = { userId: localMatch.userId, name: localMatch.name, email: cleanEmail };
-      } else {
-        if (errEl) errEl.textContent = data?.error || 'Incorrect email or password.';
-        setAuthLoading('login', false);
-        return;
-      }
+      const loggedInUser = {
+        userId: data.userId,
+        name: data.name || cleanEmail.split('@')[0],
+        email: cleanEmail
+      };
+      if (emailInput) emailInput.value = '';
+      if (passInput) passInput.value = '';
+      setAuthLoading('login', false);
+      await onAuthSuccess(loggedInUser);
+      return;
+    }
+
+    if (res && (res.status === 401 || res.status === 400)) {
+      if (errEl) errEl.textContent = data?.error || 'Invalid email or password.';
+    } else {
+      if (errEl) errEl.textContent = data?.error || 'Could not log in. Please check your credentials or network connection.';
     }
   } catch(e) {
-    console.log('[Voyage Auth] Serverless API unavailable, checking local user engine:', e.message);
+    console.error('[Voyage Auth] Login network/server error:', e);
+    if (errEl) errEl.textContent = 'Unable to reach the server. Please check your network connection and try again.';
+  } finally {
+    setAuthLoading('login', false);
+    if (passInput) passInput.value = '';
   }
-
-  // Fallback to local accounts registry
-  if (!loggedInUser) {
-    if (!localMatch) {
-      if (errEl) errEl.textContent = 'No account found with that email. Please create an account.';
-      setAuthLoading('login', false);
-      return;
-    }
-    if (localMatch.password && localMatch.password !== password) {
-      if (errEl) errEl.textContent = 'Incorrect password. Please try again.';
-      setAuthLoading('login', false);
-      return;
-    }
-    loggedInUser = { userId: localMatch.userId, name: localMatch.name, email: cleanEmail };
-  }
-
-  if (emailInput) emailInput.value = '';
-  if (passInput) passInput.value = '';
-  setAuthLoading('login', false);
-  await onAuthSuccess(loggedInUser);
 };
 
 window.handleSignup = async function() {
@@ -259,12 +262,7 @@ window.handleSignup = async function() {
   }
 
   setAuthLoading('signup', true);
-
   const cleanEmail = email.toLowerCase().trim();
-  const users = loadUsers();
-  const existingIdx = users.findIndex(u => u.email.toLowerCase() === cleanEmail);
-
-  let signedUpUser = null;
 
   try {
     const res = await apiFetch('/api/auth/signup', {
@@ -276,33 +274,31 @@ window.handleSignup = async function() {
     try { data = await res.json(); } catch(e) {}
 
     if (res && res.ok && data && data.userId) {
-      signedUpUser = { userId: data.userId, name: data.name || name, email: cleanEmail };
-    } else if (res && res.status === 409) {
-      // If server reports existing user, allow updating or logging in
-      signedUpUser = { userId: data?.userId || 'usr_' + uid(), name, email: cleanEmail };
+      const signedUpUser = {
+        userId: data.userId,
+        name: data.name || name,
+        email: cleanEmail
+      };
+      if (nameInput) nameInput.value = '';
+      if (emailInput) emailInput.value = '';
+      if (passInput) passInput.value = '';
+      setAuthLoading('signup', false);
+      await onAuthSuccess(signedUpUser);
+      return;
+    }
+
+    if (res && (res.status === 409 || res.status === 400)) {
+      if (errEl) errEl.textContent = data?.error || 'An account with this email already exists.';
+    } else {
+      if (errEl) errEl.textContent = data?.error || 'Could not complete registration. Please try again.';
     }
   } catch(e) {
-    console.log('[Voyage Auth] Serverless API unavailable, engaging instant local user engine:', e.message);
+    console.error('[Voyage Auth] Signup network/server error:', e);
+    if (errEl) errEl.textContent = 'Unable to reach the server. Please check your network connection and try again.';
+  } finally {
+    setAuthLoading('signup', false);
+    if (passInput) passInput.value = '';
   }
-
-  // Local user accounts registry
-  if (!signedUpUser) {
-    const newUserId = existingIdx >= 0 ? users[existingIdx].userId : 'usr_' + uid();
-    signedUpUser = { userId: newUserId, name, email: cleanEmail };
-  }
-
-  if (existingIdx >= 0) {
-    users[existingIdx] = { ...users[existingIdx], name, password, userId: signedUpUser.userId };
-  } else {
-    users.push({ userId: signedUpUser.userId, name, email: cleanEmail, password, createdAt: new Date().toISOString() });
-  }
-  saveUsers(users);
-
-  if (nameInput) nameInput.value = '';
-  if (emailInput) emailInput.value = '';
-  if (passInput) passInput.value = '';
-  setAuthLoading('signup', false);
-  await onAuthSuccess(signedUpUser);
 };
 
 async function onAuthSuccess(user) {
@@ -431,7 +427,11 @@ function showSyncState(state) {
 }
 
 /* ---- Logout ---- */
-function handleLogout() {
+async function handleLogout() {
+  try {
+    await apiFetch('/api/auth/logout', { method: 'POST' });
+  } catch(e) {}
+
   currentUser = null;
   clearSession();
   memoryStore = {};
@@ -523,20 +523,47 @@ function ensureUserDefaults() {
 }
 
 /* ============================================================
-   BOOT: Authenticated session check
+   BOOT: Authenticated session check via httpOnly cookie
    ============================================================ */
-(function boot() {
-  const session = getSession();
-  if (session && session.userId) {
-    currentUser = session;
+(async function boot() {
+  const cachedSession = getSession();
+  if (cachedSession && cachedSession.userId) {
+    currentUser = cachedSession;
     ensureUserDefaults();
-    updateUserUI(session.name);
+    updateUserUI(cachedSession.name);
     hideAuthOverlay();
-    loadCloudData(session.userId).then(() => {
-      renderAllViews();
-    }).catch(e => console.warn('[Voyage] Cloud load notice on boot:', e));
-  } else {
-    currentUser = null;
+    renderAllViews();
+  }
+
+  try {
+    const res = await apiFetch('/api/auth/me');
+    if (res && res.ok) {
+      const data = await res.json();
+      if (data && data.authenticated && data.user) {
+        currentUser = data.user;
+        saveSession(data.user);
+        ensureUserDefaults();
+        updateUserUI(data.user.name);
+        hideAuthOverlay();
+        await loadCloudData(data.user.userId);
+        renderAllViews();
+        return;
+      }
+    }
+    if (res && res.status === 401) {
+      currentUser = null;
+      clearSession();
+      showAuthOverlay();
+      return;
+    }
+  } catch (e) {
+    console.warn('[Voyage Auth] Server check notice:', e);
+    if (cachedSession && cachedSession.userId) {
+      return;
+    }
+  }
+
+  if (!currentUser) {
     showAuthOverlay();
   }
 })();
@@ -2160,10 +2187,10 @@ function formatNotePreview(rawHtml, maxLength = 140) {
   // Strip all other remaining HTML tags
   str = str.replace(/<[^>]+>/g, '');
 
-  // Decode HTML entities
-  const parser = document.createElement('div');
+  // Decode HTML entities safely without script execution
+  const parser = document.createElement('textarea');
   parser.innerHTML = str;
-  str = parser.textContent || parser.innerText || '';
+  str = parser.value || '';
 
   // Clean up extra blank lines while preserving meaningful line breaks
   const lines = str.split('\n')
@@ -2399,7 +2426,7 @@ function openNotionEditor(noteToEdit = null, forProjectId = null, returnView = '
       if (crumbTitle) crumbTitle.textContent = titleInput.value.trim() || 'Untitled Note';
     };
   }
-  if (canvas) canvas.innerHTML = targetNote.body || '';
+  if (canvas) canvas.innerHTML = sanitizeHtml(targetNote.body || '');
 
   if (titleInput && !targetNote.title) {
     titleInput.focus();
@@ -2451,7 +2478,7 @@ function saveCurrentNotionEditor() {
   if (titleInput) {
     note.title = titleInput.value.trim();
   }
-  if (canvas) note.body = canvas.innerHTML;
+  if (canvas) note.body = sanitizeHtml(canvas.innerHTML);
 
   save('notes', notes);
 
