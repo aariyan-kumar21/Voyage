@@ -24,8 +24,8 @@
   <!-- MoltenMetal Full Screen Background -->
   <div id="moltenMetalBg" class="molten-metal-container"></div>
 
-  <!-- AUTH OVERLAY (Temporarily disabled) -->
-  <div id="auth-overlay" class="auth-hidden" style="display:none !important;">
+  <!-- AUTH OVERLAY (Login / Sign Up) -->
+  <div id="auth-overlay">
     <div class="auth-bg-orbs">
       <div class="auth-orb auth-orb-1"></div>
       <div class="auth-orb auth-orb-2"></div>
@@ -387,7 +387,7 @@
             <div class="bars" id="barsChart"></div>
           </section>
 
-          <!-- GOALS -->
+          <!-- GOALS / ROADMAP -->
           <section class="card col-4">
             <div class="card-head">
               <div class="card-icon" style="background:var(--violet-soft);color:var(--violet);">
@@ -397,11 +397,11 @@
                   <circle cx="12" cy="12" r="1" />
                 </svg>
               </div>
-              <span class="card-title">Goals</span>
-              <span class="card-more">&#8942;</span>
+              <span class="card-title">My Roadmaps</span>
+              <span class="card-more" id="goToRoadmaps" style="cursor:pointer;" title="View all roadmaps in Goals">&rarr;</span>
             </div>
-            <div id="goalList" class="js-goal-list"></div>
-            <div class="add-inline">
+            <div id="goalList" class="js-goal-list dashboard-roadmap-list"></div>
+            <div class="add-inline" style="display:none !important;">
               <input type="text" id="goalInput" placeholder="New goal...">
               <button id="goalAddBtn">Add</button>
             </div>
@@ -714,10 +714,30 @@
               <button class="clear-btn" id="pageTodoClearBtn">Clear all</button>
             </div>
 
-            <div class="todo-list js-todo-list" id="pageTodoList" style="max-width:560px;"></div>
-            <div class="todo-add" id="pageTodoAddRow" style="max-width:560px;">
-              <input type="text" id="pageTodoInput" placeholder="Add a task...">
-              <button id="pageTodoAddBtn">Add</button>
+            <div class="todo-page-layout">
+              <!-- Left half: Tasks list & Add input -->
+              <div class="todo-page-left">
+                <div class="todo-list js-todo-list" id="pageTodoList"></div>
+                <div class="todo-add" id="pageTodoAddRow">
+                  <input type="text" id="pageTodoInput" placeholder="Add a task...">
+                  <button id="pageTodoAddBtn">Add</button>
+                </div>
+              </div>
+
+              <!-- Right half: Center aligned Task Completion Wheel -->
+              <div class="todo-page-right">
+                <div class="ring-wrap page-ring-wrap">
+                  <svg width="120" height="120" viewBox="0 0 120 120">
+                    <circle cx="60" cy="60" r="50" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="10" />
+                    <circle id="pageTodoRing" cx="60" cy="60" r="50" fill="none" stroke="var(--mauve)" stroke-width="10"
+                      stroke-linecap="round" stroke-dasharray="314" stroke-dashoffset="314" />
+                  </svg>
+                  <div class="ring-center">
+                    <div class="n" id="pageTodoDone" style="color:var(--text-1);">0</div>
+                    <small id="pageTodoTotalLbl" style="color:var(--text-3);">of 0 tasks</small>
+                  </div>
+                </div>
+              </div>
             </div>
           </section>
         </div>

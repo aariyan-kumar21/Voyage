@@ -3,27 +3,39 @@
    app.js
    ================================================ */
 
-/* ---------------- Storage helpers ---------------- */
-const KEY = 'voyage:';
+/* ---------------- Storage helpers & Multi-User Isolation ---------------- */
 let memoryStore = {};
 let storageOK = true;
-try { localStorage.setItem(KEY+'__test__','1'); localStorage.removeItem(KEY+'__test__'); } catch(e){ storageOK = false; }
+try { localStorage.setItem('voyage__test__','1'); localStorage.removeItem('voyage__test__'); } catch(e){ storageOK = false; }
+
+let currentUser = null; // { userId, name, email }
+
+function getStorageKey(k) {
+  if (currentUser && currentUser.userId) {
+    return `voyage_user_${currentUser.userId}:${k}`;
+  }
+  return `voyage:${k}`;
+}
 
 const load = (k, fallback) => {
   try {
-    if (!storageOK) return (k in memoryStore) ? JSON.parse(JSON.stringify(memoryStore[k])) : fallback;
-    const v = localStorage.getItem(KEY+k);
-    return v ? JSON.parse(v) : fallback;
+    const fullKey = getStorageKey(k);
+    if (!storageOK) return (fullKey in memoryStore) ? JSON.parse(JSON.stringify(memoryStore[fullKey])) : fallback;
+    const v = localStorage.getItem(fullKey);
+    return v !== null ? JSON.parse(v) : fallback;
   } catch(e){ return fallback; }
 };
+
 const save = (k, v) => {
   try {
-    if (!storageOK) { memoryStore[k] = v; return; }
-    localStorage.setItem(KEY+k, JSON.stringify(v));
-  } catch(e){ memoryStore[k] = v; storageOK = false; }
+    const fullKey = getStorageKey(k);
+    if (!storageOK) { memoryStore[fullKey] = v; return; }
+    localStorage.setItem(fullKey, JSON.stringify(v));
+  } catch(e){ memoryStore[fullKey] = v; storageOK = false; }
   // Trigger debounced cloud sync after every local save
   scheduleCloudSync();
 };
+
 const uid = () => Math.random().toString(36).slice(2,9);
 function escapeHtml(str){
   return String(str).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
@@ -38,7 +50,15 @@ function todayISO(){ return new Date().toISOString().slice(0,10); }
    AUTH & SESSION MANAGEMENT
    ============================================================ */
 
-let currentUser = null; // { userId, name }
+function loadUsers() {
+  try {
+    const u = localStorage.getItem('voyage_users');
+    return u ? JSON.parse(u) : [];
+  } catch(e) { return []; }
+}
+function saveUsers(users) {
+  try { localStorage.setItem('voyage_users', JSON.stringify(users)); } catch(e) {}
+}
 
 function getSession() {
   try {
@@ -55,17 +75,29 @@ function clearSession() {
 
 function showAuthOverlay() {
   const overlay = document.getElementById('auth-overlay');
-  if (overlay) { overlay.classList.add('auth-hidden'); overlay.style.display = 'none'; }
+  if (overlay) {
+    overlay.style.display = 'flex';
+    requestAnimationFrame(() => {
+      overlay.classList.remove('auth-hidden');
+    });
+  }
 }
 function hideAuthOverlay() {
   const overlay = document.getElementById('auth-overlay');
-  if (overlay) { overlay.classList.add('auth-hidden'); overlay.style.display = 'none'; }
+  if (overlay) {
+    overlay.classList.add('auth-hidden');
+    setTimeout(() => {
+      if (overlay.classList.contains('auth-hidden')) {
+        overlay.style.display = 'none';
+      }
+    }, 360);
+  }
 }
 
-/* Smart API fetch helper with 6s timeout protection */
+/* Smart API fetch helper with 5s timeout protection */
 async function apiFetch(path, options = {}) {
   const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
-  const timeoutId = controller ? setTimeout(() => controller.abort(), 6000) : null;
+  const timeoutId = controller ? setTimeout(() => controller.abort(), 5000) : null;
   try {
     const fetchOpts = controller ? { ...options, signal: controller.signal } : options;
     const res = await fetch(path, fetchOpts);
@@ -122,95 +154,169 @@ function setAuthLoading(formId, loading) {
   if (spinEl) spinEl.style.display = loading ? 'block' : 'none';
 }
 
+function renderAllViews() {
+  if (typeof renderTodos === 'function') renderTodos();
+  if (typeof renderNotes === 'function') renderNotes();
+  if (typeof renderProjects === 'function') renderProjects();
+  if (typeof renderEvents === 'function') renderEvents();
+  if (typeof renderMiniCalendar === 'function') renderMiniCalendar();
+  if (typeof renderRoadmaps === 'function') renderRoadmaps();
+  if (typeof renderHabitGrid === 'function') renderHabitGrid();
+  if (typeof renderBars === 'function') renderBars();
+  if (typeof updateStreakDisplay === 'function') updateStreakDisplay();
+  if (typeof updateWeeklyHabitMetric === 'function') updateWeeklyHabitMetric();
+  if (window._renderDashboardGoals) window._renderDashboardGoals();
+}
+
 window.handleLogin = async function() {
-  const email = document.getElementById('login-email').value.trim();
-  const password = document.getElementById('login-password').value;
+  const emailInput = document.getElementById('login-email');
+  const passInput = document.getElementById('login-password');
+  const email = emailInput ? emailInput.value.trim() : '';
+  const password = passInput ? passInput.value : '';
   const errEl = document.getElementById('login-error');
   if (errEl) errEl.textContent = '';
-  if (!email || !password) { if (errEl) errEl.textContent = 'Please fill in all fields.'; return; }
+
+  if (!email || !password) {
+    if (errEl) errEl.textContent = 'Please fill in all fields.';
+    return;
+  }
+
   setAuthLoading('login', true);
+
+  const cleanEmail = email.toLowerCase().trim();
+  const users = loadUsers();
+  const localMatch = users.find(u => u.email.toLowerCase() === cleanEmail);
+
+  let loggedInUser = null;
+
   try {
     const res = await apiFetch('/api/auth/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password })
+      body: JSON.stringify({ email: cleanEmail, password })
     });
     let data = null;
     try { data = await res.json(); } catch(e) {}
 
-    if (res.ok && data && data.userId) {
-      await onAuthSuccess(data);
-      return;
+    if (res && res.ok && data && data.userId) {
+      loggedInUser = { userId: data.userId, name: data.name || localMatch?.name || cleanEmail.split('@')[0], email: cleanEmail };
+    } else if (res && res.status === 401) {
+      // Check local stored credentials as fallback
+      if (localMatch && localMatch.password === password) {
+        loggedInUser = { userId: localMatch.userId, name: localMatch.name, email: cleanEmail };
+      } else {
+        if (errEl) errEl.textContent = data?.error || 'Incorrect email or password.';
+        setAuthLoading('login', false);
+        return;
+      }
     }
+  } catch(e) {
+    console.log('[Voyage Auth] Serverless API unavailable, checking local user engine:', e.message);
+  }
 
-    // If server returned specific credential error
-    if (res.status === 401 || (data && data.error && !data.error.includes('Could not connect') && !data.error.includes('MONGODB_URI'))) {
-      if (errEl) errEl.textContent = data.error || 'Invalid email or password.';
+  // Fallback to local accounts registry
+  if (!loggedInUser) {
+    if (!localMatch) {
+      if (errEl) errEl.textContent = 'No account found with that email. Please create an account.';
       setAuthLoading('login', false);
       return;
     }
-
-    // Fallback for offline / static preview
-    const nameFromEmail = email.split('@')[0] || 'User';
-    const user = { userId: 'local-' + uid(), name: nameFromEmail.charAt(0).toUpperCase() + nameFromEmail.slice(1), email };
-    await onAuthSuccess(user);
-  } catch(e) {
-    const nameFromEmail = email.split('@')[0] || 'User';
-    const user = { userId: 'local-' + uid(), name: nameFromEmail.charAt(0).toUpperCase() + nameFromEmail.slice(1), email };
-    await onAuthSuccess(user);
-  } finally {
-    setAuthLoading('login', false);
+    if (localMatch.password && localMatch.password !== password) {
+      if (errEl) errEl.textContent = 'Incorrect password. Please try again.';
+      setAuthLoading('login', false);
+      return;
+    }
+    loggedInUser = { userId: localMatch.userId, name: localMatch.name, email: cleanEmail };
   }
+
+  if (emailInput) emailInput.value = '';
+  if (passInput) passInput.value = '';
+  setAuthLoading('login', false);
+  await onAuthSuccess(loggedInUser);
 };
 
 window.handleSignup = async function() {
-  const name = document.getElementById('signup-name').value.trim();
-  const email = document.getElementById('signup-email').value.trim();
-  const password = document.getElementById('signup-password').value;
+  const nameInput = document.getElementById('signup-name');
+  const emailInput = document.getElementById('signup-email');
+  const passInput = document.getElementById('signup-password');
+  const name = nameInput ? nameInput.value.trim() : '';
+  const email = emailInput ? emailInput.value.trim() : '';
+  const password = passInput ? passInput.value : '';
   const errEl = document.getElementById('signup-error');
   if (errEl) errEl.textContent = '';
-  if (!name || !email || !password) { if (errEl) errEl.textContent = 'Please fill in all fields.'; return; }
-  if (password.length < 6) { if (errEl) errEl.textContent = 'Password must be at least 6 characters.'; return; }
+
+  if (!name || !email || !password) {
+    if (errEl) errEl.textContent = 'Please fill in all fields.';
+    return;
+  }
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    if (errEl) errEl.textContent = 'Please enter a valid email address.';
+    return;
+  }
+  if (password.length < 6) {
+    if (errEl) errEl.textContent = 'Password must be at least 6 characters.';
+    return;
+  }
+
   setAuthLoading('signup', true);
+
+  const cleanEmail = email.toLowerCase().trim();
+  const users = loadUsers();
+  const existingIdx = users.findIndex(u => u.email.toLowerCase() === cleanEmail);
+
+  let signedUpUser = null;
+
   try {
     const res = await apiFetch('/api/auth/signup', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, email, password })
+      body: JSON.stringify({ name, email: cleanEmail, password })
     });
     let data = null;
     try { data = await res.json(); } catch(e) {}
 
-    if (res.ok && data && data.userId) {
-      await onAuthSuccess(data);
-      return;
+    if (res && res.ok && data && data.userId) {
+      signedUpUser = { userId: data.userId, name: data.name || name, email: cleanEmail };
+    } else if (res && res.status === 409) {
+      // If server reports existing user, allow updating or logging in
+      signedUpUser = { userId: data?.userId || 'usr_' + uid(), name, email: cleanEmail };
     }
-
-    // Duplicate email or invalid input error from backend
-    if (res.status === 409 || res.status === 400) {
-      if (errEl) errEl.textContent = data.error || 'Signup failed.';
-      setAuthLoading('signup', false);
-      return;
-    }
-
-    // Fallback for offline / static preview
-    const user = { userId: 'local-' + uid(), name, email };
-    await onAuthSuccess(user);
   } catch(e) {
-    const user = { userId: 'local-' + uid(), name, email };
-    await onAuthSuccess(user);
-  } finally {
-    setAuthLoading('signup', false);
+    console.log('[Voyage Auth] Serverless API unavailable, engaging instant local user engine:', e.message);
   }
+
+  // Local user accounts registry
+  if (!signedUpUser) {
+    const newUserId = existingIdx >= 0 ? users[existingIdx].userId : 'usr_' + uid();
+    signedUpUser = { userId: newUserId, name, email: cleanEmail };
+  }
+
+  if (existingIdx >= 0) {
+    users[existingIdx] = { ...users[existingIdx], name, password, userId: signedUpUser.userId };
+  } else {
+    users.push({ userId: signedUpUser.userId, name, email: cleanEmail, password, createdAt: new Date().toISOString() });
+  }
+  saveUsers(users);
+
+  if (nameInput) nameInput.value = '';
+  if (emailInput) emailInput.value = '';
+  if (passInput) passInput.value = '';
+  setAuthLoading('signup', false);
+  await onAuthSuccess(signedUpUser);
 };
 
 async function onAuthSuccess(user) {
   currentUser = user;
   saveSession(user);
+  ensureUserDefaults();
   updateUserUI(user.name);
   hideAuthOverlay();
-  // Hydrate cloud data asynchronously in the background
-  loadCloudData(user.userId).catch(e => console.warn('[Voyage] Cloud load error:', e));
+  try {
+    await loadCloudData(user.userId);
+  } catch(e) {
+    console.warn('[Voyage] Cloud load notice:', e);
+  }
+  renderAllViews();
 }
 
 function updateUserUI(name) {
@@ -218,7 +324,7 @@ function updateUserUI(name) {
   const nameEl = document.getElementById('sidebarUserName');
   if (nameEl) nameEl.textContent = name;
   const avatarEl = document.getElementById('avatarInitial');
-  if (avatarEl) avatarEl.textContent = name.charAt(0).toUpperCase();
+  if (avatarEl) avatarEl.textContent = (name || 'U').charAt(0).toUpperCase();
 
   // Personalize greeting if on dashboard
   const activeView = document.querySelector('.nav-item.active')?.dataset.view || 'dashboard';
@@ -229,30 +335,31 @@ function updateUserUI(name) {
 }
 
 async function loadCloudData(userId) {
+  if (!userId) return;
   try {
     const res = await apiFetch(`/api/user/data?userId=${userId}`);
-    if (!res.ok) return;
+    if (!res || !res.ok) return;
     const { data } = await res.json();
     if (!data) return;
-    // Hydrate localStorage with cloud data (cloud wins)
+    const userPrefix = `voyage_user_${userId}:`;
     const keys = ['todos','notes','projects','events','goals','roadmaps','streak','todoHistory','habitGrid'];
     keys.forEach(k => {
       if (data[k] !== undefined && data[k] !== null) {
         try {
-          if (storageOK) localStorage.setItem(KEY+k, JSON.stringify(data[k]));
-          else memoryStore[k] = data[k];
+          if (storageOK) localStorage.setItem(userPrefix + k, JSON.stringify(data[k]));
+          else memoryStore[userPrefix + k] = data[k];
         } catch(e){}
       }
     });
     // Also restore any roadmap_checks_* keys
     Object.keys(data).filter(k => k.startsWith('roadmap_checks_')).forEach(k => {
       try {
-        if (storageOK) localStorage.setItem(KEY+k, JSON.stringify(data[k]));
-        else memoryStore[k] = data[k];
+        if (storageOK) localStorage.setItem(userPrefix + k, JSON.stringify(data[k]));
+        else memoryStore[userPrefix + k] = data[k];
       } catch(e){}
     });
   } catch(e) {
-    console.warn('[Voyage] Could not load cloud data:', e);
+    console.warn('[Voyage] Cloud load notice:', e);
   }
 }
 
@@ -261,27 +368,31 @@ let _syncTimer = null;
 const SYNC_DELAY_MS = 1500;
 
 function scheduleCloudSync() {
-  if (!currentUser) return;
+  if (!currentUser || !currentUser.userId) return;
   clearTimeout(_syncTimer);
   _syncTimer = setTimeout(pushCloudData, SYNC_DELAY_MS);
   showSyncState('syncing');
 }
 
 async function pushCloudData() {
-  if (!currentUser) return;
-  // Collect all voyage: keys from localStorage into one object
+  if (!currentUser || !currentUser.userId) return;
+  const userPrefix = `voyage_user_${currentUser.userId}:`;
   const data = {};
   try {
     if (storageOK) {
       for (let i = 0; i < localStorage.length; i++) {
         const fullKey = localStorage.key(i);
-        if (fullKey && fullKey.startsWith(KEY)) {
-          const shortKey = fullKey.slice(KEY.length);
+        if (fullKey && fullKey.startsWith(userPrefix)) {
+          const shortKey = fullKey.slice(userPrefix.length);
           try { data[shortKey] = JSON.parse(localStorage.getItem(fullKey)); } catch(e){}
         }
       }
     } else {
-      Object.assign(data, memoryStore);
+      Object.entries(memoryStore).forEach(([k, v]) => {
+        if (k.startsWith(userPrefix)) {
+          data[k.slice(userPrefix.length)] = v;
+        }
+      });
     }
   } catch(e){}
 
@@ -291,7 +402,7 @@ async function pushCloudData() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ userId: currentUser.userId, data })
     });
-    if (res.ok) {
+    if (res && res.ok) {
       showSyncState('saved');
     } else {
       showSyncState('error');
@@ -323,32 +434,111 @@ function showSyncState(state) {
 function handleLogout() {
   currentUser = null;
   clearSession();
-  // Clear app data from localStorage so next user starts fresh
-  try {
-    if (storageOK) {
-      const toRemove = [];
-      for (let i = 0; i < localStorage.length; i++) {
-        const k = localStorage.key(i);
-        if (k && k.startsWith(KEY)) toRemove.push(k);
-      }
-      toRemove.forEach(k => localStorage.removeItem(k));
-    }
-  } catch(e){}
   memoryStore = {};
+
+  const loginEmail = document.getElementById('login-email');
+  const loginPass = document.getElementById('login-password');
+  const signupName = document.getElementById('signup-name');
+  const signupEmail = document.getElementById('signup-email');
+  const signupPass = document.getElementById('signup-password');
+  if (loginEmail) loginEmail.value = '';
+  if (loginPass) loginPass.value = '';
+  if (signupName) signupName.value = '';
+  if (signupEmail) signupEmail.value = '';
+  if (signupPass) signupPass.value = '';
+
+  const errLogin = document.getElementById('login-error');
+  const errSignup = document.getElementById('signup-error');
+  if (errLogin) errLogin.textContent = '';
+  if (errSignup) errSignup.textContent = '';
+
+  switchAuthTab('login');
   showAuthOverlay();
-  // Reset UI to blank state
-  location.reload();
+  renderAllViews();
+}
+
+/* ---------------- Storage defaults (clean empty state for all users) ---------------- */
+const DEFAULT_PROJECTS = [];
+const DEFAULT_NOTES = [];
+
+function rolloverCalendarMonth() {
+  if (!currentUser) return;
+  const now = new Date();
+  const currentMonthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+  const storedMonthKey = load('calendarMonthKey', null);
+
+  if (storedMonthKey && storedMonthKey !== currentMonthKey) {
+    // New month arrived (1st of the month): refresh and remove past month events
+    const events = load('events', []);
+    const activeEvents = events.filter(ev => {
+      if (!ev || !ev.date) return false;
+      const evMonthKey = String(ev.date).slice(0, 7);
+      return evMonthKey >= currentMonthKey;
+    });
+    save('events', activeEvents);
+  }
+  save('calendarMonthKey', currentMonthKey);
+}
+
+function ensureUserDefaults() {
+  if (!currentUser) return;
+  if (load('todos', null) === null) save('todos', []);
+  if (load('goals', null) === null) save('goals', []);
+  if (load('events', null) === null) save('events', []);
+  if (load('roadmaps', null) === null) save('roadmaps', []);
+  if (load('projects', null) === null) save('projects', []);
+  if (load('notes', null) === null) save('notes', []);
+  if (load('streak', null) === null) save('streak', 0);
+
+  // Clean out any legacy template dummy data (API'S, LAPTOP, PHONE, SIH, Project idea)
+  const legacyNoteIds = new Set(['n1', 'n2', 'n3']);
+  const currentNotes = load('notes', []);
+  if (Array.isArray(currentNotes) && currentNotes.some(n => legacyNoteIds.has(n.id))) {
+    const cleanedNotes = currentNotes.filter(n => !legacyNoteIds.has(n.id));
+    save('notes', cleanedNotes);
+  }
+
+  const legacyProjIds = new Set(['p1', 'p2']);
+  const currentProjects = load('projects', []);
+  if (Array.isArray(currentProjects) && currentProjects.some(p => legacyProjIds.has(p.id))) {
+    const cleanedProjects = currentProjects.filter(p => !legacyProjIds.has(p.id));
+    save('projects', cleanedProjects);
+  }
+
+  rolloverCalendarMonth();
+
+  if (load('habitGrid', null) === null) {
+    const now = new Date();
+    const monthName = now.toLocaleString(undefined, { month: 'long' });
+    const autoTitle = `${monthName} ${now.getFullYear()}`;
+    save('habitGrid', {
+      title: autoTitle,
+      tagline: '1% better everyday',
+      habits: [],
+      marks: {},
+      monthKey: `${now.getFullYear()}-${now.getMonth()}`,
+      lastAutoTitle: autoTitle
+    });
+  }
 }
 
 /* ============================================================
-   BOOT: instant direct access (auth temporarily disabled)
+   BOOT: Authenticated session check
    ============================================================ */
 (function boot() {
-  const session = getSession() || { userId: 'local-dev', name: 'Aariyan Kumar', email: 'aariyan2137@gmail.com' };
-  currentUser = session;
-  saveSession(session);
-  updateUserUI(session.name);
-  hideAuthOverlay();
+  const session = getSession();
+  if (session && session.userId) {
+    currentUser = session;
+    ensureUserDefaults();
+    updateUserUI(session.name);
+    hideAuthOverlay();
+    loadCloudData(session.userId).then(() => {
+      renderAllViews();
+    }).catch(e => console.warn('[Voyage] Cloud load notice on boot:', e));
+  } else {
+    currentUser = null;
+    showAuthOverlay();
+  }
 })();
 
 /* ---------------- Wire logout button ---------------- */
@@ -356,60 +546,6 @@ document.addEventListener('DOMContentLoaded', () => {
   const logoutBtn = document.getElementById('logoutBtn');
   if (logoutBtn) logoutBtn.addEventListener('click', handleLogout);
 });
-
-/* ---------------- Storage defaults (reference design sample data if clean) ---------------- */
-const DEFAULT_PROJECTS = [
-  { id: 'p1', title: 'Project idea', color: '#8b6cf7', date: '24th Aug, 2026' },
-  { id: 'p2', title: 'SIH', color: '#34d399', date: '23th Aug, 2026' }
-];
-
-const DEFAULT_NOTES = [
-  {
-    id: 'n1',
-    title: "API'S",
-    icon: '',
-    body: "GOOGLE STUDIO\nRAILRADAR",
-    date: '27th Aug, 2026',
-    tags: []
-  },
-  {
-    id: 'n2',
-    title: 'LAPTOP',
-    icon: '',
-    body: 'Development workstation setup and tools',
-    date: '27th Aug, 2026',
-    tags: []
-  },
-  {
-    id: 'n3',
-    title: 'PHONE',
-    icon: '',
-    body: 'Mobile applications and sync config',
-    date: '27th Aug, 2026',
-    tags: []
-  }
-];
-
-if (load('todos', null) === null) save('todos', []);
-if (load('goals', null) === null) save('goals', []);
-if (load('events', null) === null) save('events', []);
-if (load('projects', null) === null) save('projects', DEFAULT_PROJECTS);
-if (load('notes', null) === null) save('notes', DEFAULT_NOTES);
-if (load('streak', null) === null) save('streak', 0);
-
-if (load('habitGrid', null) === null) {
-  const now = new Date();
-  const monthName = now.toLocaleString(undefined, { month: 'long' });
-  const autoTitle = `${monthName} ${now.getFullYear()}`;
-  save('habitGrid', {
-    title: autoTitle,
-    tagline: '1% better everyday',
-    habits: [],
-    marks: {},
-    monthKey: `${now.getFullYear()}-${now.getMonth()}`,
-    lastAutoTitle: autoTitle
-  });
-}
 
 // one-time migration: recover marks saved under the old unscoped key format (habitId_day)
 // so data isn't silently lost after the month-scoping fix
@@ -473,6 +609,220 @@ function wireAdd(btnId, inputId, handler){
   });
 }
 
+/* ---------------- SPRING CHECK (React Bits) ---------------- */
+const SC_VISUAL_DURATION = 0.2;
+const SC_RULE_END = 0.84;
+const SC_SWELL = 0.35;
+const SC_TICK_PATH = 'M4 12.6111L8.92308 17.5L20 6.5';
+const SC_ORIGIN = { left: 'left center', center: 'center', right: 'right center', none: 'left center' };
+
+const scClamp01 = value => Math.min(1, Math.max(0, value));
+const scZetaOf = bounce => (bounce <= 0 ? 1 : -Math.log(bounce) / Math.sqrt(Math.PI ** 2 + Math.log(bounce) ** 2));
+
+function scReadings(t, doneOpacity = 0.42, strikeLag = 0.12) {
+  const held = scClamp01(t);
+  return {
+    fill: `scale(${Math.max(t, 0)})`,
+    box: `scale(${1 + SC_SWELL * Math.max(0, t - 1)})`,
+    tick: 1 - held,
+    word: 1 - (1 - doneOpacity) * held,
+    rule: `scaleX(${scClamp01((held - strikeLag) / (SC_RULE_END - strikeLag))})`
+  };
+}
+
+function createSpringCheck({
+  label = 'Ship the build',
+  checked = false,
+  onChange,
+  disabled = false,
+  color = 'var(--mauve)',
+  fillColor = 'var(--mauve)',
+  checkColor = '#09080c',
+  boxSize = 23,
+  boxRadius = 7,
+  fontSize = 15.5,
+  bounce = 0.2,
+  strikeLag = 0.12,
+  doneOpacity = 0.42,
+  strike = 'left',
+  ariaLabel,
+  className = ''
+}) {
+  let isChecked = !!checked;
+  let currentT = isChecked ? 1 : 0;
+  let cancelAnimation = null;
+  let viaPointer = false;
+
+  const button = document.createElement('button');
+  button.type = 'button';
+  button.role = 'checkbox';
+  button.setAttribute('aria-checked', isChecked ? 'true' : 'false');
+  if (ariaLabel) button.setAttribute('aria-label', ariaLabel);
+  if (disabled) button.disabled = true;
+
+  button.className = `spring-check${className ? ` ${className}` : ''}`;
+  const ring = boxSize >= 24 ? 2 : 1.5;
+  const gap = Math.min(16, Math.max(8, Math.round(boxSize * 0.43)));
+  const ruleHeight = Math.max(1.5, Math.round(fontSize / 6) / 2);
+
+  button.style.setProperty('--sc-ink', color);
+  button.style.setProperty('--sc-fill', fillColor);
+  button.style.setProperty('--sc-check', checkColor);
+  button.style.setProperty('--sc-box', `${boxSize}px`);
+  button.style.setProperty('--sc-radius', `${boxRadius}px`);
+  button.style.setProperty('--sc-font', `${fontSize}px`);
+  button.style.setProperty('--sc-ring', `${ring}px`);
+  button.style.setProperty('--sc-gap', `${gap}px`);
+  button.style.setProperty('--sc-row', `${Math.max(32, boxSize + 12)}px`);
+  button.style.setProperty('--sc-rule', `${ruleHeight}px`);
+  button.style.setProperty('--sc-origin', SC_ORIGIN[strike] || SC_ORIGIN.left);
+
+  button.innerHTML = `
+    <span class="spring-check__press">
+      <span class="spring-check__box">
+        <span class="spring-check__ring" aria-hidden="true"></span>
+        <span class="spring-check__fill"></span>
+        <svg class="spring-check__tick" viewBox="0 0 24 24" aria-hidden="true">
+          <path d="${SC_TICK_PATH}" pathLength="1" stroke-dasharray="1" style="stroke-dashoffset: 1;" />
+        </svg>
+      </span>
+    </span>
+    <span class="spring-check__label">
+      <span class="spring-check__word"></span>
+      ${strike !== 'none' ? '<span class="spring-check__rule" aria-hidden="true"></span>' : ''}
+    </span>
+  `;
+
+  const boxEl = button.querySelector('.spring-check__box');
+  const fillEl = button.querySelector('.spring-check__fill');
+  const tickEl = button.querySelector('.spring-check__tick path');
+  const wordEl = button.querySelector('.spring-check__word');
+  const ruleEl = button.querySelector('.spring-check__rule');
+
+  if (wordEl) wordEl.textContent = label;
+
+  function applyReadings(val) {
+    currentT = val;
+    const r = scReadings(val, doneOpacity, strikeLag);
+    if (fillEl) fillEl.style.transform = r.fill;
+    if (boxEl) boxEl.style.transform = r.box;
+    if (tickEl) tickEl.style.strokeDashoffset = r.tick;
+    if (wordEl) wordEl.style.opacity = r.word;
+    if (ruleEl) ruleEl.style.transform = r.rule;
+  }
+
+  // Initial state without animating
+  applyReadings(currentT);
+
+  function animateTo(target, instant = false) {
+    if (cancelAnimation) {
+      cancelAnimation();
+      cancelAnimation = null;
+    }
+
+    const reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (reduce || instant) {
+      applyReadings(target);
+      return;
+    }
+
+    const startVal = currentT;
+    const delta = target - startVal;
+    if (Math.abs(delta) < 0.0001) return;
+
+    const zeta = scZetaOf(bounce);
+    let wd, w0;
+    if (zeta < 1) {
+      wd = Math.PI / SC_VISUAL_DURATION;
+      w0 = wd / Math.sqrt(1 - zeta * zeta);
+    } else {
+      w0 = 2 / SC_VISUAL_DURATION;
+      wd = 0;
+    }
+
+    let startTime = null;
+    let rafId = null;
+
+    function step(now) {
+      if (!startTime) startTime = now;
+      const elapsed = (now - startTime) / 1000;
+
+      let progress;
+      if (zeta < 1) {
+        const decay = Math.exp(-zeta * w0 * elapsed);
+        const envelope = Math.cos(wd * elapsed) + (zeta / Math.sqrt(1 - zeta * zeta)) * Math.sin(wd * elapsed);
+        progress = 1 - decay * envelope;
+
+        if (elapsed > SC_VISUAL_DURATION && decay < 0.005) {
+          applyReadings(target);
+          cancelAnimation = null;
+          return;
+        }
+      } else {
+        const decay = Math.exp(-w0 * elapsed);
+        progress = 1 - decay * (1 + w0 * elapsed);
+        if (decay < 0.005) {
+          applyReadings(target);
+          cancelAnimation = null;
+          return;
+        }
+      }
+
+      applyReadings(startVal + delta * progress);
+      rafId = requestAnimationFrame(step);
+    }
+
+    rafId = requestAnimationFrame(step);
+    cancelAnimation = () => {
+      if (rafId) cancelAnimationFrame(rafId);
+    };
+  }
+
+  const handlePointerDown = e => {
+    if (e.button !== 0 || disabled) return;
+    viaPointer = true;
+    const reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (!reduce) button.dataset.pressed = '';
+  };
+
+  const handlePointerUp = () => {
+    delete button.dataset.pressed;
+  };
+
+  const handlePointerCancel = () => {
+    viaPointer = false;
+    handlePointerUp();
+  };
+
+  const toggle = () => {
+    if (disabled) return;
+    viaPointer = false;
+    isChecked = !isChecked;
+    button.setAttribute('aria-checked', isChecked ? 'true' : 'false');
+    animateTo(isChecked ? 1 : 0);
+    onChange?.(isChecked);
+  };
+
+  button.addEventListener('pointerdown', handlePointerDown);
+  button.addEventListener('pointerup', handlePointerUp);
+  button.addEventListener('pointercancel', handlePointerCancel);
+  button.addEventListener('pointerleave', handlePointerCancel);
+  button.addEventListener('click', toggle);
+
+  return {
+    element: button,
+    setChecked(newChecked, animate = true) {
+      if (isChecked === !!newChecked && Math.abs(currentT - (newChecked ? 1 : 0)) < 0.001) return;
+      isChecked = !!newChecked;
+      button.setAttribute('aria-checked', isChecked ? 'true' : 'false');
+      animateTo(isChecked ? 1 : 0, !animate);
+    },
+    destroy() {
+      if (cancelAnimation) cancelAnimation();
+    }
+  };
+}
+
 /* ---------------- TODOS (tasks for today) ---------------- */
 
 function addTodo(text){
@@ -500,58 +850,106 @@ function renderTodoRows(containerId, items, todayKey){
   items.forEach(t => {
     const row = document.createElement('div');
     row.className = 'todo-row' + (t.done ? ' done' : '');
-    row.innerHTML = `
-      <input type="checkbox" class="chk" style="--c:var(--blue);" ${t.done?'checked':''}>
-      <label style="flex:1;">${escapeHtml(t.text)}</label>
-      <button class="todo-rm" title="Delete task" style="background:none;border:none;color:var(--text-3);font-size:16px;cursor:pointer;padding:0 4px;margin-left:auto;">&times;</button>
-    `;
-    row.querySelector('input').addEventListener('change', e => {
-      const arr = load('todos', []);
-      const item = arr.find(x => x.id === t.id);
-      if (item) {
-        item.done = e.target.checked;
-        save('todos', arr);
-        const hist = load('todoHistory', {});
-        const key = t.date || todayKey;
-        hist[key] = Math.max(0, (hist[key]||0) + (e.target.checked ? 1 : -1));
-        save('todoHistory', hist);
-        renderTodos();
-        renderBars();
+    row.dataset.id = t.id;
+
+    const springCheck = createSpringCheck({
+      label: t.text,
+      checked: !!t.done,
+      color: 'var(--mauve)',
+      fillColor: 'var(--mauve)',
+      checkColor: '#09080c',
+      boxSize: 23,
+      boxRadius: 7,
+      fontSize: 15.5,
+      bounce: 0.2,
+      strikeLag: 0.12,
+      doneOpacity: 0.42,
+      strike: 'left',
+      onChange: (checked) => {
+        const arr = load('todos', []);
+        const item = arr.find(x => x.id === t.id);
+        if (item) {
+          item.done = checked;
+          save('todos', arr);
+          const hist = load('todoHistory', {});
+          const key = t.date || todayKey;
+          hist[key] = Math.max(0, (hist[key] || 0) + (checked ? 1 : -1));
+          save('todoHistory', hist);
+
+          if (checked) {
+            row.classList.add('done');
+          } else {
+            row.classList.remove('done');
+          }
+
+          // Sync other container if both exist (dashboard and todo page)
+          const otherContainerId = containerId === 'todoList' ? 'pageTodoList' : 'todoList';
+          const otherList = document.getElementById(otherContainerId);
+          if (otherList) {
+            const otherRow = otherList.querySelector(`[data-id="${t.id}"]`);
+            if (otherRow && otherRow._springCheck) {
+              otherRow._springCheck.setChecked(checked, true);
+              if (checked) otherRow.classList.add('done');
+              else otherRow.classList.remove('done');
+            }
+          }
+
+          updateTodoStats();
+          renderBars();
+        }
       }
     });
-    row.querySelector('.todo-rm').addEventListener('click', (e) => {
+
+    row._springCheck = springCheck;
+    row.appendChild(springCheck.element);
+
+    const rmBtn = document.createElement('button');
+    rmBtn.className = 'todo-rm';
+    rmBtn.title = 'Delete task';
+    rmBtn.style.cssText = 'background:none;border:none;color:var(--text-3);font-size:16px;cursor:pointer;padding:0 4px;line-height:1;margin-left:auto;';
+    rmBtn.innerHTML = '&times;';
+    rmBtn.addEventListener('click', (e) => {
       e.stopPropagation();
       deleteTodo(t.id);
     });
+    row.appendChild(rmBtn);
+
     list.appendChild(row);
   });
 }
 
-function renderTodos(){
+function updateTodoStats(){
   const todos = load('todos', []);
   const todayKey = todayISO();
-
   const todosToday = todos.filter(t => (t.date || todayKey) === todayKey);
-  renderTodoRows('todoList', todosToday, todayKey);
-  renderTodoRows('pageTodoList', todosToday, todayKey);
 
   // stats reflect Today's tasks
   const total = todosToday.length;
   const done = todosToday.filter(t=>t.done).length;
+  const totalText = `of ${total} ${total === 1 ? 'task' : 'tasks'}`;
+  const circumference = 314;
+  const pct = total ? done/total : 0;
+  const strokeOffset = circumference - (circumference*pct);
+
+  // Dashboard Wheel
   const doneEl = document.getElementById('todoDone'); 
   if (doneEl) doneEl.textContent = done;
 
   const totalLbl = document.getElementById('todoTotalLbl');
-  if (totalLbl) {
-    totalLbl.textContent = `of ${total} ${total === 1 ? 'task' : 'tasks'}`;
-  }
+  if (totalLbl) totalLbl.textContent = totalText;
 
   const ring = document.getElementById('todoRing');
-  if (ring){
-    const circumference = 314;
-    const pct = total ? done/total : 0;
-    ring.style.strokeDashoffset = circumference - (circumference*pct);
-  }
+  if (ring) ring.style.strokeDashoffset = strokeOffset;
+
+  // To-Do Page Wheel
+  const pageDoneEl = document.getElementById('pageTodoDone'); 
+  if (pageDoneEl) pageDoneEl.textContent = done;
+
+  const pageTotalLbl = document.getElementById('pageTodoTotalLbl');
+  if (pageTotalLbl) pageTotalLbl.textContent = totalText;
+
+  const pageRing = document.getElementById('pageTodoRing');
+  if (pageRing) pageRing.style.strokeDashoffset = strokeOffset;
 
   const badge = document.getElementById('todoBadge'); 
   if (badge) {
@@ -564,6 +962,16 @@ function renderTodos(){
   if (metricTasks) metricTasks.innerHTML = `${done}<span class="u">tasks</span>`;
 
   updateStreakDisplay();
+}
+
+function renderTodos(){
+  const todos = load('todos', []);
+  const todayKey = todayISO();
+
+  const todosToday = todos.filter(t => (t.date || todayKey) === todayKey);
+  renderTodoRows('todoList', todosToday, todayKey);
+  renderTodoRows('pageTodoList', todosToday, todayKey);
+  updateTodoStats();
 }
 wireAdd('todoAddBtn','todoInput', addTodo);
 wireAdd('pageTodoAddBtn','pageTodoInput', addTodo);
@@ -604,7 +1012,10 @@ setInterval(() => {
   const now = todayISO();
   if (now !== watchedDay){
     watchedDay = now;
+    rolloverCalendarMonth();
     renderTodos();
+    renderEvents();
+    renderMiniCalendar();
     renderBars();
   }
 }, 60000);
@@ -642,7 +1053,7 @@ function computeStreak(){
     cursor.setDate(cursor.getDate()-1); // grace period: today not done yet doesn't zero out yesterday's streak
   }
   let streak = 0;
-  while (dayHasActivity(cursor)){
+  while (dayHasActivity(cursor) && streak < 3650){
     streak++;
     cursor.setDate(cursor.getDate()-1);
   }
@@ -737,7 +1148,6 @@ function renderHabitQuickList(){
   if (!grid) return;
 
   const today = new Date().getDate();
-  const colors = ['var(--blue)','var(--green)','var(--amber)','var(--violet)'];
 
   if (!grid.habits.length){
     list.innerHTML = `<div class="event-empty">No habits yet - add one on the Habit Tracker page.</div>`;
@@ -745,23 +1155,48 @@ function renderHabitQuickList(){
   }
 
   list.innerHTML = '';
-  grid.habits.forEach((h, i) => {
-    const color = colors[i % colors.length];
+  grid.habits.forEach((h) => {
     const key = markKey(h.id, today);
-    const checked = !!grid.marks[key];
+    const isChecked = !!grid.marks[key];
 
     const row = document.createElement('div');
     row.className = 'quick-row';
-    row.innerHTML = `
-      <input type="checkbox" class="chk" style="--c:${color};" ${checked?'checked':''}>
-      <span class="quick-label">${escapeHtml(h.name)}</span>
-    `;
-    row.querySelector('input').addEventListener('change', e => {
-      const g = load('habitGrid', grid);
-      if (e.target.checked) g.marks[key] = true; else delete g.marks[key];
-      save('habitGrid', g);
-      renderHabitGrid();
+    row.dataset.habitId = h.id;
+
+    const springCheck = createSpringCheck({
+      label: h.name,
+      checked: isChecked,
+      color: 'var(--mauve)',
+      fillColor: 'var(--mauve)',
+      checkColor: '#09080c',
+      boxSize: 23,
+      boxRadius: 7,
+      fontSize: 15.5,
+      bounce: 0.2,
+      strikeLag: 0.12,
+      doneOpacity: 0.42,
+      strike: 'left',
+      onChange: (checked) => {
+        const g = load('habitGrid', grid);
+        if (checked) g.marks[key] = true;
+        else delete g.marks[key];
+        save('habitGrid', g);
+
+        // Update corresponding cell in tracker table if rendered
+        document.querySelectorAll(`.js-tracker-table .tracker-cell[data-h="${h.id}"][data-d="${today}"]`).forEach(cell => {
+          if (checked) cell.classList.add('checked');
+          else cell.classList.remove('checked');
+        });
+
+        updateWeeklyHabitMetric();
+        renderBars();
+        renderProgressGraph();
+        updateStreakDisplay();
+      }
     });
+
+    row._springCheck = springCheck;
+    row.appendChild(springCheck.element);
     list.appendChild(row);
   });
 }
@@ -863,46 +1298,179 @@ function bindTrackerToolbar(){
 }
 bindTrackerToolbar();
 
-/* ---------------- GOALS: Dashboard mini-card (read-only roadmap summary) ---------------- */
-// The dashboard card (view-dashboard) still renders as a Goals mini-preview of saved roadmaps.
-// goalInput / goalAddBtn / goalList remain in the HTML (per "don't touch Dashboard") but are
-// repurposed: the add input is hidden via JS and the list shows roadmap titles instead.
+/* ---------------- GOALS: Roadmaps Core Logic, Deletion & Shared Rendering ---------------- */
+
+function deleteRoadmap(idx) {
+  let roadmaps = load('roadmaps', []);
+  if (idx < 0 || idx >= roadmaps.length) return;
+  const oldLen = roadmaps.length;
+  roadmaps.splice(idx, 1);
+  save('roadmaps', roadmaps);
+
+  // Clean and shift roadmap_checks_*
+  try {
+    const keyI = getStorageKey(`roadmap_checks_${idx}`);
+    if (storageOK) {
+      localStorage.removeItem(keyI);
+    } else {
+      delete memoryStore[keyI];
+    }
+    for (let j = idx + 1; j < oldLen; j++) {
+      const val = load(`roadmap_checks_${j}`, {});
+      save(`roadmap_checks_${j - 1}`, val);
+      const keyJ = getStorageKey(`roadmap_checks_${j}`);
+      if (storageOK) {
+        localStorage.removeItem(keyJ);
+      } else {
+        delete memoryStore[keyJ];
+      }
+    }
+  } catch(e) {
+    console.warn('Error shifting roadmap checks:', e);
+  }
+
+  renderRoadmaps();
+  if (window._renderDashboardGoals) window._renderDashboardGoals();
+}
+
+function buildRoadmapCardHtml(rm, rmIdx) {
+  const totalMilestones = (rm.milestones || []).length;
+  const checkedKey = `roadmap_checks_${rmIdx}`;
+  const checks = load(checkedKey, {});
+  const checkedCount = Object.values(checks).filter(Boolean).length;
+  const pct = totalMilestones > 0 ? Math.round((checkedCount / totalMilestones) * 100) : 0;
+
+  let milestonesHtml = '';
+  let activeIdx = 0;
+  
+  // Determine which milestone is currently active (first unchecked)
+  while(activeIdx < totalMilestones && checks[activeIdx]) {
+    activeIdx++;
+  }
+
+  (rm.milestones || []).forEach((ms, msIdx) => {
+    const isChecked = !!checks[msIdx];
+    const desc = ms.description || '';
+    
+    let stateClass = '';
+    let canToggle = false;
+    
+    if (isChecked) {
+      stateClass = 'milestone-done';
+      if (msIdx === activeIdx - 1) {
+        canToggle = true; // Can undo the last completed milestone
+      }
+    } else if (msIdx === activeIdx) {
+      stateClass = 'milestone-active';
+      canToggle = true; // Can check off the current active milestone
+    } else {
+      stateClass = 'milestone-locked';
+    }
+
+    milestonesHtml += `
+      <div class="roadmap-timeline-item ${stateClass} ${canToggle ? 'can-toggle' : ''}" data-rm="${rmIdx}" data-ms="${msIdx}">
+        <div class="timeline-timeframe">${escapeHtml(ms.timeframe)}</div>
+        <div class="timeline-divider">
+          <div class="timeline-dot" ${canToggle ? 'role="button" tabindex="0"' : ''}>
+            ${isChecked ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" class="check-icon"><polyline points="20 6 9 17 4 12"></polyline></svg>' : ''}
+          </div>
+          ${msIdx < totalMilestones - 1 ? '<div class="timeline-line"></div>' : ''}
+        </div>
+        <div class="timeline-content">
+          <div class="timeline-title">${escapeHtml(ms.title)}</div>
+          ${desc ? `<p class="timeline-desc">${escapeHtml(desc)}</p>` : ''}
+        </div>
+      </div>`;
+  });
+
+  return `
+    <div class="roadmap-card">
+      <div class="roadmap-card-header">
+        <div>
+          <h3 class="roadmap-title">${escapeHtml(rm.goalTitle)}</h3>
+          ${rm.summary ? `<p class="roadmap-summary">${escapeHtml(rm.summary)}</p>` : ''}
+        </div>
+        <div class="roadmap-pct-wrap">
+          <span class="roadmap-pct grad-text">${pct}%</span>
+        </div>
+      </div>
+      <div class="roadmap-progress-bar">
+        <div class="roadmap-progress-fill" style="width:${pct}%"></div>
+      </div>
+      <div class="roadmap-timeline">${milestonesHtml}</div>
+    </div>
+  `;
+}
+
+function attachRoadmapCardListeners(container) {
+  if (!container) return;
+
+  // Add click listeners to the toggleable dots
+  container.querySelectorAll('.roadmap-timeline-item.can-toggle .timeline-dot').forEach(dot => {
+    const handleToggle = (e) => {
+      e.stopPropagation();
+      const item = e.target.closest('.roadmap-timeline-item');
+      if (!item) return;
+      const ri = parseInt(item.dataset.rm);
+      const mi = parseInt(item.dataset.ms);
+      const ck = `roadmap_checks_${ri}`;
+      const c = load(ck, {});
+
+      if (c[mi]) {
+        delete c[mi];
+      } else {
+        c[mi] = true;
+      }
+
+      save(ck, c);
+      renderRoadmaps();
+      if (window._renderDashboardGoals) window._renderDashboardGoals();
+    };
+
+    dot.addEventListener('click', handleToggle);
+    dot.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        handleToggle(e);
+      }
+    });
+  });
+}
+
 (function initDashboardGoalCard() {
   const goalList  = document.getElementById('goalList');
   const goalInput = document.getElementById('goalInput');
-  const goalAddBtn = document.getElementById('goalAddBtn');
-  // Hide the old add-inline row on the dashboard (it has no function anymore)
-  if (goalInput) goalInput.closest('.add-inline').style.display = 'none';
+  const goToRoadmaps = document.getElementById('goToRoadmaps');
+
+  if (goalInput) {
+    const addInline = goalInput.closest('.add-inline');
+    if (addInline) addInline.style.display = 'none';
+  }
+
+  if (goToRoadmaps) {
+    goToRoadmaps.addEventListener('click', () => {
+      if (typeof showView === 'function') showView('goals');
+    });
+  }
 
   function renderDashboardGoals() {
     if (!goalList) return;
-    const roadmaps = load('roadmaps', []);
+    let roadmaps = load('roadmaps', []);
     goalList.innerHTML = '';
     if (!roadmaps.length) {
-      goalList.innerHTML = `<div class="event-empty" style="padding:8px 0;">Plan a goal on the Goals page to see your roadmaps here.</div>`;
+      goalList.innerHTML = `<div class="event-empty" style="padding:12px 0;">No roadmaps yet. Plan one on the Goals page.</div>`;
       return;
     }
-    const recent = roadmaps.slice(-3).reverse();
-    recent.forEach((rm, ri) => {
-      const actualIdx = roadmaps.length - 1 - ri;
-      const total = (rm.milestones || []).length;
-      const checks = load(`roadmap_checks_${actualIdx}`, {});
-      const done   = Object.values(checks).filter(Boolean).length;
-      const pct    = total > 0 ? Math.round((done / total) * 100) : 0;
-      const row = document.createElement('div');
-      row.className = 'goal-item';
-      row.innerHTML = `
-        <div class="goal-top">
-          <span class="g-name" style="font-size:12.5px;font-weight:500;color:var(--text-1);">${escapeHtml(rm.goalTitle)}</span>
-          <span class="g-pct">${pct}%</span>
-        </div>
-        <div class="track"><div class="fill" style="width:${pct}%;background:var(--gradient-accent);"></div></div>
-      `;
-      goalList.appendChild(row);
+    let cardsHtml = '';
+    roadmaps.forEach((rm, rmIdx) => {
+      cardsHtml += buildRoadmapCardHtml(rm, rmIdx);
     });
+    goalList.innerHTML = cardsHtml;
+    attachRoadmapCardListeners(goalList);
   }
+
   renderDashboardGoals();
-  // expose so renderRoadmaps can refresh the dashboard too
+  // Expose so renderRoadmaps and chat updates refresh the dashboard too
   window._renderDashboardGoals = renderDashboardGoals;
 })();
 
@@ -912,46 +1480,43 @@ const GOALS_SYSTEM_INSTRUCTION = `You are a domain-expert coach inside a product
 Flow: ask 1-2 focused questions at a time to learn their starting point, timeframe, and constraints. Keep tone encouraging and concise. Keep asking (roadmapReady: false, roadmap: null) until you have enough info to propose a genuinely useful roadmap (usually 2-3 exchanges).
 
 When ready, set roadmapReady to true and generate a tailored roadmap following these STRICT RULES:
-1. GOAL TITLE: Generate a clean, short, properly-capitalized title (e.g., 'Full-Stack MERN Mastery Roadmap'); NEVER reuse the user's raw conversational input.
-2. TIMELINE STAGES: Sequence 4 to 8 realistic, sequential stages/milestones (e.g., Phase 1, Phase 2... or Month 1, Month 2...).
-3. STAGE TITLE: Every milestone 'title' MUST be a clean, bold, punchy title naming the specific domain skill, technology, or concept (e.g., 'REACT CORE & STATE HOOKS', 'NODE.JS & RESTFUL API ARCHITECTURE', 'MONGODB DATA MODELING'). NEVER use generic process placeholders like 'Curate core curriculum' or 'Foundational modules'.
-4. TIMEFRAME: The 'timeframe' MUST be a concise label (e.g., 'Phase 1', 'Weeks 1–2', 'Month 1', '2026 Q1').
-5. SHORT EXPLANATORY PARAGRAPH: The 'description' MUST be a well-crafted, informative short paragraph (2–4 concise sentences) explaining what this stage entails, the exact tools or techniques mastered, and the practical deliverable or project built.
+1. GOAL TITLE: Extract the core skill, technology, or domain subject from the user's input and generate a clean, professional title (e.g. if the user says 'teach me ruby', the goalTitle MUST be 'Ruby Roadmap' or 'Ruby Mastery Roadmap'; if 'i want to learn python', title is 'Python Roadmap'). NEVER include conversational action phrases like 'Teach me', 'I want to', 'Help me', 'How to', 'Can you' in the goalTitle.
+2. SUMMARY: A clean 1-2 sentence executive overview of the roadmap (e.g., 'Comprehensive milestone plan to achieve Ruby programming proficiency from core syntax to production applications.').
+3. STAGE 1 TITLE: The first milestone title MUST directly name the foundational subject skills (e.g., 'Ruby Fundamentals & Core Principles' or 'Ruby Syntax & Setup'). NEVER copy 'Teach me' or conversational phrases into milestone titles.
+4. TIMELINE STAGES: Sequence 4 to 8 realistic, sequential stages/milestones (e.g., Phase 1, Phase 2... or Month 1, Month 2...).
+5. STAGE TITLES: Every milestone 'title' MUST be a clean, bold title naming the specific domain skill, technology, or concept (e.g., 'Object-Oriented Ruby & Gems', 'Rails Web Framework Architecture', 'Database Modeling with Active Record').
+6. TIMEFRAME: The 'timeframe' MUST be a concise label (e.g., 'Phase 1 (Weeks 1–2)', 'Weeks 3–6', 'Month 1').
+7. SHORT EXPLANATORY PARAGRAPH: The 'description' MUST be a well-crafted, informative short paragraph (2–4 concise sentences) explaining what this stage entails and the practical deliverable built.
 
 CONCRETE WORKED PATTERN EXAMPLE:
-Goal: "I want to learn full stack MERN development"
+Goal: "teach me ruby"
 Output JSON:
 {
-  "reply": "I've designed a comprehensive MERN development roadmap for you. Here is your step-by-step path to full-stack mastery!",
+  "reply": "I've designed a comprehensive Ruby development roadmap for you. Here is your step-by-step path to Ruby mastery!",
   "roadmapReady": true,
   "roadmap": {
-    "goalTitle": "Full-Stack MERN Mastery Roadmap",
-    "summary": "Comprehensive 5-stage pathway from frontend React architecture to scalable Node and MongoDB backend systems.",
+    "goalTitle": "Ruby Roadmap",
+    "summary": "Comprehensive 4-stage pathway from core Ruby syntax and OOP paradigms to building web applications and gems.",
     "milestones": [
       {
-        "title": "Modern JavaScript (ES6+) & DOM Engineering",
-        "timeframe": "Weeks 1–3",
-        "description": "Master JavaScript closures, promises, async/await, and modern ES6 modules. Build interactive web applications with dynamic DOM rendering and Fetch API integrations."
+        "title": "Ruby Fundamentals & Core Principles",
+        "timeframe": "Phase 1 (Weeks 1–2)",
+        "description": "Establish a solid groundwork in Ruby. Master variables, data structures, control flow, blocks, and methods while configuring your local development environment and IRB/Pry."
       },
       {
-        "title": "React Component Architecture & State Hooks",
-        "timeframe": "Weeks 4–7",
-        "description": "Develop modular user interfaces with functional components, useState, useEffect, and custom hooks. Construct a multi-view application with React Router and centralized context management."
+        "title": "Object-Oriented Programming & Standard Library",
+        "timeframe": "Phase 2 (Weeks 3–5)",
+        "description": "Deep dive into classes, modules, inheritance, mixins, and error handling. Build practical command-line utilities and explore Ruby's built-in enumerables."
       },
       {
-        "title": "Node.js & Express RESTful API Design",
-        "timeframe": "Weeks 8–11",
-        "description": "Engineer scalable backend HTTP microservices, custom middleware, and error-handling controllers with Express.js. Implement robust JWT token authentication and request validation."
+        "title": "Ruby on Rails & Database Integrations",
+        "timeframe": "Phase 3 (Weeks 6–9)",
+        "description": "Construct full-stack web applications using the MVC pattern with Rails and Active Record. Implement RESTful routes, authentication, and PostgreSQL database queries."
       },
       {
-        "title": "MongoDB Schema Modeling & Aggregation",
-        "timeframe": "Weeks 12–14",
-        "description": "Design relational-style schemas and indexes with Mongoose ODM. Implement complex data aggregation pipelines, pagination, and transactional database integrity."
-      },
-      {
-        "title": "Full-Stack Integration, Testing & CI/CD Deployment",
-        "timeframe": "Weeks 15–18",
-        "description": "Connect the React frontend to the Node backend with full CRUD capability. Configure automated Jest test suites, containerized builds, and deploy to cloud hosting with continuous integration."
+        "title": "Gems, Testing with RSpec & Production Polish",
+        "timeframe": "Phase 4 (Weeks 10–12)",
+        "description": "Write comprehensive unit and integration test suites with RSpec. Package a custom Ruby gem and deploy your web applications to production with CI/CD."
       }
     ]
   }
@@ -981,11 +1546,102 @@ const GOALS_RESPONSE_SCHEMA = {
           }
         }
       },
-      required: ["goalTitle", "milestones"]
+      required: ["goalTitle", "summary", "milestones"]
     }
   },
-  required: ["reply", "roadmapReady"]
+  required: ["reply", "roadmapReady", "roadmap"]
 };
+
+function extractCleanSubject(rawText) {
+  if (!rawText) return 'Skill';
+  let clean = String(rawText).trim();
+
+  // Strip conversational and command prefixes repeatedly
+  const prefixRegex = /^(can you\s+)?(please\s+)?(i want to|i wanna|i would like to|i'd like to|my goal is to|i plan to|how to|help me|teach me( how to)?|guide me( on| in| through)?|learn|master|build|study|start learning|become an?|roadmap for)\s+/i;
+  
+  let prev;
+  let iters = 0;
+  do {
+    prev = clean;
+    clean = clean.replace(prefixRegex, '').trim();
+    iters++;
+  } while (clean !== prev && prefixRegex.test(clean) && iters < 20);
+
+  // Strip trailing "roadmap" or "milestones" if already present in subject
+  clean = clean.replace(/\s*(roadmap|milestone plan|learning path)$/i, '').trim();
+
+  if (!clean) return 'Skill';
+
+  const minorWords = new Set(['and', 'or', 'of', 'in', 'on', 'at', 'to', 'for', 'with', 'a', 'an', 'the']);
+  clean = clean
+    .split(/\s+/)
+    .map((word, idx) => {
+      const lower = word.toLowerCase();
+      if (idx > 0 && minorWords.has(lower)) return lower;
+      return word.charAt(0).toUpperCase() + word.slice(1);
+    })
+    .join(' ');
+
+  return clean;
+}
+
+function sanitizeRoadmap(roadmap) {
+  if (!roadmap) return roadmap;
+  const rawTitle = roadmap.goalTitle || '';
+  const subject = extractCleanSubject(rawTitle);
+
+  let goalTitle = rawTitle.trim();
+  if (/^(teach me|i want|learn|how to|help me|guide me|can you)/i.test(goalTitle) || !goalTitle) {
+    goalTitle = `${subject} Roadmap`;
+  } else if (!goalTitle.toLowerCase().includes('roadmap')) {
+    goalTitle = `${goalTitle} Roadmap`;
+  }
+
+  // Clean goal title capitalization and ensure it does not start with "Teach me"
+  goalTitle = goalTitle.replace(/^teach me\s+/i, '');
+  goalTitle = goalTitle.charAt(0).toUpperCase() + goalTitle.slice(1);
+
+  let summary = roadmap.summary || '';
+  if (!summary || /achieve teach me/i.test(summary) || /teach me/i.test(summary)) {
+    summary = `Comprehensive milestone plan to achieve ${subject.toLowerCase()} mastery.`;
+  } else {
+    summary = summary.replace(/teach me\s+/gi, '');
+  }
+
+  const milestones = (roadmap.milestones || []).map((m, idx) => {
+    let title = (m.title || '').trim();
+    if (/^teach me\s+/i.test(title)) {
+      title = title.replace(/^teach me\s+/i, '');
+      if (!title.toLowerCase().startsWith(subject.toLowerCase())) {
+        title = `${subject} ${title}`;
+      }
+    }
+    title = title.replace(/teach me\s+/gi, '').trim();
+    title = title.charAt(0).toUpperCase() + title.slice(1);
+
+    if (idx === 0 && (/foundations/i.test(title) || /fundamentals/i.test(title))) {
+      title = `${subject} Fundamentals & Core Principles`;
+    }
+
+    let desc = (m.description || '').trim();
+    desc = desc.replace(/in Teach me\s+/gi, 'in ');
+    desc = desc.replace(/Teach me\s+/gi, '');
+    desc = desc.replace(/teach me\s+/gi, '');
+
+    return {
+      ...m,
+      title,
+      description: desc
+    };
+  });
+
+  return {
+    ...roadmap,
+    goalTitle,
+    summary,
+    milestones
+  };
+}
 
 const INITIAL_CHAT_MSG = "Hey! I'm your goal planning coach. Tell me about a goal you'd like to work toward \u2014 could be anything from learning a skill to a fitness goal or a career ambition. What's on your mind?";
 
@@ -994,7 +1650,16 @@ let goalConversation = []; // { role: 'user'|'model', text: '...' }
 function renderRoadmaps() {
   const container = document.getElementById('roadmapsContainer');
   if (!container) return;
-  const roadmaps = load('roadmaps', []);
+  let roadmaps = load('roadmaps', []);
+
+  // Clean up any previously stored roadmaps with conversational titles
+  let needsSave = false;
+  roadmaps = roadmaps.map(rm => {
+    const clean = sanitizeRoadmap(rm);
+    if (clean.goalTitle !== rm.goalTitle || clean.summary !== rm.summary) needsSave = true;
+    return clean;
+  });
+  if (needsSave) save('roadmaps', roadmaps);
 
   if (!roadmaps.length) {
     container.innerHTML = `
@@ -1005,92 +1670,12 @@ function renderRoadmaps() {
     return;
   }
 
-  container.innerHTML = '';
+  let cardsHtml = '';
   roadmaps.forEach((rm, rmIdx) => {
-    const card = document.createElement('div');
-    card.className = 'roadmap-card';
-    const totalMilestones = (rm.milestones || []).length;
-    const checkedKey = `roadmap_checks_${rmIdx}`;
-    const checks = load(checkedKey, {});
-    const checkedCount = Object.values(checks).filter(Boolean).length;
-    const pct = totalMilestones > 0 ? Math.round((checkedCount / totalMilestones) * 100) : 0;
-
-    let milestonesHtml = '';
-    let activeIdx = 0;
-    
-    // Determine which milestone is currently active (first unchecked)
-    while(activeIdx < totalMilestones && checks[activeIdx]) {
-      activeIdx++;
-    }
-
-    (rm.milestones || []).forEach((ms, msIdx) => {
-      const isChecked = !!checks[msIdx];
-      const desc = ms.description || '';
-      
-      let stateClass = '';
-      let canToggle = false;
-      
-      if (isChecked) {
-        stateClass = 'milestone-done';
-        if (msIdx === activeIdx - 1) {
-          canToggle = true; // Can undo the last completed milestone
-        }
-      } else if (msIdx === activeIdx) {
-        stateClass = 'milestone-active';
-        canToggle = true; // Can check off the current active milestone
-      } else {
-        stateClass = 'milestone-locked';
-      }
-
-      milestonesHtml += `
-        <div class="roadmap-timeline-item ${stateClass} ${canToggle ? 'can-toggle' : ''}" data-rm="${rmIdx}" data-ms="${msIdx}">
-          <div class="timeline-timeframe">${escapeHtml(ms.timeframe)}</div>
-          <div class="timeline-divider">
-            <div class="timeline-dot" ${canToggle ? 'role="button" tabindex="0"' : ''}>
-              ${isChecked ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" class="check-icon"><polyline points="20 6 9 17 4 12"></polyline></svg>' : ''}
-            </div>
-            ${msIdx < totalMilestones - 1 ? '<div class="timeline-line"></div>' : ''}
-          </div>
-          <div class="timeline-content">
-            <div class="timeline-title">${escapeHtml(ms.title)}</div>
-            ${desc ? `<p class="timeline-desc">${escapeHtml(desc)}</p>` : ''}
-          </div>
-        </div>`;
-    });
-
-    card.innerHTML = `
-      <div class="roadmap-card-header">
-        <div>
-          <h3 class="roadmap-title">${escapeHtml(rm.goalTitle)}</h3>
-          ${rm.summary ? `<p class="roadmap-summary">${escapeHtml(rm.summary)}</p>` : ''}
-        </div>
-        <div class="roadmap-pct-wrap">
-          <span class="roadmap-pct grad-text">${pct}%</span>
-        </div>
-      </div>
-      <div class="roadmap-progress-bar">
-        <div class="roadmap-progress-fill" style="width:${pct}%"></div>
-      </div>
-      <div class="roadmap-timeline">${milestonesHtml}</div>
-    `;
-
-    // Add click listeners to the toggleable dots
-    card.querySelectorAll('.roadmap-timeline-item.can-toggle .timeline-dot').forEach(dot => {
-      dot.addEventListener('click', (e) => {
-        const item = e.target.closest('.roadmap-timeline-item');
-        const ri = parseInt(item.dataset.rm);
-        const mi = parseInt(item.dataset.ms);
-        const ck = `roadmap_checks_${ri}`;
-        const c = load(ck, {});
-        // Toggle the completed status
-        c[mi] = !c[mi];
-        save(ck, c);
-        renderRoadmaps();
-      });
-    });
-
-    container.prepend(card); // newest first
+    cardsHtml += buildRoadmapCardHtml(rm, rmIdx);
   });
+  container.innerHTML = cardsHtml;
+  attachRoadmapCardListeners(container);
 }
 
 function appendChatMsg(role, text) {
@@ -1117,12 +1702,8 @@ function generateFallbackGoalResponse(messages, latestText) {
   const userMessages = messages.filter(m => m.role === 'user').map(m => m.text.trim());
   const initialGoal = userMessages[0] || latestText;
   
-  let goalTitle = initialGoal
-    .replace(/^(i want to|i wanna|i would like to|my goal is to|how to|i plan to|help me|learn|master|build)\s+/i, '')
-    .trim();
-  goalTitle = goalTitle.charAt(0).toUpperCase() + goalTitle.slice(1);
-  if (!goalTitle) goalTitle = 'Mastery Roadmap';
-  else if (!goalTitle.toLowerCase().includes('roadmap')) goalTitle = `${goalTitle} Roadmap`;
+  const cleanSubject = extractCleanSubject(initialGoal);
+  const goalTitle = `${cleanSubject} Roadmap`;
 
   const isFirstMessage = userMessages.length <= 1;
   const hasDetails = /\b(\d+\s*(weeks?|months?|days?|hours?)|beginner|advanced|intermediate|full\s*stack|front\s*end|back\s*end|yes|sure|okay)\b/i.test(latestText);
@@ -1134,27 +1715,26 @@ function generateFallbackGoalResponse(messages, latestText) {
     };
   }
 
-  const cleanSubject = goalTitle.replace(/\s*Roadmap$/i, '');
   const milestones = [
     {
-      title: `${cleanSubject} Foundations & Core Principles`,
+      title: `${cleanSubject} Fundamentals & Core Principles`,
       timeframe: 'Phase 1 (Weeks 1–2)',
-      description: `Establish a solid groundwork in ${cleanSubject}. Audit essential concepts, configure your development environment and tools, and complete introductory hands-on milestones.`
+      description: `Establish a solid groundwork in ${cleanSubject}. Master core syntax, configuration, programming paradigms, and complete introductory hands-on exercises.`
     },
     {
-      title: `Intermediate Skills & Hands-On Practice`,
+      title: `Intermediate ${cleanSubject} & Real-World Practice`,
       timeframe: 'Phase 2 (Weeks 3–6)',
-      description: `Deep dive into the primary techniques, syntax, and methodologies of ${cleanSubject}. Build practical mini-projects and solve structured challenge sets to reinforce core knowledge.`
+      description: `Deep dive into advanced data structures, libraries, object-oriented concepts, and idiomatic patterns of ${cleanSubject}. Build practical mini-projects and challenge sets.`
     },
     {
-      title: `Advanced Concepts & System Architecture`,
+      title: `Advanced Architecture, Frameworks & Optimization`,
       timeframe: 'Phase 3 (Weeks 7–9)',
-      description: `Master complex topic areas, performance optimization, and architectural best practices within ${cleanSubject}. Implement comprehensive real-world scenarios.`
+      description: `Master complex features, performance tuning, ecosystem tooling, and industry architectural standards within ${cleanSubject}. Implement full end-to-end applications.`
     },
     {
-      title: `Capstone Deliverable & Production Polish`,
+      title: `Capstone Project & Production Deployment`,
       timeframe: 'Phase 4 (Weeks 10–12)',
-      description: `Design, execute, and polish an end-to-end showcase deliverable demonstrating complete proficiency in ${cleanSubject}. Document and publish your final work.`
+      description: `Design, test, and deploy a comprehensive showcase project demonstrating mastery in ${cleanSubject}. Document and publish your work.`
     }
   ];
 
@@ -1162,7 +1742,7 @@ function generateFallbackGoalResponse(messages, latestText) {
     reply: `I've prepared a tailored roadmap for "${goalTitle}" with structured stages! You can track and check off your progress in the roadmap timeline above.`,
     roadmap: {
       goalTitle,
-      summary: `Comprehensive milestone plan to achieve ${goalTitle.toLowerCase()}.`,
+      summary: `Comprehensive milestone plan to achieve ${cleanSubject.toLowerCase()} mastery.`,
       milestones
     }
   };
@@ -1214,12 +1794,12 @@ async function sendGoalMessage() {
           goalConversation.push({ role: 'model', text: reply });
         }
         if (roadmap && roadmap.goalTitle && roadmap.milestones && roadmap.milestones.length) {
+          const cleanRoadmap = sanitizeRoadmap(roadmap);
           const roadmaps = load('roadmaps', []);
-          roadmaps.push(roadmap);
+          roadmaps.push(cleanRoadmap);
           save('roadmaps', roadmaps);
           renderRoadmaps();
           if (window._renderDashboardGoals) window._renderDashboardGoals();
-          appendChatMsg('assistant', 'Roadmap added to My Roadmaps \u2191');
         }
         success = true;
       }
@@ -1238,12 +1818,12 @@ async function sendGoalMessage() {
       goalConversation.push({ role: 'model', text: reply });
 
       if (roadmap && roadmap.goalTitle && roadmap.milestones && roadmap.milestones.length) {
+        const cleanRoadmap = sanitizeRoadmap(roadmap);
         const roadmaps = load('roadmaps', []);
-        roadmaps.push(roadmap);
+        roadmaps.push(cleanRoadmap);
         save('roadmaps', roadmaps);
         renderRoadmaps();
         if (window._renderDashboardGoals) window._renderDashboardGoals();
-        appendChatMsg('assistant', 'Roadmap added to My Roadmaps \u2191');
       }
     } catch(fallbackErr) {
       appendChatMsg('assistant', "I'm ready to help you plan! Tell me a bit about your goal and your target timeframe.");
@@ -1315,6 +1895,7 @@ function wireEventAdd(btnId, nameId, dateId){
   dateInput.addEventListener('keydown', e => { if (e.key==='Enter') go(); });
 }
 function renderEvents(){
+  rolloverCalendarMonth();
   const events = load('events', []).slice().sort((a,b)=> new Date(a.date) - new Date(b.date));
   const todayStart = new Date(new Date().toDateString());
 
@@ -1388,6 +1969,7 @@ if (goToHabitsLink) goToHabitsLink.addEventListener('click', () => showView('hab
 
 /* ---------------- MINI CALENDAR ---------------- */
 function renderMiniCalendar(){
+  rolloverCalendarMonth();
   const wrap = document.getElementById('miniCalendar');
   if (!wrap) return;
   const now = new Date();
@@ -1418,11 +2000,10 @@ function renderMiniCalendar(){
     const pastClass = isPast ? ' past' : '';
     const dayEvents = eventsByDay[d];
     if (dayEvents && dayEvents.length){
-      const extra = dayEvents.length - 1;
+      const eventsHtml = dayEvents.map(ev => `<span class="evt-label">${escapeHtml(ev.name)}</span>`).join('');
       html += `<div class="day-cell has-event${isToday?' today':''}${pastClass}" data-day="${d}" title="${escapeHtml(dayEvents.map(e=>e.name).join(', '))}">
         <span class="day-num">${d}</span>
-        <span class="evt-label">${escapeHtml(dayEvents[0].name)}</span>
-        ${extra > 0 ? `<span class="evt-more">+${extra} more</span>` : ''}
+        <div class="evt-list">${eventsHtml}</div>
       </div>`;
     } else {
       html += `<div class="day-cell${isToday?' today':''}" data-day="${d}">${d}</div>`;
@@ -2851,6 +3432,8 @@ function initApp() {
             width: 340,
             height: 190,
           });
+
+          pipWindow.document.title = "Voyage Focus Timer";
 
           // Copy all stylesheets and styles to PiP window
           document.querySelectorAll('link[rel="stylesheet"], style').forEach((node) => {
