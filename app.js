@@ -1503,47 +1503,46 @@ function attachRoadmapCardListeners(container) {
 
 /* ---------------- GOALS: AI Roadmap + Chat ---------------- */
 
-const GOALS_SYSTEM_INSTRUCTION = `You are a domain-expert coach inside a productivity app called Voyage. Help the user turn a vague goal into a concrete, realistic roadmap.
-Flow: ask 1-2 focused questions at a time to learn their starting point, timeframe, and constraints. Keep tone encouraging and concise. Keep asking (roadmapReady: false, roadmap: null) until you have enough info to propose a genuinely useful roadmap (usually 2-3 exchanges).
+const GOALS_SYSTEM_INSTRUCTION = `You are an expert domain coach inside Voyage, a productivity app. Your job is to transform the user's goal into a concrete, realistic, and highly tailored roadmap.
 
-When ready, set roadmapReady to true and generate a tailored roadmap following these STRICT RULES:
-1. GOAL TITLE: Extract the core skill, technology, or domain subject from the user's input and generate a clean, professional title (e.g. if the user says 'teach me ruby', the goalTitle MUST be 'Ruby Roadmap' or 'Ruby Mastery Roadmap'; if 'i want to learn python', title is 'Python Roadmap'). NEVER include conversational action phrases like 'Teach me', 'I want to', 'Help me', 'How to', 'Can you' in the goalTitle.
-2. SUMMARY: A clean 1-2 sentence executive overview of the roadmap (e.g., 'Comprehensive milestone plan to achieve Ruby programming proficiency from core syntax to production applications.').
-3. STAGE 1 TITLE: The first milestone title MUST directly name the foundational subject skills (e.g., 'Ruby Fundamentals & Core Principles' or 'Ruby Syntax & Setup'). NEVER copy 'Teach me' or conversational phrases into milestone titles.
-4. TIMELINE STAGES: Sequence 4 to 8 realistic, sequential stages/milestones (e.g., Phase 1, Phase 2... or Month 1, Month 2...).
-5. STAGE TITLES: Every milestone 'title' MUST be a clean, bold title naming the specific domain skill, technology, or concept (e.g., 'Object-Oriented Ruby & Gems', 'Rails Web Framework Architecture', 'Database Modeling with Active Record').
-6. TIMEFRAME: The 'timeframe' MUST be a concise label (e.g., 'Phase 1 (Weeks 1–2)', 'Weeks 3–6', 'Month 1').
-7. SHORT EXPLANATORY PARAGRAPH: The 'description' MUST be a well-crafted, informative short paragraph (2–4 concise sentences) explaining what this stage entails and the practical deliverable built.
+Flow:
+Ask 1-2 focused questions at a time to learn their starting point/prior experience, timeframe, and constraints. Keep tone encouraging and concise. Keep asking (roadmapReady: false, roadmap: null) until you have enough info to propose a genuinely useful roadmap (usually 1-3 exchanges).
 
-CONCRETE WORKED PATTERN EXAMPLE:
-Goal: "teach me ruby"
-Output JSON:
+When ready to generate the roadmap, set roadmapReady to true and output a JSON object adhering strictly to these rules:
+
+1. EXTRACT THE ACTUAL SUBJECT, NEVER REPEAT THE RAW SENTENCE:
+- Before generating anything, identify the underlying topic, technology, or skill (e.g. "Ruby", "Digital Marketing", "Guitar") — NOT the user's literal request sentence.
+- The goalTitle and every milestone title/description must refer to the actual subject naturally (e.g. goalTitle: "Ruby Mastery", "Ruby Development Roadmap").
+- NEVER repeat the user's literal request phrasing (words like "give me," "a roadmap to," "teach me," "how to," "i want to learn," etc.) in goalTitle, summary, or any milestone title/description.
+- Never append redundant words like "Roadmap Roadmap". Extract only the real subject matter.
+
+2. RESPECT THE STATED TIMEFRAME EXACTLY:
+- If the user specifies a timeframe (e.g. "2 months", "8 weeks", "3 months", "30 days"), the sum of all milestone durations MUST add up to approximately that total — not more, not noticeably less.
+- Mentally total the weeks across all milestones before finalizing. If the user asks for 8 weeks (2 months), distribute exactly 8 weeks (e.g. Weeks 1–2, Weeks 3–4, Weeks 5–6, Weeks 7–8 across 4 milestones). Do not generate a default 10-12 week plan when given an 8-week target.
+
+3. RESPECT STATED EXPERIENCE LEVEL:
+- If the user states prior relevant experience (e.g. "I already know Python and Java", "experienced in C++"), SKIP general beginner material (variables, loops, what is an if-statement, basic OOP theory).
+- Focus milestones on what is unique, idiomatic, and specific to the new subject (e.g. for Ruby with prior Python/Java experience: Ruby-specific syntax differences, blocks/procs/lambdas, metaprogramming, gems/Bundler, Rails ecosystem).
+- Only include foundational programming basics if the user is a true beginner with zero coding background.
+
+4. MILESTONE SPECIFICITY & NO "&" BUNDLING:
+- Do NOT bundle two distinct major topics into a single milestone with "&" (e.g. do not do "Ruby Fundamentals & Core Principles" or "Gems & Rails & Testing").
+- Every milestone title must name a concrete, specific skill or domain topic (not a generic study phase like "Intermediate Phase" or "Phase 1: Getting Started").
+- Milestone count should scale naturally to goal breadth and timeframe (typically 3 to 6 focused milestones).
+- Every milestone description must be 2-3 concise sentences explaining the focus and the concrete deliverable built.
+
+RESPONSE FORMAT (JSON):
 {
-  "reply": "I've designed a comprehensive Ruby development roadmap for you. Here is your step-by-step path to Ruby mastery!",
+  "reply": "Encouraging summary explaining how this roadmap is tailored to their specific background and timeframe.",
   "roadmapReady": true,
   "roadmap": {
-    "goalTitle": "Ruby Roadmap",
-    "summary": "Comprehensive 4-stage pathway from core Ruby syntax and OOP paradigms to building web applications and gems.",
+    "goalTitle": "Clean Title (e.g. 'Ruby Developer Roadmap')",
+    "summary": "1-2 sentence executive overview of the roadmap tailored to their timeline and prior background.",
     "milestones": [
       {
-        "title": "Ruby Fundamentals & Core Principles",
-        "timeframe": "Phase 1 (Weeks 1–2)",
-        "description": "Establish a solid groundwork in Ruby. Master variables, data structures, control flow, blocks, and methods while configuring your local development environment and IRB/Pry."
-      },
-      {
-        "title": "Object-Oriented Programming & Standard Library",
-        "timeframe": "Phase 2 (Weeks 3–5)",
-        "description": "Deep dive into classes, modules, inheritance, mixins, and error handling. Build practical command-line utilities and explore Ruby's built-in enumerables."
-      },
-      {
-        "title": "Ruby on Rails & Database Integrations",
-        "timeframe": "Phase 3 (Weeks 6–9)",
-        "description": "Construct full-stack web applications using the MVC pattern with Rails and Active Record. Implement RESTful routes, authentication, and PostgreSQL database queries."
-      },
-      {
-        "title": "Gems, Testing with RSpec & Production Polish",
-        "timeframe": "Phase 4 (Weeks 10–12)",
-        "description": "Write comprehensive unit and integration test suites with RSpec. Package a custom Ruby gem and deploy your web applications to production with CI/CD."
+        "title": "Concrete Topic Name",
+        "timeframe": "Weeks 1–2",
+        "description": "2-3 sentences detailing specific concepts and what practical project/deliverable is created."
       }
     ]
   }
@@ -1583,8 +1582,8 @@ function extractCleanSubject(rawText) {
   if (!rawText) return 'Skill';
   let clean = String(rawText).trim();
 
-  // Strip conversational and command prefixes repeatedly
-  const prefixRegex = /^(can you\s+)?(please\s+)?(i want to|i wanna|i would like to|i'd like to|my goal is to|i plan to|how to|help me|teach me( how to)?|guide me( on| in| through)?|learn|master|build|study|start learning|become an?|roadmap for)\s+/i;
+  // Strip conversational requests, commands, action phrases, and meta prompts
+  const prefixRegex = /^(can you\s+)?(please\s+)?(give me\s+(a\s+)?(roadmap|plan|guide|schedule|learning path)?(\s+(to|for|on))?|create\s+(a\s+)?(roadmap|plan|guide)?(\s+(to|for|on))?|make\s+(a\s+)?(roadmap|plan|guide)?(\s+(to|for|on))?|build\s+(a\s+)?(roadmap|plan|guide)?(\s+(to|for|on))?|show me\s+(a\s+)?(roadmap|plan|guide)?(\s+(to|for|on))?|i want to|i wanna|i would like to|i'd like to|my goal is to|i plan to|how to|help me(\s+(with|to|learn))?|teach me(\s+(how to|about))?|guide me(\s+(on|in|through|to))?|learn|master|study|start learning|become an?|roadmap for|roadmap to|plan for|learning path for)\s+/i;
   
   let prev;
   let iters = 0;
@@ -1594,8 +1593,11 @@ function extractCleanSubject(rawText) {
     iters++;
   } while (clean !== prev && prefixRegex.test(clean) && iters < 20);
 
-  // Strip trailing "roadmap" or "milestones" if already present in subject
-  clean = clean.replace(/\s*(roadmap|milestone plan|learning path)$/i, '').trim();
+  // Strip trailing timeframe / filler qualifiers if present in raw sentence
+  clean = clean.replace(/\s+(in\s+\d+\s*(weeks?|months?|days?|years?)|over\s+\d+\s*(weeks?|months?|days?|years?)|for\s+beginners?|from\s+scratch)$/i, '').trim();
+
+  // Strip trailing "roadmap", "learning path", "plan"
+  clean = clean.replace(/\s*(roadmap|milestone plan|learning path|plan)$/i, '').trim();
 
   if (!clean) return 'Skill';
 
@@ -1614,50 +1616,45 @@ function extractCleanSubject(rawText) {
 
 function sanitizeRoadmap(roadmap) {
   if (!roadmap) return roadmap;
-  const rawTitle = roadmap.goalTitle || '';
-  const subject = extractCleanSubject(rawTitle);
-
-  let goalTitle = rawTitle.trim();
-  if (/^(teach me|i want|learn|how to|help me|guide me|can you)/i.test(goalTitle) || !goalTitle) {
-    goalTitle = `${subject} Roadmap`;
-  } else if (!goalTitle.toLowerCase().includes('roadmap')) {
-    goalTitle = `${goalTitle} Roadmap`;
+  let rawTitle = (roadmap.goalTitle || '').trim();
+  
+  // Clean conversational prefixes from goalTitle
+  const cleanSubject = extractCleanSubject(rawTitle);
+  
+  // Build a clean, natural goalTitle without double "Roadmap" or conversational sentence
+  let goalTitle = rawTitle;
+  if (/^(give me|teach me|i want|learn|how to|help me|guide me|can you|create a|make a)/i.test(goalTitle) || !goalTitle) {
+    goalTitle = `${cleanSubject} Roadmap`;
+  } else {
+    // Remove duplicate "Roadmap" if repeated at end
+    goalTitle = goalTitle.replace(/\s+Roadmap\s+Roadmap$/i, ' Roadmap');
+    if (!goalTitle.toLowerCase().includes('roadmap') && !goalTitle.toLowerCase().includes('mastery') && !goalTitle.toLowerCase().includes('path')) {
+      goalTitle = `${goalTitle} Roadmap`;
+    }
   }
 
-  // Clean goal title capitalization and ensure it does not start with "Teach me"
-  goalTitle = goalTitle.replace(/^teach me\s+/i, '');
+  // Capitalize nicely
   goalTitle = goalTitle.charAt(0).toUpperCase() + goalTitle.slice(1);
 
-  let summary = roadmap.summary || '';
-  if (!summary || /achieve teach me/i.test(summary) || /teach me/i.test(summary)) {
-    summary = `Comprehensive milestone plan to achieve ${subject.toLowerCase()} mastery.`;
-  } else {
-    summary = summary.replace(/teach me\s+/gi, '');
+  let summary = (roadmap.summary || '').trim();
+  if (!summary || /achieve teach me/i.test(summary) || /give me a roadmap/i.test(summary)) {
+    summary = `Tailored milestone roadmap to achieve ${cleanSubject.toLowerCase()} proficiency.`;
   }
 
-  const milestones = (roadmap.milestones || []).map((m, idx) => {
+  const conversationalFilterRegex = /(give me\s+(a\s+)?roadmap\s+(to\s+)?learn|teach me\s+how\s+to|teach me\s+|how to\s+|i want to\s+learn\s+)/gi;
+
+  const milestones = (roadmap.milestones || []).map((m) => {
     let title = (m.title || '').trim();
-    if (/^teach me\s+/i.test(title)) {
-      title = title.replace(/^teach me\s+/i, '');
-      if (!title.toLowerCase().startsWith(subject.toLowerCase())) {
-        title = `${subject} ${title}`;
-      }
-    }
-    title = title.replace(/teach me\s+/gi, '').trim();
+    // Clean any accidental conversational prefixes from title
+    title = title.replace(conversationalFilterRegex, '').trim();
     title = title.charAt(0).toUpperCase() + title.slice(1);
 
-    if (idx === 0 && (/foundations/i.test(title) || /fundamentals/i.test(title))) {
-      title = `${subject} Fundamentals & Core Principles`;
-    }
-
     let desc = (m.description || '').trim();
-    desc = desc.replace(/in Teach me\s+/gi, 'in ');
-    desc = desc.replace(/Teach me\s+/gi, '');
-    desc = desc.replace(/teach me\s+/gi, '');
+    desc = desc.replace(conversationalFilterRegex, '');
 
     return {
       ...m,
-      title,
+      title: title || 'Milestone',
       description: desc
     };
   });
@@ -1728,48 +1725,94 @@ function setGoalChatLoading(loading) {
 function generateFallbackGoalResponse(messages, latestText) {
   const userMessages = messages.filter(m => m.role === 'user').map(m => m.text.trim());
   const initialGoal = userMessages[0] || latestText;
+  const allUserText = userMessages.join(' ');
   
   const cleanSubject = extractCleanSubject(initialGoal);
   const goalTitle = `${cleanSubject} Roadmap`;
 
   const isFirstMessage = userMessages.length <= 1;
-  const hasDetails = /\b(\d+\s*(weeks?|months?|days?|hours?)|beginner|advanced|intermediate|full\s*stack|front\s*end|back\s*end|yes|sure|okay)\b/i.test(latestText);
+  const hasDetails = /\b(\d+\s*(weeks?|months?|days?|hours?)|beginner|advanced|intermediate|developer|programmer|engineer|experience|python|java|javascript|c\+\+|coding|code|yes|sure|okay)\b/i.test(latestText);
 
   if (isFirstMessage && !hasDetails) {
     return {
-      reply: `That's an exciting goal! To tailor the best step-by-step roadmap for "${goalTitle}", could you share a bit more:\n1. What is your current experience level or starting point?\n2. What is your target timeframe (e.g. 3 months, 6 months)?\n3. How many hours per week can you dedicate?`,
+      reply: `That's an exciting goal! To tailor the best step-by-step roadmap for "${cleanSubject}", could you share a bit more:\n1. What is your current background or prior coding experience?\n2. What is your target timeframe (e.g. 8 weeks, 3 months)?\n3. How many hours per week can you dedicate?`,
       roadmap: null
     };
   }
 
-  const milestones = [
-    {
-      title: `${cleanSubject} Fundamentals & Core Principles`,
-      timeframe: 'Phase 1 (Weeks 1–2)',
-      description: `Establish a solid groundwork in ${cleanSubject}. Master core syntax, configuration, programming paradigms, and complete introductory hands-on exercises.`
-    },
-    {
-      title: `Intermediate ${cleanSubject} & Real-World Practice`,
-      timeframe: 'Phase 2 (Weeks 3–6)',
-      description: `Deep dive into advanced data structures, libraries, object-oriented concepts, and idiomatic patterns of ${cleanSubject}. Build practical mini-projects and challenge sets.`
-    },
-    {
-      title: `Advanced Architecture, Frameworks & Optimization`,
-      timeframe: 'Phase 3 (Weeks 7–9)',
-      description: `Master complex features, performance tuning, ecosystem tooling, and industry architectural standards within ${cleanSubject}. Implement full end-to-end applications.`
-    },
-    {
-      title: `Capstone Project & Production Deployment`,
-      timeframe: 'Phase 4 (Weeks 10–12)',
-      description: `Design, test, and deploy a comprehensive showcase project demonstrating mastery in ${cleanSubject}. Document and publish your work.`
-    }
-  ];
+  // Detect timeframe from conversation
+  let totalWeeks = 8;
+  const monthMatch = allUserText.match(/(\d+)\s*months?/i);
+  const weekMatch = allUserText.match(/(\d+)\s*weeks?/i);
+  if (monthMatch) {
+    totalWeeks = parseInt(monthMatch[1], 10) * 4;
+  } else if (weekMatch) {
+    totalWeeks = parseInt(weekMatch[1], 10);
+  }
+
+  // Detect prior experience
+  const hasPriorExp = /\b(python|java|c\+\+|javascript|golang|rust|php|c#|experience|already know|developer|engineer|programmer|can code)\b/i.test(allUserText);
+
+  // Divide into 4 phases proportional to totalWeeks
+  const w1End = Math.max(1, Math.round(totalWeeks * 0.25));
+  const w2End = Math.max(w1End + 1, Math.round(totalWeeks * 0.5));
+  const w3End = Math.max(w2End + 1, Math.round(totalWeeks * 0.75));
+  const w4End = totalWeeks;
+
+  let milestones = [];
+  if (hasPriorExp) {
+    milestones = [
+      {
+        title: `${cleanSubject} Syntax & Idiomatic Paradigms`,
+        timeframe: `Weeks 1–${w1End}`,
+        description: `Leverage your prior programming background to quickly map core constructs into ${cleanSubject}. Focus on language-specific idioms, closures/blocks, memory model, and interactive tooling.`
+      },
+      {
+        title: `Standard Library & Ecosystem Tooling`,
+        timeframe: `Weeks ${w1End + 1}–${w2End}`,
+        description: `Explore ${cleanSubject}'s standard packages, package management, project structure, and automated testing frameworks. Build modular CLI tools and benchmark performance.`
+      },
+      {
+        title: `Frameworks & Production Architecture`,
+        timeframe: `Weeks ${w2End + 1}–${w3End}`,
+        description: `Build end-to-end applications using the premier frameworks in the ${cleanSubject} ecosystem. Implement clean service architecture, database persistence, and asynchronous operations.`
+      },
+      {
+        title: `Advanced Systems & Capstone Project`,
+        timeframe: `Weeks ${w3End + 1}–${w4End}`,
+        description: `Develop and deploy a complete production-grade application or library. Implement comprehensive test suites, CI/CD pipelines, and performance optimizations.`
+      }
+    ];
+  } else {
+    milestones = [
+      {
+        title: `${cleanSubject} Fundamentals & Setup`,
+        timeframe: `Weeks 1–${w1End}`,
+        description: `Set up your development environment and master foundational syntax, data structures, and basic control flow in ${cleanSubject} through practical exercises.`
+      },
+      {
+        title: `Applied Concepts & Project Building`,
+        timeframe: `Weeks ${w1End + 1}–${w2End}`,
+        description: `Deepen your understanding with object-oriented and functional techniques in ${cleanSubject}. Construct practical utilities and solve algorithmic problems.`
+      },
+      {
+        title: `Ecosystem Frameworks & Data Persistence`,
+        timeframe: `Weeks ${w2End + 1}–${w3End}`,
+        description: `Learn standard frameworks and data management techniques. Build multi-component applications integrating external libraries and databases.`
+      },
+      {
+        title: `Showcase Application & Deployment`,
+        timeframe: `Weeks ${w3End + 1}–${w4End}`,
+        description: `Design, test, and deploy a complete capstone project demonstrating your mastery in ${cleanSubject}. Publish and document your repository.`
+      }
+    ];
+  }
 
   return {
-    reply: `I've prepared a tailored roadmap for "${goalTitle}" with structured stages! You can track and check off your progress in the roadmap timeline above.`,
+    reply: `I've prepared a ${totalWeeks}-week tailored roadmap for ${cleanSubject}${hasPriorExp ? ' tailored to your existing programming background' : ''}! You can track and check off each milestone in your roadmap timeline above.`,
     roadmap: {
       goalTitle,
-      summary: `Comprehensive milestone plan to achieve ${cleanSubject.toLowerCase()} mastery.`,
+      summary: `Tailored ${totalWeeks}-week milestone plan to achieve ${cleanSubject.toLowerCase()} mastery${hasPriorExp ? ' leveraging your existing coding background' : ''}.`,
       milestones
     }
   };
