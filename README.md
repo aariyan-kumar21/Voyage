@@ -33,6 +33,10 @@ Setting a goal is easy. Knowing the *right order* to pursue it in is not. Voyage
 
 ## Technology
 
+<p align="left">
+  <img src="https://skillicons.dev/icons?i=html,css,js,nodejs,mongodb,vercel" alt="Tech stack icons" />
+</p>
+
 | Layer | Technology |
 |---|---|
 | Frontend | Vanilla JavaScript, HTML, CSS — no framework overhead |
