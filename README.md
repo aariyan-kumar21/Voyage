@@ -27,32 +27,7 @@ Voyage takes a third path.
 - **The goal planner is a coach, not a text box.** Instead of a static "Goals" list where you type a percentage yourself, Voyage's AI-powered planner holds an actual conversation with you — asking about your experience, your timeframe, and your constraints — and produces a real, sequenced, checkable roadmap tailored to what you told it.
 - **One surface, not five tabs.** Tasks, habits, notes, a focus timer, a calendar, and an AI goal roadmap all live inside a single connected dashboard, not a set of app icons competing for your attention.
 
-## Key Features
-
-**Dashboard**
-A live overview of your day: a to-do ring showing real completion progress, a habit checklist synced with your tracker, an upcoming events preview, quick notes, and a weekly activity chart built entirely from real task and habit data — not placeholder numbers.
-
-**To-Do**
-Date-stamped tasks with full day-by-day history, so you can look back on any previous day without losing today's view. Built for actually tracking what got done, not just what's pending.
-
-**Habit Tracker**
-A monthly grid for building consistency, with real streak calculation that accounts for time zones and grace periods rather than punishing you the instant midnight passes.
-
-**Timer**
-A focus tool with both a straightforward stopwatch and a full Pomodoro cycle, designed to sit inside your workflow rather than requiring a separate app.
-
-**Notes**
-A rich, block-based editor — headings, lists, quotes, callouts, and code blocks — for capturing thought without leaving your productivity flow to open a separate notes application.
-
-**Calendar**
-A clean monthly view of your events, with upcoming and past events clearly separated so your focus stays on what's ahead.
-
-**AI Roadmap Planner**
-The centerpiece of what makes Voyage distinct. Rather than listing a goal and guessing at the steps, you describe what you want to achieve, your current experience level, and your timeframe. Voyage's AI planner reasons through that context and produces a structured, ordered curriculum of concrete milestones — not a generic outline, but a plan sequenced the way a real mentor in that field would teach it. Each milestone can be checked off as you progress, unlocking the next stage, turning an abstract ambition into an actual, trackable path forward.
-
-This is where Voyage's AI integration earns its place: it is not a chat window bolted onto the side of the app for novelty. It is a functional planning engine that produces structured, checkable, real data — the exact kind of data-driven design philosophy that runs through the rest of the app.
-
-## How the AI Benefits You
+## What's the use AI chatbot here
 
 Setting a goal is easy. Knowing the *right order* to pursue it in is not. Voyage's planner removes the paralysis of "where do I even start" by doing the sequencing work for you — accounting for what you already know, how much time you actually have, and what genuinely needs to happen before the next step makes sense. It turns a vague ambition like "I want to learn full-stack development" into a concrete, ordered, milestone-by-milestone path you can act on immediately.
 
