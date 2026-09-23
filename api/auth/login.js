@@ -103,6 +103,8 @@ export default async function handler(req, res) {
     const db = await getDb();
     const users = db.collection('users');
 
+    const user = await users.findOne({ email: email.toLowerCase().trim() });
+
     let match = false;
     if (user && user.passwordHash) {
       match = await bcrypt.compare(password, user.passwordHash);
